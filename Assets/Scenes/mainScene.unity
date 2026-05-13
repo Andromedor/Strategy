@@ -2762,8 +2762,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GenerateEnemy
   _points:
   - {fileID: 1158547559}
-  - {fileID: 101172881}
-  - {fileID: 489124129}
   _factory: {fileID: 2221833450515023493, guid: b426e496210a16744b3f6a654afe58b8, type: 3}
 --- !u!114 &527143989
 MonoBehaviour:
@@ -2786,7 +2784,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 527143986}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09f34eed0e61d064595fce173419223a, type: 3}
   m_Name: 
@@ -3652,7 +3650,6 @@ GameObject:
   - component: {fileID: 710983837}
   - component: {fileID: 710983839}
   - component: {fileID: 710983838}
-  - component: {fileID: 710983840}
   m_Layer: 5
   m_Name: FactoryPanel
   m_TagString: Untagged
@@ -3719,20 +3716,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 1
---- !u!114 &710983840
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 710983836}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ee230c50d64e3874d8cc73d2347ce8f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FactoryUI
-  _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
-  _panelType: 1
 --- !u!1001 &726977408
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6083,8 +6066,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 710983840}
-        m_TargetAssemblyTypeName: FactoryUI, Assembly-CSharp
+      - m_Target: {fileID: -5955587015591027389, guid: b426e496210a16744b3f6a654afe58b8, type: 3}
+        m_TargetAssemblyTypeName: Factory, Assembly-CSharp
         m_MethodName: OnClickUnity
         m_Mode: 1
         m_Arguments:
@@ -8808,7 +8791,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1755795197
 Transform:
   m_ObjectHideFlags: 0
@@ -8831,7 +8814,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1755795196}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a8f05c8233b9d554f968f5db8ba38987, type: 3}
   m_Name: 
@@ -15161,7 +15144,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2101929354}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: -5955587015591027389, guid: b426e496210a16744b3f6a654afe58b8, type: 3}
+        m_TargetAssemblyTypeName: Factory, Assembly-CSharp
+        m_MethodName: OnClickUnity
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2101929354
 MonoBehaviour:
   m_ObjectHideFlags: 0

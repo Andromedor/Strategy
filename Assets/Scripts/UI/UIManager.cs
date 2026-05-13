@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FactoryUIManager : MonoBehaviour
+public class UIManager : MonoBehaviour
 {
    [System.Serializable]
    public class Panel

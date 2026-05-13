@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   Prefab: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
   Cost: 0
-  ProductionTime: 3
+  ProductionTime: 1

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class SelectionManager : MonoBehaviour
@@ -13,6 +14,12 @@ public class SelectionManager : MonoBehaviour
    {
       if (Mouse.current.leftButton.wasReleasedThisFrame)
       {
+         if (PlaceObject.IsPlacing)
+            return;
+         
+         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+         
          SelectBuilding();
       }
    }
@@ -22,18 +29,20 @@ public class SelectionManager : MonoBehaviour
       Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
       if (Physics.Raycast(ray, out var hit, 1000f, _buildingMask))
       {
-         BuildingProduction production = hit.collider.GetComponent<BuildingProduction>();
-         Factory factory = hit.collider.GetComponent<Factory>();
+         Factory factory = hit.collider.GetComponentInParent<Factory>();
 
-         if (production != null && factory != null)
+         if (factory != null)
          {
-               SelectedFactory = production;
-               EventManager.OnOpenPanel.Invoke(factory.PanelType);
+            var production = factory.GetComponent<BuildingProduction>();
+            if(production != null)
+              SelectedFactory = production;
+            
+            EventManager.OnOpenPanel?.Invoke(factory.PanelType);
+               return;
          }
       }
-      else
-      {
-         EventManager.OnOpenPanel.Invoke(PanelType.MainMenu);
-      }
+      
+      SelectedFactory = null;
+      EventManager.OnOpenPanel?.Invoke(PanelType.MainMenu);
    }
 }

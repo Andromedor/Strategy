@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public class BuildingProduction : MonoBehaviour
 {
+   [SerializeField] private Transform _pointPosition;
    private Queue<UnitData> _queue = new Queue<UnitData>();
    private bool _isProducing;
    
@@ -25,7 +26,7 @@ public class BuildingProduction : MonoBehaviour
 
          yield return new WaitForSeconds(unit.ProductionTime);
 
-         Instantiate(unit.Prefab, transform.position + Vector3.forward * 2, Quaternion.identity);
+         Instantiate(unit.Prefab, _pointPosition.position + Vector3.forward * 2, Quaternion.identity);
       }
 
       _isProducing = false;
