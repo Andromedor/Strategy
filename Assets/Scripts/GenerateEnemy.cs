@@ -8,7 +8,8 @@ public class GenerateEnemy : MonoBehaviour
     
     void Start()
     {
-        StartCoroutine(SpawnFactory());
+        
+      //  StartCoroutine(SpawnFactory());
     }
 
     private IEnumerator SpawnFactory()
@@ -17,7 +18,7 @@ public class GenerateEnemy : MonoBehaviour
         {
             yield return new WaitForSeconds(10f);
           GameObject spawn = Instantiate(_factory);
-          Destroy(spawn.GetComponent<PlaceObject>());
+          Destroy(spawn.GetComponent<BuildingPlacementManager>());
           spawn.transform.position = _points[i].position;
           spawn.transform.rotation = Quaternion.Euler(0, Random.Range(0, 360), 0);
           spawn.GetComponent<UnitCreat>().enabled = true;

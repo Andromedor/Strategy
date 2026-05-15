@@ -3,9 +3,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-public class PlaceObject : MonoBehaviour
+public class BuildingPlacementManager : MonoBehaviour
 {
     [Header("Raycast")] 
+    [SerializeField] private Camera _camera;
     [SerializeField] private LayerMask _groundMask;
 
     [Header("Placement check")]
@@ -24,30 +25,18 @@ public class PlaceObject : MonoBehaviour
     private bool _isValidPlacement;
     private bool _canPlaceClick;
     
+    private GameObject _previewObject;
     private Renderer[] _renderers;
     private MaterialPropertyBlock _propertyBlock;
-
-    private void Start()
-    {
-        PositionObject();
-        CheckPlacement();
-        UpdatePreviewColor();
-    }
     
-    private void Awake()
-    {
-        IsPlacing = true;
-        _canPlaceClick = false;
-
-        _renderers = GetComponentsInChildren<Renderer>();
-        _propertyBlock = new MaterialPropertyBlock();
-    }
     
     private void Update()
     {
+        if (!IsPlacing || _previewObject == null)
+            return;
+        
         PositionObject();
         HandleRotation();
-
         CheckPlacement();
         UpdatePreviewColor();
         
@@ -74,12 +63,30 @@ public class PlaceObject : MonoBehaviour
         }
     }
     
+    public void StartPlacement(GameObject buildingPrefab)
+    {
+        if (IsPlacing)
+            return;
+
+        _previewObject = Instantiate(buildingPrefab, Vector3.zero, Quaternion.identity);
+
+        IsPlacing = true;
+        _canPlaceClick = false;
+
+        _renderers = _previewObject.GetComponentsInChildren<Renderer>();
+        _propertyBlock = new MaterialPropertyBlock();
+
+        PositionObject();
+        CheckPlacement();
+        UpdatePreviewColor();
+    }
+    
     private void PositionObject()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
         if (Physics.Raycast(ray, out var hit, 1000,_groundMask))
         {
-            transform.position = hit.point;
+            _previewObject.transform.position = hit.point;
         }
     }
 
@@ -87,23 +94,23 @@ public class PlaceObject : MonoBehaviour
     {
         if (Keyboard.current.qKey.wasPressedThisFrame)
         {
-            transform.Rotate(Vector3.up, -_rotationStep);
+            _previewObject.transform.Rotate(Vector3.up, -_rotationStep);
         }
 
         if (Keyboard.current.eKey.wasPressedThisFrame)
         {
-            transform.Rotate(Vector3.up, _rotationStep);
+            _previewObject.transform.Rotate(Vector3.up, _rotationStep);
         }
     }
 
     private void CheckPlacement()
     {
-        Vector3 center = transform.position + transform.rotation * _checkBoxOffset;
+        Vector3 center = _previewObject.transform.position + _previewObject.transform.rotation * _checkBoxOffset;
         
         Collider[] hits = Physics.OverlapBox(
             center,
             _checkBoxSize / 2f,
-            transform.rotation,
+            _previewObject.transform.rotation,
             _blockMask
         );
         
@@ -111,7 +118,7 @@ public class PlaceObject : MonoBehaviour
         
         foreach (Collider hit in hits)
         {
-            if(hit.transform.IsChildOf(transform))
+            if(hit.transform.IsChildOf(_previewObject.transform))
                 continue;
             
             _isValidPlacement = false;
@@ -139,38 +146,19 @@ public class PlaceObject : MonoBehaviour
         }
     }
     
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = _isValidPlacement ? Color.green : Color.red;
-
-        Matrix4x4 oldMatrix = Gizmos.matrix;
-        Gizmos.matrix = Matrix4x4.TRS(
-            transform.position + transform.rotation * _checkBoxOffset,
-            transform.rotation,
-            Vector3.one
-        );
-
-        Gizmos.DrawWireCube(Vector3.zero, _checkBoxSize);
-
-        Gizmos.matrix = oldMatrix;
-    }
-    
     private void ConfirmPlacement()
     {
-        IsPlacing = false;
         ResetPreviewColor();
-        Destroy(this);
+        
+        _previewObject = null;
+        IsPlacing = false;
+       
     }
 
     private void CancelPlacement()
     {
+        Destroy(_previewObject);
+        _previewObject = null;
         IsPlacing = false;
-        Destroy(gameObject);
-    }
-    
-    private void OnDestroy()
-    {
-        if (IsPlacing)
-            IsPlacing = false;
     }
 }

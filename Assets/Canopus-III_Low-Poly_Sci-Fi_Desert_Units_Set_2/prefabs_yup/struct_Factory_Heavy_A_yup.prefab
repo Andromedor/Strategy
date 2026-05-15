@@ -133,7 +133,6 @@ GameObject:
   - component: {fileID: 1557780845714414655}
   - component: {fileID: 2463894480273019802}
   - component: {fileID: 420371540457613136}
-  - component: {fileID: 2513746225105023433}
   - component: {fileID: -8645479984767854479}
   - component: {fileID: 4442843065147400290}
   - component: {fileID: -5955587015591027389}
@@ -219,29 +218,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &2513746225105023433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2221833450515023493}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48c003c590ab3894ea19abc0df5c20e7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlaceObject
-  _groundMask:
-    serializedVersion: 2
-    m_Bits: 64
-  _blockMask:
-    serializedVersion: 2
-    m_Bits: 896
-  _checkBoxSize: {x: 4, y: 2, z: 4}
-  _checkBoxOffset: {x: 0, y: 1, z: 0}
-  _rotationStep: 90
-  _validColor: {r: 0, g: 1, b: 0, a: 0.5}
-  _invalidColor: {r: 1, g: 0, b: 0, a: 0.5}
 --- !u!65 &-8645479984767854479
 BoxCollider:
   m_ObjectHideFlags: 0

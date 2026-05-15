@@ -14,7 +14,7 @@ public class SelectionManager : MonoBehaviour
    {
       if (Mouse.current.leftButton.wasReleasedThisFrame)
       {
-         if (PlaceObject.IsPlacing)
+         if (BuildingPlacementManager.IsPlacing)
             return;
          
          if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
