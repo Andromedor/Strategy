@@ -3102,8 +3102,6 @@ MonoBehaviour:
   _blockMask:
     serializedVersion: 2
     m_Bits: 896
-  _checkBoxSize: {x: 4, y: 2, z: 4}
-  _checkBoxOffset: {x: 0, y: 1, z: 0}
   _rotationStep: 90
   _validColor: {r: 0, g: 1, b: 0, a: 0.5}
   _invalidColor: {r: 1, g: 0, b: 0, a: 0.5}
@@ -3429,7 +3427,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97eb7a9e76f1b4b4da72e629dce27f61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonPlaceBuilding
-  _buildingPrefab: {fileID: 2221833450515023493, guid: b426e496210a16744b3f6a654afe58b8, type: 3}
+  _buildingData: {fileID: 11400000, guid: 7ced5d753867f1f42b6ba223f50f9631, type: 2}
   _button: {fileID: 592982882}
   _placementManager: {fileID: 527143992}
 --- !u!114 &592982886

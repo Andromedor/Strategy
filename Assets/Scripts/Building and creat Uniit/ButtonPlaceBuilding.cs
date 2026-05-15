@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class ButtonPlaceBuilding : MonoBehaviour
 {
-  [SerializeField] private GameObject _buildingPrefab;
+  [SerializeField] private BuildingData _buildingData;
   [SerializeField] private Button _button;
   [SerializeField] private BuildingPlacementManager _placementManager;
 
@@ -28,7 +28,7 @@ public class ButtonPlaceBuilding : MonoBehaviour
 
   private void PlaceBuilding()
   {
-    _placementManager.StartPlacement(_buildingPrefab);
+    _placementManager.StartPlacement(_buildingData);
     Debug.Log("Place Building");
   }
 }

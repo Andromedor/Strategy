@@ -11,8 +11,6 @@ public class BuildingPlacementManager : MonoBehaviour
 
     [Header("Placement check")]
     [SerializeField] private LayerMask _blockMask;
-    [SerializeField] private Vector3 _checkBoxSize = new Vector3(4f, 2f, 4f);
-    [SerializeField] private Vector3 _checkBoxOffset = new Vector3(0f, 1f, 0f);
 
     [Header("Rotation")]
     [SerializeField] private float _rotationStep = 90f;
@@ -28,6 +26,7 @@ public class BuildingPlacementManager : MonoBehaviour
     private GameObject _previewObject;
     private Renderer[] _renderers;
     private MaterialPropertyBlock _propertyBlock;
+    private BuildingData _currentBuildingData;
     
     
     private void Update()
@@ -63,12 +62,13 @@ public class BuildingPlacementManager : MonoBehaviour
         }
     }
     
-    public void StartPlacement(GameObject buildingPrefab)
+    public void StartPlacement(BuildingData  buildingData)
     {
         if (IsPlacing)
             return;
-
-        _previewObject = Instantiate(buildingPrefab, Vector3.zero, Quaternion.identity);
+        _currentBuildingData = buildingData;
+        
+        _previewObject = Instantiate(buildingData.prefab, Vector3.zero, Quaternion.identity);
 
         IsPlacing = true;
         _canPlaceClick = false;
@@ -105,11 +105,11 @@ public class BuildingPlacementManager : MonoBehaviour
 
     private void CheckPlacement()
     {
-        Vector3 center = _previewObject.transform.position + _previewObject.transform.rotation * _checkBoxOffset;
+        Vector3 center = _previewObject.transform.position + _previewObject.transform.rotation * _currentBuildingData.CheckBoxOffset;
         
         Collider[] hits = Physics.OverlapBox(
             center,
-            _checkBoxSize / 2f,
+            _currentBuildingData.CheckBoxSize / 2f,
             _previewObject.transform.rotation,
             _blockMask
         );
