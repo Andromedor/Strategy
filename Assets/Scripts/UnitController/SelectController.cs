@@ -74,6 +74,9 @@ public class SelectController : MonoBehaviour
             );
 
             agent.SetDestination(pos);
+            
+            EventManager.OnUnitMoveCommand?.Invoke(selection, pos);
+            
             index++;
         }
     }
@@ -111,6 +114,7 @@ public class SelectController : MonoBehaviour
         {
             if (selection == null) continue;
             selection.transform.GetChild(0).gameObject.SetActive(false);
+            EventManager.OnUnitDeselected?.Invoke(selection);
         }
         
         _selections.Clear();
@@ -160,6 +164,7 @@ public class SelectController : MonoBehaviour
             
             _selections.Add(hit.transform.gameObject);
             hit.transform.GetChild(0).gameObject.SetActive(true);
+            EventManager.OnUnitSelected?.Invoke(hit.transform.gameObject);
         }
 
         Destroy(_currentSelection);

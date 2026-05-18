@@ -48,6 +48,8 @@ public class ShootAttack : MonoBehaviour
 
         if (target != null)
         {
+            EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target.transform);
+            
             if (target.CompareTag("Enemy"))
             {
                 _agent.SetDestination(target.transform.position);
