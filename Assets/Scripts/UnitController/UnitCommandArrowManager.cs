@@ -12,10 +12,10 @@ public class UnitCommandArrowManager : MonoBehaviour
   [SerializeField] private float _lineWidth  = 0.15f;   // Товщина лінії.
   [SerializeField] private float _heightOffset = 0.2f;   // Підняття лінії над землею.
   
-  private readonly Dictionary<GameObject, LineRenderer> _activeLines = new();
-  private readonly Dictionary<GameObject, Vector3> _moveTargets = new();
-  private readonly Dictionary<GameObject, Transform> _attackTargets = new();
-  private readonly List<GameObject> _unitsToRemove = new();
+  private readonly Dictionary<GameObject, LineRenderer> _activeLines = new(); // Активні лінії для вибраних юнітів.
+  private readonly Dictionary<GameObject, Vector3> _moveTargets = new(); // Останні точки руху юнітів. НЕ видаляємо при deselect, щоб при повторному виборі лінія повернулась
+  private readonly Dictionary<GameObject, Transform> _attackTargets = new(); //Останні цілі атаки юнітів
+  private readonly List<GameObject> _unitsToRemove = new();  // Тимчасовий список для безпечного видалення мертвих/null юнітів.
   
 
   private void OnEnable()

@@ -8,9 +8,11 @@ using Random = UnityEngine.Random;
 public class SelectController : MonoBehaviour
 {
     [SerializeField] private GameObject _cubePrefab;
+    [SerializeField] private LayerMask _enemyMask;
     [SerializeField] private LayerMask _cubeMask;
     [SerializeField] private LayerMask _selectedLayerMask;
     [SerializeField] private List<GameObject> _selections;
+    [SerializeField] private float _formationSpacing = 4f;
     private Camera _camera;
     private GameObject _currentSelection;
 
@@ -40,19 +42,52 @@ public class SelectController : MonoBehaviour
     {
         if (_selections == null || _selections.Count == 0)
             return;
-        
+
         Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
-        if (!Physics.Raycast(ray, out RaycastHit agentTarget, 1000, _cubeMask))
+        if (Physics.Raycast(ray, out RaycastHit enemyHit, 1000f, _enemyMask))
+        {
+            CommandAttack(enemyHit.transform);
             return;
+        }
 
+        if (Physics.Raycast(ray, out RaycastHit groundHit, 1000f, _cubeMask))
+        {
+            CommandMove(groundHit.point);
+        }
+    }
+    
+    private void CommandAttack(Transform enemy)
+    {
+        foreach (GameObject selection in _selections)
+        {
+            if (selection == null)
+                continue;
+
+            UnitCombat attack = selection.GetComponent<UnitCombat>();
+
+            if (attack == null)
+                continue;
+
+            attack.SetManualAttackTarget(enemy);
+
+            EventManager.OnUnitAttackTargetChanged?.Invoke(selection, enemy);
+        }
+    }
+    
+    private void CommandMove(Vector3 targetPoint)
+    {
         GameObject firstUnit = GetFirstValidSelection();
 
         if (firstUnit == null)
             return;
 
-        Vector3 dir = (agentTarget.point - firstUnit.transform.position).normalized;
-        Quaternion rot = Quaternion.LookRotation(dir);
+        Vector3 dir = (targetPoint - firstUnit.transform.position).normalized;
+
+        if (dir.sqrMagnitude < 0.01f)
+            dir = firstUnit.transform.forward;
+
+        Quaternion rotation = Quaternion.LookRotation(dir);
 
         int index = 0;
 
@@ -62,23 +97,43 @@ public class SelectController : MonoBehaviour
                 continue;
 
             NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
+
             if (agent == null)
                 continue;
 
-            Vector3 pos = GetCirclePosition(
-                agentTarget.point,
-                index,
-                _selections.Count,
-                5f,
-                rot
-            );
+            Vector3 destination = index == 0
+                ? targetPoint
+                : GetChessFormationPosition(targetPoint, index, _formationSpacing, rotation);
 
-            agent.SetDestination(pos);
-            
-            EventManager.OnUnitMoveCommand?.Invoke(selection, pos);
-            
+            agent.SetDestination(destination);
+
+            EventManager.OnUnitMoveCommand?.Invoke(selection, destination);
+
             index++;
         }
+    }
+    
+    private Vector3 GetChessFormationPosition(
+        Vector3 center,
+        int index,
+        float spacing,
+        Quaternion rotation)
+    {
+        int formationIndex = index - 1;
+
+        int row = formationIndex / 2 + 1;
+        int side = formationIndex % 2 == 0 ? -1 : 1;
+
+        float x = side * spacing * 0.5f;
+
+        if (row % 2 == 0)
+            x += side * spacing * 0.5f;
+
+        float z = -row * spacing;
+
+        Vector3 localOffset = new Vector3(x, 0f, z);
+
+        return center + rotation * localOffset;
     }
     
     private GameObject GetFirstValidSelection()
@@ -91,21 +146,6 @@ public class SelectController : MonoBehaviour
         return null;
     }
     
-    private Vector3 GetCirclePosition(Vector3 center, int index, int count, float spacing, Quaternion rotation)
-    {
-        int rowSize = Mathf.CeilToInt(Mathf.Sqrt(count));
-
-        int row = index / rowSize;
-        int col = index % rowSize;
-
-        float offsetX = (col - rowSize / 2f) * spacing;
-        float offsetZ = (row - rowSize / 2f) * spacing;
-
-        Vector3 localOffset = new Vector3(offsetX, 0, offsetZ);
-
-        return center + rotation * localOffset;
-    }
-
     private void StartSelection()
     {
         if (!RaycastToGround(out var hitPoint)) return;

@@ -1885,6 +1885,10 @@ PrefabInstance:
       value: unit_Quad_B_yup (3)
       objectReference: {fileID: 0}
     - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
@@ -2123,6 +2127,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SelectController
   _cubePrefab: {fileID: 7424505983745072262, guid: 778f825cd188b51459969936010c6c3e, type: 3}
+  _enemyMask:
+    serializedVersion: 2
+    m_Bits: 1024
   _cubeMask:
     serializedVersion: 2
     m_Bits: 64
@@ -2130,6 +2137,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   _selections: []
+  _formationSpacing: 4
 --- !u!1001 &330853669
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8456,6 +8464,10 @@ PrefabInstance:
     - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
       propertyPath: m_Name
       value: unit_Quad_B_yup (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
       propertyPath: m_TagString
@@ -16288,6 +16300,10 @@ PrefabInstance:
       value: unit_Quad_B_yup
       objectReference: {fileID: 0}
     - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
@@ -16562,6 +16578,10 @@ PrefabInstance:
     - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
       propertyPath: m_Name
       value: unit_Quad_B_yup (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
       propertyPath: m_TagString

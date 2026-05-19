@@ -197,6 +197,7 @@ GameObject:
   - component: {fileID: -4786000167650600384}
   - component: {fileID: 4476516859466301737}
   - component: {fileID: 436172262246814853}
+  - component: {fileID: 5635012842650600140}
   m_Layer: 7
   m_Name: unit_Quad_B_yup
   m_TagString: Player
@@ -335,10 +336,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90d1f6c8947af504390dba856041238d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShootAttack
-  _rangeAttack: 40
-  _attackDelay: 2
+  _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
   _pointPosition: {fileID: 1735648999806541720}
-  _health: 100
 --- !u!54 &4476516859466301737
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -378,6 +377,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 106d023553714a819feb4bec7039d8bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.UnitSelectionState
+--- !u!114 &5635012842650600140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4641279379937375252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8048908ed816431882380502bde3dcf3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Building_and_creat_Uniit.UnitHealth
+  _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
 --- !u!1 &4864932473319648666
 GameObject:
   m_ObjectHideFlags: 0

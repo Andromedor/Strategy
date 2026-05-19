@@ -1,37 +1,46 @@
-using System;
+using Building_and_creat_Uniit;
 using UnityEngine;
 
-public class BulletController : MonoBehaviour
+namespace UnitController
 {
-    [SerializeField] private float _speed;
-    [SerializeField] private float _damage;
-    
-    [NonSerialized] public Vector3 TargetPosition;
-    
-    private void Update()
+    public class BulletController : MonoBehaviour
     {
-        FlyBullet();
-    }
+        private float Speed;
+        private float Damage;
+        private Vector3 TargetPosition;
 
-    private void FlyBullet()
-    {
-       float step = Time.deltaTime * _speed;
-       transform.position = Vector3.MoveTowards(transform.position, TargetPosition, step);
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player" ) || other.CompareTag("Enemy"))
+        private void Update()
         {
-       
-            BulletPool.Instance.ReturnBullet(gameObject);
-            ShootAttack shootAttack = other.GetComponent<ShootAttack>();
-            shootAttack.Health -= _damage;
+            FlyBullet();
+        }
+
+        public void Initialize (float damage, float speed, Vector3 targetPosition)
+        {
+            Damage = damage;
+            Speed = speed;
+            TargetPosition = targetPosition;
+        }
+
+        private void FlyBullet()
+        {
+            float step = Time.deltaTime * Speed;
+            transform.position = Vector3.MoveTowards(transform.position, TargetPosition, step);
             
-            if (shootAttack.Health <= 0)
+            if (Vector3.Distance(transform.position, TargetPosition) < 0.1f)
             {
-                Destroy(other.gameObject);
+                BulletPool.Instance.ReturnBullet(gameObject);
             }
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            IDamageable damageable = other.GetComponentInParent<IDamageable>();
+
+            if (damageable == null)
+                return;
+
+            damageable.TakeDamage(Damage);
+            BulletPool.Instance.ReturnBullet(gameObject);
         }
     }
 }
