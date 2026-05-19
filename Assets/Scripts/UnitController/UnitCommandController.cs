@@ -5,7 +5,7 @@ using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
 
-public class SelectController : MonoBehaviour
+public class UnitCommandController : MonoBehaviour
 {
     [SerializeField] private GameObject _cubePrefab;
     [SerializeField] private LayerMask _enemyMask;
