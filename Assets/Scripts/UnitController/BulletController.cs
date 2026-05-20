@@ -60,3 +60,9 @@ namespace UnitController
         }
     }
 }
+
+public enum TeamType
+{
+    Player,
+    Enemy
+}
