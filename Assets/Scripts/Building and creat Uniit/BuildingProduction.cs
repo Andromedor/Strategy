@@ -43,8 +43,8 @@ public class BuildingProduction : MonoBehaviour
             unitTeam.SetTeam(_teamComponent.Team);
             spawnedUnit.layer =
                _teamComponent.Team == TeamType.Player
-                  ? LayerMask.NameToLayer("Player")
-                  : LayerMask.NameToLayer("Enemy");
+                  ? LayerMask.NameToLayer("PlayerUnit")
+                  : LayerMask.NameToLayer("EnemyUnit");
          }
       }
 

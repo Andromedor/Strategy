@@ -18,6 +18,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     private UnitHealth _health;
     private TeamComponent _teamComponent;
     private Transform _currentAttackTarget;
+    private LayerMask _targetMask;
     public TeamType Team => _teamComponent.Team;
 
     
@@ -26,6 +27,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
         _agent = GetComponent<NavMeshAgent>();
         _teamComponent = GetComponent<TeamComponent>();
         _health = new UnitHealth(_unitData.MaxHealth);
+        SetupTargetMask();
     }
     
     private void Start()
@@ -101,7 +103,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     {
         Collider[] hits = Physics.OverlapSphere(
             transform.position,
-            _unitData.AttackRange
+            _unitData.AttackRange,_targetMask
         );
 
         Transform closestTarget = null;
@@ -180,6 +182,20 @@ public class UnitCombat : MonoBehaviour, IDamageable
         }
 
         _currentAttackTarget = null;
+    }
+    
+    private void SetupTargetMask()
+    {
+        if (Team == TeamType.Player)
+        {
+            _targetMask =
+                LayerMask.GetMask("EnemyUnit");
+        }
+        else
+        {
+            _targetMask =
+                LayerMask.GetMask("PlayerUnit");
+        }
     }
     
     private bool IsTargetValid(Transform target)
