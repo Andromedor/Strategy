@@ -20,7 +20,12 @@ public class UnitCombat : MonoBehaviour, IDamageable
     private Transform _currentAttackTarget;
     private LayerMask _targetMask;
     public TeamType Team => _teamComponent.Team;
+    
+    private bool _hasPlayerMoveCommand;
+// Чи є зараз активний наказ руху від гравця.
 
+    private Vector3 _playerMoveDestination;
+// Точка, куди гравець наказав рухатися.
     
     private void Awake()
     {
@@ -28,6 +33,25 @@ public class UnitCombat : MonoBehaviour, IDamageable
         _teamComponent = GetComponent<TeamComponent>();
         _health = new UnitHealth(_unitData.MaxHealth);
         SetupTargetMask();
+    }
+    
+    private void OnEnable()
+    {
+        EventManager.OnUnitMoveCommand += OnMoveCommand;
+    }
+
+    private void OnDisable()
+    {
+        EventManager.OnUnitMoveCommand -= OnMoveCommand;
+    }
+    
+    private void OnMoveCommand(GameObject unit, Vector3 destination)
+    {
+        if (unit != gameObject)
+            return;
+
+        _hasPlayerMoveCommand = true;
+        _playerMoveDestination = destination;
     }
     
     private void Start()
@@ -57,39 +81,55 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
     private void CheckEnemies()
     {
+        if (_hasPlayerMoveCommand && HasReachedPlayerMoveDestination())
+        {
+            _hasPlayerMoveCommand = false;
+        }
+
         Transform target = _manualAttackTarget;
 
-        // Якщо manual target помер або зник —
-        // очищаємо його та шукаємо нового.
         if (!IsTargetValid(target))
         {
             _manualAttackTarget = null;
             target = FindAutoTarget();
         }
 
-        // Якщо цілі нема — зупиняємо атаку.
         if (!IsTargetValid(target))
         {
             StopAttack();
             return;
         }
 
-        // Якщо ворог далеко —
-        // під'їжджаємо.
         float distance = Vector3.Distance(transform.position, target.position);
+
+        if (_hasPlayerMoveCommand)
+        {
+            if (distance <= _unitData.AttackRange)
+                StartAttackIfNeeded(target);
+            else
+                StopAttack();
+
+            return;
+        }
+
         if (distance > _unitData.AttackRange)
         {
             MoveToAttackRange(target);
             StopAttack();
             return;
         }
-        
-        // Якщо ворог у range —
-        // зупиняємо NavMesh рух.
+
         _agent.ResetPath();
-        
+
         EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
-        
+
+        StartAttackIfNeeded(target);
+    }
+    
+    private void StartAttackIfNeeded(Transform target)
+    {
+        EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
+
         if (_attackCoroutine == null || _currentAttackTarget != target)
         {
             StopAttack();
@@ -97,6 +137,14 @@ public class UnitCombat : MonoBehaviour, IDamageable
             _currentAttackTarget = target;
             _attackCoroutine = StartCoroutine(Attack(target));
         }
+    }
+
+    private bool HasReachedPlayerMoveDestination()
+    {
+        if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + 0.2f)
+            return true;
+
+        return false;
     }
     
     private Transform FindAutoTarget()
