@@ -197,6 +197,7 @@ GameObject:
   - component: {fileID: 9040674858860214893}
   - component: {fileID: -4786000167650600384}
   - component: {fileID: 436172262246814853}
+  - component: {fileID: -1213748796353276796}
   m_Layer: 7
   m_Name: unit_Quad_B_yup
   m_TagString: Player
@@ -364,6 +365,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShootAttack
   _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
   _pointPosition: {fileID: 1735648999806541720}
+  _targetMask:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!114 &436172262246814853
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -376,6 +380,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 106d023553714a819feb4bec7039d8bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.UnitSelectionState
+--- !u!114 &-1213748796353276796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4641279379937375252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cbb12c6ab8f4debb43e016ecfa1164a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.TeamComponent
+  _team: 0
 --- !u!1 &4864932473319648666
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,12 +1,19 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnitController;
 
 public class BuildingProduction : MonoBehaviour
 {
    [SerializeField] private Transform _pointPosition;
    private Queue<UnitData> _queue = new Queue<UnitData>();
+   private TeamComponent _teamComponent;
    private bool _isProducing;
+   
+   private void Awake()
+   {
+      _teamComponent = GetComponent<TeamComponent>();
+   }
    
    public void AddToQueue(UnitData unitData)
    {
@@ -25,8 +32,20 @@ public class BuildingProduction : MonoBehaviour
          UnitData unit = _queue.Dequeue();
 
          yield return new WaitForSeconds(unit.ProductionTime);
+         
+         GameObject spawnedUnit = Instantiate(unit.Prefab, _pointPosition.position + Vector3.forward * 2, Quaternion.identity);
+         
+         TeamComponent unitTeam =
+            spawnedUnit.GetComponent<TeamComponent>();
 
-         Instantiate(unit.Prefab, _pointPosition.position + Vector3.forward * 2, Quaternion.identity);
+         if(unitTeam != null)
+         {
+            unitTeam.SetTeam(_teamComponent.Team);
+            spawnedUnit.layer =
+               _teamComponent.Team == TeamType.Player
+                  ? LayerMask.NameToLayer("Player")
+                  : LayerMask.NameToLayer("Enemy");
+         }
       }
 
       _isProducing = false;

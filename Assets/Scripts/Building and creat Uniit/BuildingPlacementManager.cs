@@ -1,4 +1,5 @@
 using System;
+using UnitController;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -8,6 +9,9 @@ public class BuildingPlacementManager : MonoBehaviour
     [Header("Raycast")] 
     [SerializeField] private Camera _camera;
     [SerializeField] private LayerMask _groundMask;
+    
+    [Header("Team")]
+    [SerializeField] private TeamType _currentTeam;
 
     [Header("Placement check")]
     [SerializeField] private LayerMask _blockMask;
@@ -149,6 +153,14 @@ public class BuildingPlacementManager : MonoBehaviour
     private void ConfirmPlacement()
     {
         ResetPreviewColor();
+        
+        TeamComponent teamComponent =
+            _previewObject.GetComponent<TeamComponent>();
+
+        if (teamComponent != null)
+        {
+            teamComponent.SetTeam(_currentTeam);
+        }
         
         _previewObject = null;
         IsPlacing = false;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnitController;
 using UnityEngine;
 
@@ -78,7 +79,7 @@ public class UnitCommandArrowManager : MonoBehaviour
   {
     _unitsToRemove.Clear();
     
-    foreach (var pair in _activeLines)
+    foreach (var pair in _activeLines.ToList())
     {
       GameObject unit = pair.Key;
       LineRenderer line = pair.Value;

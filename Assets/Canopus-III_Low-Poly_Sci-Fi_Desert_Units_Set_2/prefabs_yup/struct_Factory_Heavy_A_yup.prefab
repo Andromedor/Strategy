@@ -134,9 +134,9 @@ GameObject:
   - component: {fileID: 2463894480273019802}
   - component: {fileID: 420371540457613136}
   - component: {fileID: -8645479984767854479}
-  - component: {fileID: 4442843065147400290}
   - component: {fileID: -5955587015591027389}
   - component: {fileID: 4106059242367547387}
+  - component: {fileID: 1422297417859208169}
   m_Layer: 8
   m_Name: struct_Factory_Heavy_A_yup
   m_TagString: Untagged
@@ -239,21 +239,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 10.000004, y: 10.84212, z: 15.000002}
   m_Center: {x: 0, y: 5.421059, z: 0}
---- !u!114 &4442843065147400290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2221833450515023493}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: faec6127ec93c5248a99c7c927ffcd3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UnitCreat
-  _prefab: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
-  _spawnPrefab: {fileID: 1024673061132322336}
-  _time: 5
 --- !u!114 &-5955587015591027389
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -281,6 +266,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingProduction
   _pointPosition: {fileID: 936919208819045398}
+--- !u!114 &1422297417859208169
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2221833450515023493}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cbb12c6ab8f4debb43e016ecfa1164a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.TeamComponent
+  _team: 0
 --- !u!1 &6283097865136294372
 GameObject:
   m_ObjectHideFlags: 0

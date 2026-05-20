@@ -6,17 +6,25 @@ using UnityEngine.AI;
 
 public class UnitCombat : MonoBehaviour, IDamageable
 {
+    [Header("Data")]
     [SerializeField] private UnitData _unitData;
+    
+    [Header("References")]
     [SerializeField] private Transform _pointPosition;
     
     private NavMeshAgent _agent;
-    private Coroutine _attackCoroutine;
-    private Transform _manualAttackTarget;
+    private Coroutine _attackCoroutine; //Поточна корутина атаки.
+    private Transform _manualAttackTarget; // Ціль, яку гравець задав вручну правим кліком.
     private UnitHealth _health;
+    private TeamComponent _teamComponent;
+    private Transform _currentAttackTarget;
+    public TeamType Team => _teamComponent.Team;
+
     
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
+        _teamComponent = GetComponent<TeamComponent>();
         _health = new UnitHealth(_unitData.MaxHealth);
     }
     
@@ -49,15 +57,23 @@ public class UnitCombat : MonoBehaviour, IDamageable
     {
         Transform target = _manualAttackTarget;
 
-        if (target == null)
+        // Якщо manual target помер або зник —
+        // очищаємо його та шукаємо нового.
+        if (!IsTargetValid(target))
+        {
+            _manualAttackTarget = null;
             target = FindAutoTarget();
+        }
 
-        if (target == null)
+        // Якщо цілі нема — зупиняємо атаку.
+        if (!IsTargetValid(target))
         {
             StopAttack();
             return;
         }
 
+        // Якщо ворог далеко —
+        // під'їжджаємо.
         float distance = Vector3.Distance(transform.position, target.position);
         if (distance > _unitData.AttackRange)
         {
@@ -66,29 +82,56 @@ public class UnitCombat : MonoBehaviour, IDamageable
             return;
         }
         
+        // Якщо ворог у range —
+        // зупиняємо NavMesh рух.
         _agent.ResetPath();
         
         EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
         
-        if (_attackCoroutine == null)
+        if (_attackCoroutine == null || _currentAttackTarget != target)
+        {
+            StopAttack();
+
+            _currentAttackTarget = target;
             _attackCoroutine = StartCoroutine(Attack(target));
+        }
     }
     
     private Transform FindAutoTarget()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, _unitData.AttackRange);
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position,
+            _unitData.AttackRange
+        );
+
+        Transform closestTarget = null;
+        float closestDistanceSqr = float.MaxValue;
 
         foreach (Collider hit in hits)
         {
-            bool isEnemy =
-                (CompareTag("Player") && hit.CompareTag("Enemy")) ||
-                (CompareTag("Enemy") && hit.CompareTag("Player"));
+            ITeam targetTeam = hit.GetComponentInParent<ITeam>();
 
-            if (isEnemy)
-                return hit.transform;
+            if (targetTeam == null)
+                continue;
+
+            if (targetTeam.Team == Team)
+                continue;
+
+            Transform target = hit.transform;
+
+            if (!IsTargetValid(target))
+                continue;
+
+            float distanceSqr = (target.position - transform.position).sqrMagnitude;
+
+            if (distanceSqr < closestDistanceSqr)
+            {
+                closestDistanceSqr = distanceSqr;
+                closestTarget = target;
+            }
         }
 
-        return null;
+        return closestTarget;
     }
     
     private void MoveToAttackRange(Transform target)
@@ -107,7 +150,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
     private IEnumerator Attack(Transform target)
     {
-        while (target != null)
+        while (IsTargetValid(target))
         {
             GameObject bullet = BulletPool.Instance.GetBullet();
 
@@ -119,16 +162,28 @@ public class UnitCombat : MonoBehaviour, IDamageable
             
             yield return new WaitForSeconds(_unitData.AttackDelay);
         }
+        if (_manualAttackTarget == target)
+            _manualAttackTarget = null;
+
+        if (_currentAttackTarget == target)
+            _currentAttackTarget = null;
 
         _attackCoroutine = null;
     }
     
     private void StopAttack()
     {
-        if (_attackCoroutine == null)
-            return;
+        if (_attackCoroutine != null)
+        {
+            StopCoroutine(_attackCoroutine);
+            _attackCoroutine = null;
+        }
 
-        StopCoroutine(_attackCoroutine);
-        _attackCoroutine = null;
+        _currentAttackTarget = null;
+    }
+    
+    private bool IsTargetValid(Transform target)
+    {
+        return target != null && target.gameObject.activeInHierarchy;
     }
 }

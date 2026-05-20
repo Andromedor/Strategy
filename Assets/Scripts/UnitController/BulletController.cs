@@ -25,7 +25,7 @@ namespace UnitController
 
         private void FlyBullet()
         {
-            if (_target == null)
+            if (_target == null || !_target.gameObject.activeInHierarchy)
             {
                 BulletPool.Instance.ReturnBullet(gameObject);
                 return;
@@ -33,21 +33,23 @@ namespace UnitController
 
             float step = Time.deltaTime * _speed;
             transform.position = Vector3.MoveTowards(transform.position, _target.position, step);
-            
-            if (Vector3.Distance(transform.position, _target.position) < 0.1f)
-            {
-                BulletPool.Instance.ReturnBullet(gameObject);
-            }
         }
 
         private void OnTriggerEnter(Collider other)
         {
-            if(_owner == null) return;
-            
-            if (other.gameObject == _owner)
+            if (_owner == null)
+            {
+                BulletPool.Instance.ReturnBullet(gameObject);
+                return;
+            }
+
+            if (other.transform.IsChildOf(_owner.transform))
                 return;
 
-            if (other.CompareTag(_owner.tag))
+            ITeam ownerTeam = _owner.GetComponentInParent<ITeam>();
+            ITeam targetTeam = other.GetComponentInParent<ITeam>();
+
+            if (ownerTeam != null && targetTeam != null && ownerTeam.Team == targetTeam.Team)
                 return;
             
             IDamageable damageable = other.GetComponentInParent<IDamageable>();
@@ -59,10 +61,4 @@ namespace UnitController
             BulletPool.Instance.ReturnBullet(gameObject);
         }
     }
-}
-
-public enum TeamType
-{
-    Player,
-    Enemy
 }
