@@ -5,28 +5,36 @@ namespace UnitController
 {
     public class BulletController : MonoBehaviour
     {
-        private float Speed;
-        private float Damage;
-        private Vector3 TargetPosition;
+        private float _speed;
+        private float _damage;
+        private Transform _target;
+        private GameObject _owner;
 
         private void Update()
         {
             FlyBullet();
         }
 
-        public void Initialize (float damage, float speed, Vector3 targetPosition)
+        public void Initialize (float damage, float speed, Transform target, GameObject owner)
         {
-            Damage = damage;
-            Speed = speed;
-            TargetPosition = targetPosition;
+            _damage = damage;
+            _speed = speed;
+            _target = target;
+            _owner = owner;
         }
 
         private void FlyBullet()
         {
-            float step = Time.deltaTime * Speed;
-            transform.position = Vector3.MoveTowards(transform.position, TargetPosition, step);
+            if (_target == null)
+            {
+                BulletPool.Instance.ReturnBullet(gameObject);
+                return;
+            }
+
+            float step = Time.deltaTime * _speed;
+            transform.position = Vector3.MoveTowards(transform.position, _target.position, step);
             
-            if (Vector3.Distance(transform.position, TargetPosition) < 0.1f)
+            if (Vector3.Distance(transform.position, _target.position) < 0.1f)
             {
                 BulletPool.Instance.ReturnBullet(gameObject);
             }
@@ -34,12 +42,20 @@ namespace UnitController
 
         private void OnTriggerEnter(Collider other)
         {
+            if(_owner == null) return;
+            
+            if (other.gameObject == _owner)
+                return;
+
+            if (other.CompareTag(_owner.tag))
+                return;
+            
             IDamageable damageable = other.GetComponentInParent<IDamageable>();
 
             if (damageable == null)
                 return;
 
-            damageable.TakeDamage(Damage);
+            damageable.TakeDamage(_damage);
             BulletPool.Instance.ReturnBullet(gameObject);
         }
     }

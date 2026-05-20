@@ -1,9 +1,10 @@
 using System.Collections;
+using Building_and_creat_Uniit;
 using UnitController;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class UnitCombat : MonoBehaviour
+public class UnitCombat : MonoBehaviour, IDamageable
 {
     [SerializeField] private UnitData _unitData;
     [SerializeField] private Transform _pointPosition;
@@ -11,10 +12,12 @@ public class UnitCombat : MonoBehaviour
     private NavMeshAgent _agent;
     private Coroutine _attackCoroutine;
     private Transform _manualAttackTarget;
+    private UnitHealth _health;
     
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
+        _health = new UnitHealth(_unitData.MaxHealth);
     }
     
     private void Start()
@@ -26,6 +29,20 @@ public class UnitCombat : MonoBehaviour
     {
         _manualAttackTarget = target;
         EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
+    }
+    
+    public void TakeDamage(float damage)
+    {
+        _health.TakeDamage(damage);
+
+        if (_health.IsDead)
+            Die();
+    }
+
+    private void Die()
+    {
+        EventManager.OnUnitDeselected?.Invoke(gameObject);
+        Destroy(gameObject);
     }
 
     private void CheckEnemies()
@@ -98,7 +115,7 @@ public class UnitCombat : MonoBehaviour
             bullet.transform.rotation = Quaternion.identity;
 
             BulletController bulletController = bullet.GetComponent<BulletController>();
-            bulletController.Initialize(_unitData.Damage, _unitData.Speed, target.position);
+            bulletController.Initialize(_unitData.Damage, _unitData.Speed, target, gameObject);
             
             yield return new WaitForSeconds(_unitData.AttackDelay);
         }
