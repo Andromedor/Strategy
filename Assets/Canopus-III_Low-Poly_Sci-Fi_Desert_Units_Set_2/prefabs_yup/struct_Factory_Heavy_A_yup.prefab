@@ -134,7 +134,6 @@ GameObject:
   - component: {fileID: 2463894480273019802}
   - component: {fileID: 420371540457613136}
   - component: {fileID: -8645479984767854479}
-  - component: {fileID: -5955587015591027389}
   - component: {fileID: 4106059242367547387}
   - component: {fileID: 1422297417859208169}
   m_Layer: 8
@@ -239,20 +238,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 10.000004, y: 10.84212, z: 15.000002}
   m_Center: {x: 0, y: 5.421059, z: 0}
---- !u!114 &-5955587015591027389
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2221833450515023493}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ee230c50d64e3874d8cc73d2347ce8f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Building
-  _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
-  _panelType: 1
 --- !u!114 &4106059242367547387
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -266,6 +251,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingProduction
   _pointPosition: {fileID: 936919208819045398}
+  _productionConfig: {fileID: 11400000, guid: 9802de36f30c65748b3777b93e7e9060, type: 2}
 --- !u!114 &1422297417859208169
 MonoBehaviour:
   m_ObjectHideFlags: 0

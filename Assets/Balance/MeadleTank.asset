@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e48060335b59034cb6b3718be1e9fc1, type: 3}
   m_Name: MeadleTank
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  Prefab: {fileID: 0}
+  Prefab: {fileID: 2218461069028294333, guid: b9d308d9f071bbc46be660ddc91ca2ee, type: 3}
   Cost: 0
   ProductionTime: 0
   MaxHealth: 100

@@ -1,23 +1,30 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Data;
 using UnitController;
 
 public class BuildingProduction : MonoBehaviour
 {
    [SerializeField] private Transform _pointPosition;
-   private Queue<UnitData> _queue = new Queue<UnitData>();
+   [Header("Production")]
+   [SerializeField] private ProductionConfig _productionConfig;
+   
+   private Queue<ProductionItemData> _queue = new Queue<ProductionItemData>();
    private TeamComponent _teamComponent;
    private bool _isProducing;
+   
+   public List<ProductionItemData> Items =>
+      _productionConfig.Items;
    
    private void Awake()
    {
       _teamComponent = GetComponent<TeamComponent>();
    }
    
-   public void AddToQueue(UnitData unitData)
+   public void AddToQueue(ProductionItemData item)
    {
-      _queue.Enqueue(unitData);
+      _queue.Enqueue(item);
       
       if (!_isProducing)
          StartCoroutine(ProcessQueue());
@@ -29,9 +36,11 @@ public class BuildingProduction : MonoBehaviour
 
       while (_queue.Count > 0)
       {
-         UnitData unit = _queue.Dequeue();
+         ProductionItemData item = _queue.Dequeue();
 
-         yield return new WaitForSeconds(unit.ProductionTime);
+         yield return new WaitForSeconds(item.ProductionTime);
+         
+         UnitData unit = item.UnitData;
          
          GameObject spawnedUnit = Instantiate(unit.Prefab, _pointPosition.position + Vector3.forward * 2, Quaternion.identity);
          

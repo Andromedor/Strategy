@@ -16,4 +16,6 @@ public static class EventManager
 
     // Викликається, коли юніт почав атакувати ціль.
     public static Action<GameObject, Transform> OnUnitAttackTargetChanged;
+    
+    public static Action<BuildingProduction> OnFactorySelected;
 }

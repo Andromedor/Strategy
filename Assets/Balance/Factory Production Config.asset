@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b12c52a08ce4ea18e2da2a713546c54, type: 3}
+  m_Name: Factory Production Config
+  m_EditorClassIdentifier: Assembly-CSharp::Data.ProductionConfig
+  Items:
+  - {fileID: 11400000, guid: bae9135be8b7f6648b3ad496fa6c9b8a, type: 2}
+  - {fileID: 11400000, guid: f83509def1fbe4a468b83ca0a4a598af, type: 2}

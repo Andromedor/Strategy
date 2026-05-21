@@ -5,8 +5,6 @@ public class UnitData : ScriptableObject
 {
     [Header("Production")]
     public GameObject Prefab;
-    public int Cost;
-    public float ProductionTime;
     
     [Header("Combat")]
     public float MaxHealth = 100f;

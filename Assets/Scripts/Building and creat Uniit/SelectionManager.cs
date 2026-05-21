@@ -29,15 +29,15 @@ public class SelectionManager : MonoBehaviour
       Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
       if (Physics.Raycast(ray, out var hit, 1000f, _buildingMask))
       {
-         Factory factory = hit.collider.GetComponentInParent<Factory>();
+         BuildingProduction production =
+            hit.collider.GetComponent<BuildingProduction>();
 
-         if (factory != null)
+         if (production != null)
          {
-            var production = factory.GetComponent<BuildingProduction>();
-            if(production != null)
               SelectedFactory = production;
-            
-            EventManager.OnOpenPanel?.Invoke(factory.PanelType);
+              
+              EventManager.OnOpenPanel?.Invoke(PanelType.Factory);
+              EventManager.OnFactorySelected?.Invoke(production);
                return;
          }
       }
