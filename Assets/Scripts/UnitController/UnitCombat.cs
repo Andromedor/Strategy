@@ -12,6 +12,11 @@ public class UnitCombat : MonoBehaviour, IDamageable
     [Header("References")]
     [SerializeField] private Transform _pointPosition;
     
+    [Header("Aiming")]
+    [SerializeField] private Transform _turret; // Башня танка. Вона крутиться навколо Y.
+    [SerializeField] private Transform _gun; // Пушка танка. Вона піднімається/опускається по X.
+
+    
     private NavMeshAgent _agent;
     private Coroutine _attackCoroutine; //Поточна корутина атаки.
     private Transform _manualAttackTarget; // Ціль, яку гравець задав вручну правим кліком.
@@ -26,6 +31,8 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
     private Vector3 _playerMoveDestination;
 // Точка, куди гравець наказав рухатися.
+    private Transform _aimTarget;
+    private float _lastTargetTime;
     
     private void Awake()
     {
@@ -33,6 +40,18 @@ public class UnitCombat : MonoBehaviour, IDamageable
         _teamComponent = GetComponent<TeamComponent>();
         _health = new UnitHealth(_unitData.MaxHealth);
         SetupTargetMask();
+    }
+    
+    private void Update()
+    {
+        if (IsTargetValid(_aimTarget))
+        {
+            AimAtTarget(_aimTarget);
+        }
+        else
+        {
+            HandleIdleTurret();
+        }
     }
     
     private void OnEnable()
@@ -97,15 +116,26 @@ public class UnitCombat : MonoBehaviour, IDamageable
         if (!IsTargetValid(target))
         {
             StopAttack();
+            _aimTarget = null;
             return;
         }
+        
+        _aimTarget = target;
+        _lastTargetTime = Time.time;
 
         float distance = Vector3.Distance(transform.position, target.position);
-
+// Якщо є наказ руху від гравця.
         if (_hasPlayerMoveCommand)
-        {
+        {// Якщо ворог ще далеко.
             if (distance <= _unitData.AttackRange)
-                StartAttackIfNeeded(target);
+            {
+                bool isAimedMove = AimAtTarget(target); // Наводимо башню та пушку.
+                if (isAimedMove)
+                    StartAttackIfNeeded(target);
+                else
+                    StopAttack();
+            }
+
             else
                 StopAttack();
 
@@ -122,7 +152,15 @@ public class UnitCombat : MonoBehaviour, IDamageable
         _agent.ResetPath();
 
         EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
+        
+        bool isAimed = AimAtTarget(target);
 
+        if (!isAimed)
+        {
+            StopAttack();
+            return;
+        }
+        
         StartAttackIfNeeded(target);
     }
     
@@ -244,6 +282,124 @@ public class UnitCombat : MonoBehaviour, IDamageable
             _targetMask =
                 LayerMask.GetMask("PlayerUnit");
         }
+    }
+
+    /// <summary>
+    /// Повертає башню по локальній Y-осі відносно корпусу танка.
+    /// Це прибирає смикання, бо ми не задаємо world rotation напряму.
+    /// </summary>
+    private bool RotateTurretToTarget(Transform target)
+    {
+        Vector3 worldDirection = target.position - _turret.position;
+
+        Vector3 localDirection = transform.InverseTransformDirection(worldDirection);
+        localDirection.y = 0f;
+
+        if (localDirection.sqrMagnitude < 0.01f)
+            return true;
+
+        float targetYaw = Mathf.Atan2(localDirection.x, localDirection.z) * Mathf.Rad2Deg;
+
+        float currentYaw = _turret.localEulerAngles.y;
+
+        float newYaw = Mathf.MoveTowardsAngle(
+            currentYaw,
+            targetYaw,
+            _unitData.TurretRotationSpeed * Time.deltaTime
+        );
+
+        _turret.localRotation = Quaternion.Euler(0f, newYaw, 0f);
+
+        float angle = Mathf.Abs(Mathf.DeltaAngle(newYaw, targetYaw));
+
+        return angle <= _unitData.AimAngleTolerance;
+    }
+    
+    /// <summary>
+    /// Піднімає або опускає пушку по локальній X-осі.
+    /// Працює відносно башні.
+    /// </summary>
+    private bool RotateGunToTarget(Transform target)
+    {
+        Vector3 worldDirection = target.position - _gun.position;
+
+        Vector3 localDirection = _turret.InverseTransformDirection(worldDirection);
+
+        float horizontalDistance = new Vector2(
+            localDirection.x,
+            localDirection.z
+        ).magnitude;
+
+        float targetPitch = -Mathf.Atan2(localDirection.y, horizontalDistance) * Mathf.Rad2Deg;
+
+        targetPitch = Mathf.Clamp(
+            targetPitch,
+            _unitData.MinGunPitch,
+            _unitData.MaxGunPitch
+        );
+
+        float currentPitch = _gun.localEulerAngles.x;
+
+        float newPitch = Mathf.MoveTowardsAngle(
+            currentPitch,
+            targetPitch,
+            _unitData.GunPitchSpeed * Time.deltaTime
+        );
+
+        _gun.localRotation = Quaternion.Euler(newPitch, 0f, 0f);
+
+        float angle = Mathf.Abs(Mathf.DeltaAngle(newPitch, targetPitch));
+
+        return angle <= _unitData.AimAngleTolerance;
+    }
+    
+    /// <summary>
+    /// Повертає башню вперед,
+    /// якщо давно нема target.
+    /// </summary>
+    private void HandleIdleTurret()
+    {
+        // Ще рано повертати.
+        if (Time.time < _lastTargetTime + _unitData.ReturnTurretDelay)
+            return;
+
+        float currentYaw = _turret.localEulerAngles.y;
+
+        float newYaw = Mathf.MoveTowardsAngle(
+            currentYaw,
+            0f,
+            _unitData.IdleTurretRotationSpeed * Time.deltaTime
+        );
+
+        _turret.localRotation =
+            Quaternion.Euler(0f, newYaw, 0f);
+
+        // Пушку теж повертаємо.
+        float currentPitch = _gun.localEulerAngles.x;
+
+        float newPitch = Mathf.MoveTowardsAngle(
+            currentPitch,
+            0f,
+            _unitData.GunPitchSpeed * Time.deltaTime
+        );
+
+        _gun.localRotation =
+            Quaternion.Euler(newPitch, 0f, 0f);
+    }
+    
+    /// <summary>
+    /// Повертає башню і пушку до цілі.
+    /// Повертає true тільки тоді, коли наведення майже завершене.
+    /// </summary>
+    private bool AimAtTarget(Transform target)
+    {
+        if (target == null)
+            return false;
+
+        bool turretReady = RotateTurretToTarget(target);
+        bool gunReady = RotateGunToTarget(target);
+
+        return turretReady && gunReady;
     }
     
     private bool IsTargetValid(Transform target)

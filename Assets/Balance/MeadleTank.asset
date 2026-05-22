@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: MeadleTank
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   Prefab: {fileID: 2218461069028294333, guid: b9d308d9f071bbc46be660ddc91ca2ee, type: 3}
-  Cost: 0
-  ProductionTime: 0
   MaxHealth: 100
   Damage: 20
   Speed: 10
   AttackRange: 30
   AttackDelay: 3
   FormationSpacing: 4
+  TurretRotationSpeed: 720
+  GunPitchSpeed: 90
+  MinGunPitch: -5
+  MaxGunPitch: 20
+  AimAngleTolerance: 3

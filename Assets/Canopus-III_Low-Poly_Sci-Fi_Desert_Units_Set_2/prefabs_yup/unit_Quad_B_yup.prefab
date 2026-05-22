@@ -365,6 +365,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShootAttack
   _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
   _pointPosition: {fileID: 1735648999806541720}
+  _turret: {fileID: 7192603064606675590}
+  _gun: {fileID: 8559806326031593549}
 --- !u!114 &436172262246814853
 MonoBehaviour:
   m_ObjectHideFlags: 0

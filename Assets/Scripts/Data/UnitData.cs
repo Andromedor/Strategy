@@ -14,4 +14,27 @@ public class UnitData : ScriptableObject
     public float AttackDelay = 2f;
     [Header("Movement")]
     public float FormationSpacing = 4f;
+    
+    [Header("Aiming")]
+    public float TurretRotationSpeed = 180f;
+// Швидкість повороту башні по Y.
+
+    public float GunPitchSpeed = 90f;
+// Швидкість підйому/опускання пушки.
+
+    public float MinGunPitch = -5f;
+// Мінімальний кут пушки вниз.
+
+    public float MaxGunPitch = 20f;
+// Максимальний кут пушки вгору.
+
+    public float AimAngleTolerance = 3f;
+// Наскільки точно треба навестись, щоб дозволити постріл.
+
+    public float ReturnTurretDelay = 2f;
+// Через скільки секунд без target
+// башня починає повертатись назад.
+
+    public float IdleTurretRotationSpeed = 90f;
+// Швидкість повернення в idle.
 }
