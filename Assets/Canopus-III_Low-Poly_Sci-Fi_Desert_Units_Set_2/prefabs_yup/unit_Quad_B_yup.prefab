@@ -198,6 +198,7 @@ GameObject:
   - component: {fileID: -4786000167650600384}
   - component: {fileID: 436172262246814853}
   - component: {fileID: -1213748796353276796}
+  - component: {fileID: 3288223131304063876}
   m_Layer: 7
   m_Name: unit_Quad_B_yup
   m_TagString: Player
@@ -392,6 +393,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.TeamComponent
   _team: 0
+--- !u!114 &3288223131304063876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4641279379937375252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eda90b836d604c6f8410feec0e5709a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Building_and_creat_Uniit.UnitSpawnActivator
 --- !u!1 &4864932473319648666
 GameObject:
   m_ObjectHideFlags: 0

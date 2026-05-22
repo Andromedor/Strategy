@@ -116,7 +116,7 @@ Transform:
   m_GameObject: {fileID: 1024673061132322336}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -11.05}
+  m_LocalPosition: {x: -0.25012198, y: 0.37, z: 2.67}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -136,6 +136,7 @@ GameObject:
   - component: {fileID: -8645479984767854479}
   - component: {fileID: 4106059242367547387}
   - component: {fileID: 1422297417859208169}
+  - component: {fileID: 8293821140606752439}
   m_Layer: 8
   m_Name: struct_Factory_Heavy_A_yup
   m_TagString: Untagged
@@ -158,6 +159,7 @@ Transform:
   m_Children:
   - {fileID: 8881496716670763145}
   - {fileID: 936919208819045398}
+  - {fileID: 2083708031326899822}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2463894480273019802
@@ -250,8 +252,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 967b3617ac1440c43b735f59c1b7f4a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingProduction
-  _pointPosition: {fileID: 936919208819045398}
+  _unitSpawnPoint: {fileID: 936919208819045398}
+  _unitExitPoint: {fileID: 2083708031326899822}
   _productionConfig: {fileID: 11400000, guid: 9802de36f30c65748b3777b93e7e9060, type: 2}
+  _gate: {fileID: 8627803447755182765}
 --- !u!114 &1422297417859208169
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -265,6 +269,53 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.TeamComponent
   _team: 0
+--- !u!208 &8293821140606752439
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2221833450515023493}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 5, y: 5.4210005, z: 7.5000005}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 5.4210005, z: 0}
+  m_TimeToStationary: 0.5
+--- !u!1 &3909771343675748711
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2083708031326899822}
+  m_Layer: 8
+  m_Name: UnitExitPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2083708031326899822
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3909771343675748711}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 14.03}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1557780845714414655}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6283097865136294372
 GameObject:
   m_ObjectHideFlags: 0
@@ -276,6 +327,7 @@ GameObject:
   - component: {fileID: 7246647801237102179}
   - component: {fileID: 7475654780425975965}
   - component: {fileID: 7528952854760032665}
+  - component: {fileID: 8627803447755182765}
   m_Layer: 8
   m_Name: struct_Factory_Heavy_A_Door_Upper_yup
   m_TagString: Untagged
@@ -291,7 +343,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6283097865136294372}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -2.4600342e-14, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.0000024414062, y: 2.1731982, z: 1.7164618}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -356,6 +408,22 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8627803447755182765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6283097865136294372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fb876ea1f674aa4b807d426ffb6aa99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Building_and_creat_Uniit.FactoryGate
+  _gatePivot: {fileID: 7246647801237102179}
+  _closedXAngle: 0
+  _openXAngle: -90
+  _rotationSpeed: 120
 --- !u!1 &6486099545665834401
 GameObject:
   m_ObjectHideFlags: 0
@@ -382,7 +450,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6486099545665834401}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -2.4600342e-14, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.0000024414062, y: -2.261367, z: 0.22929443}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

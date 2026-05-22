@@ -1,14 +1,23 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Building_and_creat_Uniit;
 using Data;
 using UnitController;
 
 public class BuildingProduction : MonoBehaviour
 {
-   [SerializeField] private Transform _pointPosition;
+   [Header("Spawn Points")]
+   [SerializeField] private Transform _unitSpawnPoint;
+   [SerializeField] private Transform _unitExitPoint;
+   // Куди юніт має виїхати після створення.
+
    [Header("Production")]
    [SerializeField] private ProductionConfig _productionConfig;
+   
+   [Header("Gate")]
+   [SerializeField] private FactoryGate _gate;
+   // Компонент воріт заводу.
    
    private Queue<ProductionItemData> _queue = new Queue<ProductionItemData>();
    private TeamComponent _teamComponent;
@@ -39,24 +48,58 @@ public class BuildingProduction : MonoBehaviour
          ProductionItemData item = _queue.Dequeue();
 
          yield return new WaitForSeconds(item.ProductionTime);
-         
-         UnitData unit = item.UnitData;
-         
-         GameObject spawnedUnit = Instantiate(unit.Prefab, _pointPosition.position + Vector3.forward * 2, Quaternion.identity);
-         
-         TeamComponent unitTeam =
-            spawnedUnit.GetComponent<TeamComponent>();
 
-         if(unitTeam != null)
-         {
-            unitTeam.SetTeam(_teamComponent.Team);
-            spawnedUnit.layer =
-               _teamComponent.Team == TeamType.Player
-                  ? LayerMask.NameToLayer("PlayerUnit")
-                  : LayerMask.NameToLayer("EnemyUnit");
-         }
+         yield return StartCoroutine(SpawnAndReleaseUnit(item));
       }
 
       _isProducing = false;
+   }
+   
+   private IEnumerator SpawnAndReleaseUnit(ProductionItemData item)
+   {
+      UnitData unitData = item.UnitData;
+
+      GameObject spawnedUnit = Instantiate(
+         unitData.Prefab,
+         _unitSpawnPoint.position,
+         _unitSpawnPoint.rotation
+      );
+
+      SetupUnitTeam(spawnedUnit);
+      DisableUnitBeforeExit(spawnedUnit);
+
+      if (_gate != null)
+         yield return StartCoroutine(_gate.Open());
+
+      UnitSpawnActivator activator = spawnedUnit.GetComponent<UnitSpawnActivator>();
+
+      if (activator != null)
+         yield return StartCoroutine(activator.MoveOutOfFactory(_unitExitPoint.position));
+
+      if (_gate != null)
+         yield return StartCoroutine(_gate.Close());
+   }
+
+   private void SetupUnitTeam(GameObject spawnedUnit)
+   {
+      TeamComponent unitTeam = spawnedUnit.GetComponent<TeamComponent>();
+
+      if (unitTeam != null)
+      {
+         unitTeam.SetTeam(_teamComponent.Team);
+
+         spawnedUnit.layer =
+            _teamComponent.Team == TeamType.Player
+               ? LayerMask.NameToLayer("PlayerUnit")
+               : LayerMask.NameToLayer("EnemyUnit");
+      }
+   }
+
+   private void DisableUnitBeforeExit(GameObject spawnedUnit)
+   {
+      UnitSpawnActivator activator = spawnedUnit.GetComponent<UnitSpawnActivator>();
+
+      if (activator != null)
+         activator.SetSpawningState(true);
    }
 }
