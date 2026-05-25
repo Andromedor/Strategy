@@ -53,5 +53,6 @@ public enum PanelType
     MainMenu,
     Factory,
     Barracks,
+    Construction
 }
 

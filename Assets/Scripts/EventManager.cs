@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using DefaultNamespace;
 
 public static class EventManager 
 {
@@ -18,4 +19,8 @@ public static class EventManager
     public static Action<GameObject, Transform> OnUnitAttackTargetChanged;
     
     public static Action<BuildingProduction> OnFactorySelected;
+    
+    public static Action<ConstructionCenter> OnConstructionCenterSelected;
+    public static Action OnConstructionClosed;
+    public static Action OnConstructionCentersChanged;
 }

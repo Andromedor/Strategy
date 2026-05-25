@@ -1,4 +1,5 @@
 using System;
+using DefaultNamespace;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -29,8 +30,23 @@ public class SelectionManager : MonoBehaviour
       Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
       if (Physics.Raycast(ray, out var hit, 1000f, _buildingMask))
       {
+         
+         ConstructionCenter constructionCenter =
+            hit.collider.GetComponentInParent<ConstructionCenter>();
+
+         if (constructionCenter != null)
+         {
+            SelectedFactory = null;
+            
+            EventManager.OnConstructionCenterSelected?.Invoke(constructionCenter);
+            EventManager.OnOpenPanel?.Invoke(PanelType.Construction);
+
+            return;
+         }
+
+         
          BuildingProduction production =
-            hit.collider.GetComponent<BuildingProduction>();
+            hit.collider.GetComponentInParent<BuildingProduction>();
 
          if (production != null)
          {
@@ -43,6 +59,7 @@ public class SelectionManager : MonoBehaviour
       }
       
       SelectedFactory = null;
+      EventManager.OnConstructionClosed?.Invoke();
       EventManager.OnOpenPanel?.Invoke(PanelType.MainMenu);
    }
 }

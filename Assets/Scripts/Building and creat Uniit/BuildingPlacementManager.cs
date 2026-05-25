@@ -1,4 +1,5 @@
 using System;
+using DefaultNamespace;
 using UnitController;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -31,7 +32,33 @@ public class BuildingPlacementManager : MonoBehaviour
     private Renderer[] _renderers;
     private MaterialPropertyBlock _propertyBlock;
     private BuildingData _currentBuildingData;
+    private ConstructionCenter _currentConstructionCenter;
     
+    
+    private void OnEnable()
+    {
+        EventManager.OnConstructionCenterSelected += SetConstructionCenter;
+        EventManager.OnConstructionClosed += ClearConstructionCenter;
+    }
+
+    private void OnDisable()
+    {
+        EventManager.OnConstructionCenterSelected -= SetConstructionCenter;
+        EventManager.OnConstructionClosed -= ClearConstructionCenter;
+    }
+    
+    private void SetConstructionCenter(ConstructionCenter constructionCenter)
+    {
+        _currentConstructionCenter = constructionCenter;
+    }
+
+    private void ClearConstructionCenter()
+    {
+        if (_currentConstructionCenter != null)
+            _currentConstructionCenter.HideBuildArea();
+
+        _currentConstructionCenter = null;
+    }
     
     private void Update()
     {
@@ -66,16 +93,22 @@ public class BuildingPlacementManager : MonoBehaviour
         }
     }
     
-    public void StartPlacement(BuildingData  buildingData)
+    public void StartPlacement(BuildingData buildingData)
     {
         if (IsPlacing)
             return;
+
+        if (ConstructionCenter.All.Count == 0)
+            return;
+
         _currentBuildingData = buildingData;
-        
+
         _previewObject = Instantiate(buildingData.prefab, Vector3.zero, Quaternion.identity);
 
         IsPlacing = true;
         _canPlaceClick = false;
+        
+        ShowAllBuildAreas();
 
         _renderers = _previewObject.GetComponentsInChildren<Renderer>();
         _propertyBlock = new MaterialPropertyBlock();
@@ -109,25 +142,50 @@ public class BuildingPlacementManager : MonoBehaviour
 
     private void CheckPlacement()
     {
-        Vector3 center = _previewObject.transform.position + _previewObject.transform.rotation * _currentBuildingData.CheckBoxOffset;
-        
+        _isValidPlacement = true;
+
+        if (ConstructionCenter.All.Count == 0)
+        {
+            _isValidPlacement = false;
+            return;
+        }
+
+        if (!IsInsideAnyConstructionArea(_previewObject.transform.position))
+        {
+            _isValidPlacement = false;
+            return;
+        }
+
+        Vector3 center =
+            _previewObject.transform.position +
+            _previewObject.transform.rotation * _currentBuildingData.CheckBoxOffset;
+
         Collider[] hits = Physics.OverlapBox(
             center,
             _currentBuildingData.CheckBoxSize / 2f,
             _previewObject.transform.rotation,
             _blockMask
         );
-        
-        _isValidPlacement =true;
-        
+
         foreach (Collider hit in hits)
         {
-            if(hit.transform.IsChildOf(_previewObject.transform))
+            if (hit.transform.IsChildOf(_previewObject.transform))
                 continue;
-            
+
             _isValidPlacement = false;
             break;
         }
+    }
+    
+    private bool IsInsideAnyConstructionArea(Vector3 position)
+    {
+        foreach (ConstructionCenter center in ConstructionCenter.All)
+        {
+            if (center != null && center.IsInsideBuildArea(position))
+                return true;
+        }
+
+        return false;
     }
     
     private void UpdatePreviewColor()
@@ -153,18 +211,17 @@ public class BuildingPlacementManager : MonoBehaviour
     private void ConfirmPlacement()
     {
         ResetPreviewColor();
-        
+
         TeamComponent teamComponent =
             _previewObject.GetComponent<TeamComponent>();
 
         if (teamComponent != null)
-        {
             teamComponent.SetTeam(_currentTeam);
-        }
-        
+
         _previewObject = null;
         IsPlacing = false;
-       
+
+        HideAllBuildAreas();
     }
 
     private void CancelPlacement()
@@ -172,5 +229,24 @@ public class BuildingPlacementManager : MonoBehaviour
         Destroy(_previewObject);
         _previewObject = null;
         IsPlacing = false;
+        HideAllBuildAreas();
+    }
+    
+    private void ShowAllBuildAreas()
+    {
+        foreach (ConstructionCenter center in ConstructionCenter.All)
+        {
+            if (center != null)
+                center.ShowBuildArea();
+        }
+    }
+
+    private void HideAllBuildAreas()
+    {
+        foreach (ConstructionCenter center in ConstructionCenter.All)
+        {
+            if (center != null)
+                center.HideBuildArea();
+        }
     }
 }
