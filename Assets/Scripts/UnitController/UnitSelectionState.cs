@@ -4,6 +4,9 @@ namespace UnitController
 {
     public class UnitSelectionState: MonoBehaviour
     {
+        [Header("Selection Visual")]
+        [SerializeField] private GameObject _selectionVisual;
+        
         public bool IsSelected { get; private set; }
 
         private void OnEnable()
@@ -24,6 +27,7 @@ namespace UnitController
                 return;
 
             IsSelected = true;
+            ShowSelection();
         }
 
         private void Deselect(GameObject unit)
@@ -32,6 +36,19 @@ namespace UnitController
                 return;
 
             IsSelected = false;
+            HideSelection();
+        }
+        
+        private void ShowSelection()
+        {
+            if (_selectionVisual != null)
+                _selectionVisual.SetActive(true);
+        }
+
+        private void HideSelection()
+        {
+            if (_selectionVisual != null)
+                _selectionVisual.SetActive(false);
         }
     }
 }

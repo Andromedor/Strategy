@@ -13,6 +13,7 @@ public class UnitCommandController : MonoBehaviour
     [SerializeField] private LayerMask _selectedLayerMask;
     [SerializeField] private List<GameObject> _selections;
     [SerializeField] private float _formationSpacing = 4f;
+   
     private Camera _camera;
     private GameObject _currentSelection;
 
@@ -153,7 +154,7 @@ public class UnitCommandController : MonoBehaviour
         foreach (GameObject selection in _selections)
         {
             if (selection == null) continue;
-            selection.transform.GetChild(0).gameObject.SetActive(false);
+            
             EventManager.OnUnitDeselected?.Invoke(selection);
         }
         
@@ -203,7 +204,6 @@ public class UnitCommandController : MonoBehaviour
             if(hit.collider.CompareTag("Enemy")) continue;
             
             _selections.Add(hit.transform.gameObject);
-            hit.transform.GetChild(0).gameObject.SetActive(true);
             EventManager.OnUnitSelected?.Invoke(hit.transform.gameObject);
         }
 
