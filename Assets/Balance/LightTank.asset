@@ -13,8 +13,6 @@ MonoBehaviour:
   m_Name: LightTank
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   Prefab: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
-  Cost: 0
-  ProductionTime: 1
   MaxHealth: 100
   Damage: 10
   Speed: 50

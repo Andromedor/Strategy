@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Windows;
 
 public class CameraController : MonoBehaviour
 {
@@ -52,7 +51,10 @@ public class CameraController : MonoBehaviour
     }
 
     private void RotateByKeyboard()
-    { 
+    {
+        if (BuildingPlacementManager.IsPlacing)
+            return;
+
         float rotation = _input.M_rotateInput;
         transform.Rotate(Vector3.up, rotation * _rotationSpeed * Time.deltaTime, Space.World);
     }

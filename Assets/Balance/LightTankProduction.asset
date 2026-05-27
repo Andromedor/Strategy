@@ -16,4 +16,4 @@ MonoBehaviour:
   Icon: {fileID: 0}
   UnitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
   Cost: 0
-  BuildTime: 2
+  ProductionTime: 2

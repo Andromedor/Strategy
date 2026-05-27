@@ -453,7 +453,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 90d1f6c8947af504390dba856041238d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShootAttack
+  m_EditorClassIdentifier: Assembly-CSharp::UnitCombat
   _unitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
   _pointPosition: {fileID: 1735648999806541720}
   _turret: {fileID: 7192603064606675590}
