@@ -9,16 +9,16 @@ public class BulletPool : MonoBehaviour
     [SerializeField] private int _poolSize = 200;
     
     private Queue<GameObject> _bulletPool = new Queue<GameObject>();
+    private Transform _bulletContainer;
 
     private void Awake()
     {
         Instance = this;
+        _bulletContainer = RuntimeObjectContainer.Get("Bullets");
 
         for (int i = 0; i < _poolSize; i++)
         {
-            GameObject bullet = Instantiate(bulletPrefab);
-            
-            bullet.SetActive(false);
+            GameObject bullet = CreateBullet();
             _bulletPool.Enqueue(bullet);
         }
     }
@@ -31,13 +31,23 @@ public class BulletPool : MonoBehaviour
             bullet.SetActive(true);
             return bullet;
         }
-        
-        return Instantiate(bulletPrefab);
+
+        GameObject newBullet = CreateBullet();
+        newBullet.SetActive(true);
+        return newBullet;
     }
 
     public void ReturnBullet(GameObject bullet)
     {
         bullet.SetActive(false);
+        bullet.transform.SetParent(_bulletContainer, false);
         _bulletPool.Enqueue(bullet);
+    }
+
+    private GameObject CreateBullet()
+    {
+        GameObject bullet = Instantiate(bulletPrefab, _bulletContainer);
+        bullet.SetActive(false);
+        return bullet;
     }
 }

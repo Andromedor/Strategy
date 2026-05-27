@@ -58,11 +58,13 @@ public class BuildingProduction : MonoBehaviour
    private IEnumerator SpawnAndReleaseUnit(ProductionItemData item)
    {
       UnitData unitData = item.UnitData;
+      Transform unitsContainer = RuntimeObjectContainer.Get("Units");
 
       GameObject spawnedUnit = Instantiate(
          unitData.Prefab,
          _unitSpawnPoint.position,
-         _unitSpawnPoint.rotation
+         _unitSpawnPoint.rotation,
+         unitsContainer
       );
 
       SetupUnitTeam(spawnedUnit);

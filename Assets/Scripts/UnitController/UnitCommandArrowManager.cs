@@ -183,6 +183,7 @@ public class UnitCommandArrowManager : MonoBehaviour
       return existingLine;
 
     GameObject lineObject = new GameObject($"CommandLine_{unit.name}");
+    lineObject.transform.SetParent(RuntimeObjectContainer.Get("Command Lines"), false);
 
     LineRenderer line = lineObject.AddComponent<LineRenderer>();
 

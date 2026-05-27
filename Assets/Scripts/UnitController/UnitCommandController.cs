@@ -162,7 +162,7 @@ public class UnitCommandController : MonoBehaviour
 
         _startPoint = hitPoint;
         _currentSelection = Instantiate(_cubePrefab, new Vector3(_startPoint.x, 1f, _startPoint.z),
-            Quaternion.identity);
+            Quaternion.identity, RuntimeObjectContainer.Get("Selection"));
     }
 
     private void UpdateSelection()

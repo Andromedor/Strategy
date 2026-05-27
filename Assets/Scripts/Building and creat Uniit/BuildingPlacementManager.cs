@@ -126,7 +126,9 @@ public class BuildingPlacementManager : MonoBehaviour
 
     private void CreatePreviewObject(GameObject prefab)
     {
+        Transform previewContainer = RuntimeObjectContainer.Get("Building Previews");
         GameObject inactiveRoot = new GameObject("BuildingPlacementPreviewRoot");
+        inactiveRoot.transform.SetParent(previewContainer, false);
         inactiveRoot.SetActive(false);
 
         _previewObject = Instantiate(prefab, inactiveRoot.transform);
@@ -134,7 +136,7 @@ public class BuildingPlacementManager : MonoBehaviour
 
         CacheAndDisablePreviewGameplay();
 
-        _previewObject.transform.SetParent(null, true);
+        _previewObject.transform.SetParent(previewContainer, true);
         _previewObject.SetActive(true);
         Destroy(inactiveRoot);
     }
@@ -265,6 +267,7 @@ public class BuildingPlacementManager : MonoBehaviour
         if (teamComponent != null)
             teamComponent.SetTeam(_currentTeam);
 
+        _previewObject.transform.SetParent(RuntimeObjectContainer.Get("Buildings"), true);
         RestorePreviewGameplay();
         ClearPreviewState();
 
