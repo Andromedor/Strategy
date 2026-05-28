@@ -29,6 +29,9 @@ namespace UnitController
 
         private static Mesh _segmentMesh;
 
+        /// <summary>
+        /// Отримує посилання на NavMeshAgent та будує сегменти гусениць.
+        /// </summary>
         private void Awake()
         {
             if (_agent == null)
@@ -37,12 +40,18 @@ namespace UnitController
             BuildSegments();
         }
 
+        /// <summary>
+        /// Запам'ятовує початкову позицію для коректного обчислення швидкості.
+        /// </summary>
         private void OnEnable()
         {
             _lastPosition = transform.position;
             _hasLastPosition = true;
         }
 
+        /// <summary>
+        /// Кожен кадр обчислює швидкість руху та прокручує гусениці відповідно до напрямку.
+        /// </summary>
         private void Update()
         {
             float deltaTime = Time.deltaTime;
@@ -68,6 +77,9 @@ namespace UnitController
             UpdateSegmentPositions();
         }
 
+        /// <summary>
+        /// Знищує динамічно створений матеріал гусениць, щоб уникнути витоку пам'яті.
+        /// </summary>
         private void OnDestroy()
         {
             if (_trackMaterial == null)
@@ -79,6 +91,9 @@ namespace UnitController
                 DestroyImmediate(_trackMaterial);
         }
 
+        /// <summary>
+        /// Створює кореневий об'єкт гусениць, матеріал, меш і всі сегменти двох петель.
+        /// </summary>
         private void BuildSegments()
         {
             if (_segmentsPerRun <= 0)
@@ -102,6 +117,9 @@ namespace UnitController
             UpdateSegmentPositions();
         }
 
+        /// <summary>
+        /// Створює одну петлю гусениці (ліву або праву) із заданою кількістю сегментів.
+        /// </summary>
         private void CreateLoop(float side, int segmentCount, Mesh mesh)
         {
             float spacing = _loopLength / segmentCount;
@@ -128,6 +146,9 @@ namespace UnitController
             }
         }
 
+        /// <summary>
+        /// Повертає швидкість руху об'єкта: з NavMeshAgent якщо активний, або за різницею позицій.
+        /// </summary>
         private Vector3 GetVelocity(float deltaTime)
         {
             if (_agent != null && _agent.enabled)
@@ -149,6 +170,9 @@ namespace UnitController
             return velocity;
         }
 
+        /// <summary>
+        /// Перераховує локальні позиції та кути нахилу всіх сегментів гусениць.
+        /// </summary>
         private void UpdateSegmentPositions()
         {
             for (int i = 0; i < _segments.Count; i++)
@@ -162,17 +186,26 @@ namespace UnitController
             }
         }
 
+        /// <summary>
+        /// Нормалізує зміщення гусениці до діапазону [0, loopLength] за допомогою Mathf.Repeat.
+        /// </summary>
         private float WrapOffset(float offset)
         {
             return Mathf.Repeat(offset, _loopLength);
         }
 
+        /// <summary>
+        /// Обчислює повну довжину петлі гусениці: дві прямі ділянки плюс два напівкола.
+        /// </summary>
         private float CalculateLoopLength()
         {
             float radius = GetTrackRadius();
             return _trackLength * 2f + Mathf.PI * radius * 2f;
         }
 
+        /// <summary>
+        /// За відстанню вздовж петлі повертає Y, Z-позицію та кут нахилу сегмента.
+        /// </summary>
         private TrackPose EvaluateTrackPose(float distance)
         {
             float radius = GetTrackRadius();
@@ -213,11 +246,17 @@ namespace UnitController
             return new TrackPose(rearY, rearZ, rearPitch);
         }
 
+        /// <summary>
+        /// Повертає радіус округлення гусениці, не менший за 0.05.
+        /// </summary>
         private float GetTrackRadius()
         {
             return Mathf.Max(0.05f, _trackVerticalSpacing * 0.5f);
         }
 
+        /// <summary>
+        /// Створює унікальний матеріал для сегментів гусениць із заданим кольором і гладкістю.
+        /// </summary>
         private Material CreateTrackMaterial()
         {
             Shader shader =
@@ -239,9 +278,13 @@ namespace UnitController
             return material;
         }
 
+        /// <summary>
+        /// Повертає спільний меш сегмента гусениці, будуючи його один раз і кешуючи у статичне поле.
+        /// Повторна перевірка через Unity bool operator захищає від "fake-null" після domain reload.
+        /// </summary>
         private static Mesh GetSegmentMesh()
         {
-            if (_segmentMesh != null)
+            if (_segmentMesh != null && _segmentMesh)
                 return _segmentMesh;
 
             _segmentMesh = new Mesh
@@ -268,6 +311,9 @@ namespace UnitController
             return _segmentMesh;
         }
 
+        /// <summary>
+        /// Додає вершини та трикутники паралелепіпеда із заданим центром і розміром до списків меша.
+        /// </summary>
         private static void AddBox(List<Vector3> vertices, List<int> triangles, Vector3 center, Vector3 size)
         {
             int start = vertices.Count;
@@ -290,6 +336,9 @@ namespace UnitController
             AddFace(triangles, start, 3, 0, 4, 3, 4, 7);
         }
 
+        /// <summary>
+        /// Додає трикутники однієї грані паралелепіпеда до списку, зміщуючи індекси на start.
+        /// </summary>
         private static void AddFace(List<int> triangles, int start, params int[] indices)
         {
             for (int i = 0; i < indices.Length; i++)
@@ -298,6 +347,9 @@ namespace UnitController
 
         private readonly struct TrackSegment
         {
+            /// <summary>
+            /// Ініціалізує сегмент гусениці з трансформом, стороною та базовою відстанню вздовж петлі.
+            /// </summary>
             public TrackSegment(Transform transform, float side, float baseDistance)
             {
                 Transform = transform;
@@ -312,6 +364,9 @@ namespace UnitController
 
         private readonly struct TrackPose
         {
+            /// <summary>
+            /// Ініціалізує позу сегмента: висоту Y, зміщення Z та кут нахилу Pitch.
+            /// </summary>
             public TrackPose(float y, float z, float pitch)
             {
                 Y = y;

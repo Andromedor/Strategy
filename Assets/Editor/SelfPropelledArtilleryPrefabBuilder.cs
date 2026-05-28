@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.IO;
 using Building_and_creat_Uniit;
 using Data;
 using UnitController;
@@ -15,6 +16,24 @@ public static class SelfPropelledArtilleryPrefabBuilder
     private const string ProductionItemPath = "Assets/Balance/SelfPropelledArtilleryProduction.asset";
     private const string ProductionConfigPath = "Assets/Balance/Factory Production Config.asset";
     private const string SelectionMaterialPath = "Assets/Material/SelectionVisual.mat";
+    private const string MaterialFolderPath = "Assets/Models/SelfPropelledArtillery/Materials";
+
+    private static readonly Dictionary<string, MaterialSettings> MaterialSettingsByName =
+        new Dictionary<string, MaterialSettings>
+        {
+            { "SPG_Armor_Olive", new MaterialSettings(new Color(0.26f, 0.36f, 0.21f, 1f), 0.7f, 0f) },
+            { "SPG_Armor_LightOlive", new MaterialSettings(new Color(0.43f, 0.52f, 0.32f, 1f), 0.68f, 0f) },
+            { "SPG_Camo_Sand", new MaterialSettings(new Color(0.62f, 0.55f, 0.37f, 1f), 0.72f, 0f) },
+            { "SPG_Camo_Brown", new MaterialSettings(new Color(0.25f, 0.19f, 0.12f, 1f), 0.78f, 0f) },
+            { "SPG_Camo_DarkGreen", new MaterialSettings(new Color(0.12f, 0.22f, 0.12f, 1f), 0.75f, 0f) },
+            { "SPG_Player_Blue", new MaterialSettings(new Color(0.04f, 0.18f, 0.86f, 1f), 0.48f, 0f) },
+            { "SPG_Track_Dark", new MaterialSettings(new Color(0.035f, 0.034f, 0.032f, 1f), 0.76f, 0f) },
+            { "SPG_Track_Pads", new MaterialSettings(new Color(0.12f, 0.115f, 0.105f, 1f), 0.84f, 0f) },
+            { "SPG_Rubber", new MaterialSettings(new Color(0.08f, 0.075f, 0.07f, 1f), 0.8f, 0f) },
+            { "SPG_Gun_Metal", new MaterialSettings(new Color(0.46f, 0.47f, 0.46f, 1f), 0.45f, 0.08f) },
+            { "SPG_Dark_Metal", new MaterialSettings(new Color(0.18f, 0.18f, 0.17f, 1f), 0.55f, 0.12f) },
+            { "SPG_Lamp_Amber", new MaterialSettings(new Color(1f, 0.65f, 0.13f, 1f), 0.3f, 0f) },
+        };
 
     [MenuItem("Tools/RTS/Rebuild Self-Propelled Artillery")]
     public static void Build()
@@ -42,13 +61,21 @@ public static class SelfPropelledArtilleryPrefabBuilder
         modelInstance.name = "SelfPropelledArtillery_Model";
         modelInstance.transform.SetParent(root.transform, false);
         modelInstance.transform.localPosition = Vector3.zero;
+        modelInstance.transform.localRotation = Quaternion.identity;
         modelInstance.transform.localScale = Vector3.one;
 
         SetLayerRecursively(root, root.layer);
+        ConfigureModelMaterials(modelInstance);
 
         Transform turret = FindChildRecursive(root.transform, "TurretPivot");
         Transform gun = FindChildRecursive(root.transform, "GunBarrel");
         Transform muzzle = FindChildRecursive(root.transform, "MuzzlePoint");
+
+        if (turret != null)
+            turret.localRotation = Quaternion.identity;
+
+        if (gun != null)
+            gun.localRotation = Quaternion.identity;
 
         BoxCollider collider = root.AddComponent<BoxCollider>();
         collider.center = new Vector3(0f, 0.95f, 0f);
@@ -67,8 +94,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         agent.acceleration = 7f;
         agent.stoppingDistance = 3.6f;
 
-        UnitCombat combat = root.AddComponent<UnitCombat>();
-        ArtilleryWeapon artilleryWeapon = root.AddComponent<ArtilleryWeapon>();
+        ArtilleryWeapon combat = root.AddComponent<ArtilleryWeapon>();
         TankCannonEffects cannonEffects = root.AddComponent<TankCannonEffects>();
         TankTrackAnimator trackAnimator = root.AddComponent<TankTrackAnimator>();
         UnitSelectionState selectionState = root.AddComponent<UnitSelectionState>();
@@ -89,11 +115,13 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetInt(cannonEffects, "_flashParticles", 26);
         SetInt(cannonEffects, "_smokeParticles", 36);
 
-        SetFloat(artilleryWeapon, "_maxElevationAngle", 70f);
-        SetFloat(artilleryWeapon, "_maxRangeStationaryHitChance", 0.5f);
-        SetFloat(artilleryWeapon, "_maxRangeMovingHitChance", 0.1f);
-        SetFloat(artilleryWeapon, "_splashRadius", 4.6f);
-        SetFloat(artilleryWeapon, "_maxMissRadius", 10f);
+        SetFloat(combat, "_minElevationAngle", 20f);
+        SetFloat(combat, "_maxElevationAngle", 70f);
+        SetFloat(combat, "_minElevationDistanceRatio", 0.1f);
+        SetFloat(combat, "_maxRangeStationaryHitChance", 0.5f);
+        SetFloat(combat, "_maxRangeMovingHitChance", 0.1f);
+        SetFloat(combat, "_splashRadius", 4.6f);
+        SetFloat(combat, "_maxMissRadius", 10f);
 
         SetObjectReference(trackAnimator, "_agent", agent);
         SetInt(trackAnimator, "_segmentsPerRun", 30);
@@ -145,9 +173,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
 
         bool changed = false;
 
-        if (!importer.bakeAxisConversion)
+        if (importer.bakeAxisConversion)
         {
-            importer.bakeAxisConversion = true;
+            importer.bakeAxisConversion = false;
             changed = true;
         }
 
@@ -157,21 +185,119 @@ public static class SelfPropelledArtilleryPrefabBuilder
             AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
     }
 
+    private static void ConfigureModelMaterials(GameObject modelInstance)
+    {
+        EnsureFolder(MaterialFolderPath);
+
+        foreach (MeshRenderer renderer in modelInstance.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            Material[] materials = renderer.sharedMaterials;
+
+            if (materials == null || materials.Length == 0)
+                continue;
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                string materialName = NormalizeMaterialName(materials[i] != null ? materials[i].name : renderer.name);
+                materials[i] = LoadOrCreateMaterial(materialName);
+            }
+
+            renderer.sharedMaterials = materials;
+        }
+    }
+
+    private static Material LoadOrCreateMaterial(string materialName)
+    {
+        if (!MaterialSettingsByName.TryGetValue(materialName, out MaterialSettings settings))
+            settings = new MaterialSettings(new Color(0.43f, 0.52f, 0.32f, 1f), 0.68f, 0f);
+
+        string materialPath = $"{MaterialFolderPath}/{SanitizeFileName(materialName)}.mat";
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+
+        if (material == null)
+        {
+            Shader shader =
+                Shader.Find("Universal Render Pipeline/Lit") ??
+                Shader.Find("Standard") ??
+                Shader.Find("Unlit/Color");
+
+            material = new Material(shader)
+            {
+                name = materialName
+            };
+            AssetDatabase.CreateAsset(material, materialPath);
+        }
+
+        SetMaterialProperties(material, settings);
+        EditorUtility.SetDirty(material);
+        return material;
+    }
+
+    private static void SetMaterialProperties(Material material, MaterialSettings settings)
+    {
+        if (material.HasProperty("_BaseColor"))
+            material.SetColor("_BaseColor", settings.Color);
+
+        if (material.HasProperty("_Color"))
+            material.SetColor("_Color", settings.Color);
+
+        if (material.HasProperty("_Smoothness"))
+            material.SetFloat("_Smoothness", settings.Smoothness);
+
+        if (material.HasProperty("_Metallic"))
+            material.SetFloat("_Metallic", settings.Metallic);
+    }
+
+    private static string NormalizeMaterialName(string materialName)
+    {
+        if (string.IsNullOrWhiteSpace(materialName))
+            return "SPG_Armor_LightOlive";
+
+        int instanceIndex = materialName.IndexOf(" (Instance)", System.StringComparison.Ordinal);
+
+        if (instanceIndex >= 0)
+            materialName = materialName.Substring(0, instanceIndex);
+
+        return materialName.Trim();
+    }
+
+    private static string SanitizeFileName(string fileName)
+    {
+        foreach (char invalidChar in Path.GetInvalidFileNameChars())
+            fileName = fileName.Replace(invalidChar, '_');
+
+        return fileName;
+    }
+
+    private static void EnsureFolder(string folderPath)
+    {
+        if (AssetDatabase.IsValidFolder(folderPath))
+            return;
+
+        string parent = Path.GetDirectoryName(folderPath)?.Replace("\\", "/");
+        string folderName = Path.GetFileName(folderPath);
+
+        if (!string.IsNullOrEmpty(parent) && !AssetDatabase.IsValidFolder(parent))
+            EnsureFolder(parent);
+
+        AssetDatabase.CreateFolder(parent, folderName);
+    }
+
     private static void ConfigureUnitData(UnitData data)
     {
         data.MaxHealth = 135f;
         data.Damage = 110f;
         data.Speed = 28f;
         data.AttackRange = 95f;
-        data.AttackDelay = 6.5f;
+        data.AttackDelay = 8.5f;
         data.FormationSpacing = 6.2f;
-        data.TurretRotationSpeed = 70f;
-        data.GunPitchSpeed = 38f;
+        data.TurretRotationSpeed = 35f;
+        data.GunPitchSpeed = 18f;
         data.MinGunPitch = -70f;
         data.MaxGunPitch = 8f;
         data.AimAngleTolerance = 4f;
         data.ReturnTurretDelay = 3f;
-        data.IdleTurretRotationSpeed = 45f;
+        data.IdleTurretRotationSpeed = 24f;
         EditorUtility.SetDirty(data);
     }
 
@@ -302,6 +428,20 @@ public static class SelfPropelledArtilleryPrefabBuilder
 
         property.intValue = value;
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private readonly struct MaterialSettings
+    {
+        public MaterialSettings(Color color, float smoothness, float metallic)
+        {
+            Color = color;
+            Smoothness = smoothness;
+            Metallic = metallic;
+        }
+
+        public Color Color { get; }
+        public float Smoothness { get; }
+        public float Metallic { get; }
     }
 }
 #endif

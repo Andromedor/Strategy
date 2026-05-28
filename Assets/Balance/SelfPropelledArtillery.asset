@@ -17,12 +17,12 @@ MonoBehaviour:
   Damage: 110
   Speed: 28
   AttackRange: 95
-  AttackDelay: 6.5
+  AttackDelay: 8.5
   FormationSpacing: 6.2
-  TurretRotationSpeed: 70
-  GunPitchSpeed: 38
+  TurretRotationSpeed: 35
+  GunPitchSpeed: 18
   MinGunPitch: -70
   MaxGunPitch: 8
   AimAngleTolerance: 4
   ReturnTurretDelay: 3
-  IdleTurretRotationSpeed: 45
+  IdleTurretRotationSpeed: 24

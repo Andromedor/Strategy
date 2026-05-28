@@ -2,7 +2,7 @@ import math
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -130,6 +130,129 @@ def set_flat_low_poly():
 def look_at(obj, target):
     direction = Vector(target) - obj.location
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def is_descendant_of(obj, ancestor):
+    parent = obj.parent
+    while parent is not None:
+        if parent == ancestor:
+            return True
+        parent = parent.parent
+
+    return False
+
+
+def get_or_add_material(materials, material):
+    if material is None:
+        return 0
+
+    if material not in materials:
+        materials.append(material)
+
+    return materials.index(material)
+
+
+def combine_meshes(name, objects, parent):
+    objects = [obj for obj in objects if obj is not None and obj.type == "MESH"]
+
+    if not objects:
+        return None
+
+    parent_inverse = parent.matrix_world.inverted() if parent is not None else Matrix.Identity(4)
+    vertices = []
+    faces = []
+    face_material_indices = []
+    materials = []
+
+    for obj in objects:
+        transform = parent_inverse @ obj.matrix_world
+        vertex_offset = len(vertices)
+
+        for vertex in obj.data.vertices:
+            vertices.append(transform @ vertex.co)
+
+        for polygon in obj.data.polygons:
+            faces.append(tuple(vertex_offset + index for index in polygon.vertices))
+
+            material = None
+            if obj.data.materials and polygon.material_index < len(obj.data.materials):
+                material = obj.data.materials[polygon.material_index]
+
+            face_material_indices.append(get_or_add_material(materials, material))
+
+    mesh = bpy.data.meshes.new(f"{name}Mesh")
+    mesh.from_pydata([tuple(vertex) for vertex in vertices], [], faces)
+
+    for material in materials:
+        mesh.materials.append(material)
+
+    mesh.update()
+
+    for polygon, material_index in zip(mesh.polygons, face_material_indices):
+        polygon.material_index = material_index
+
+    combined = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(combined)
+    combined.parent = parent
+    combined.matrix_parent_inverse = Matrix.Identity(4)
+    combined.location = (0.0, 0.0, 0.0)
+    combined.rotation_euler = (0.0, 0.0, 0.0)
+    combined.scale = (1.0, 1.0, 1.0)
+
+    for obj in objects:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    return combined
+
+
+def simplify_model_hierarchy(root, turret, gun):
+    mesh_objects = [obj for obj in list(bpy.context.scene.objects) if obj.type == "MESH"]
+    gun_meshes = [obj for obj in mesh_objects if is_descendant_of(obj, gun)]
+    turret_meshes = [
+        obj for obj in mesh_objects
+        if is_descendant_of(obj, turret) and not is_descendant_of(obj, gun)
+    ]
+    root_meshes = [
+        obj for obj in mesh_objects
+        if is_descendant_of(obj, root) and not is_descendant_of(obj, turret)
+    ]
+
+    track_keywords = ("Track", "Wheel", "Idler", "Hub")
+    track_meshes = [
+        obj for obj in root_meshes
+        if any(keyword in obj.name for keyword in track_keywords)
+    ]
+    body_meshes = [obj for obj in root_meshes if obj not in track_meshes]
+
+    combine_meshes("SPG_Body", body_meshes, root)
+    combine_meshes("SPG_Tracks", track_meshes, root)
+    combine_meshes("SPG_Turret", turret_meshes, turret)
+    combine_meshes("SPG_Gun", gun_meshes, gun)
+
+
+def to_unity_source_axes(vector):
+    return Vector((vector.x, vector.z, vector.y))
+
+
+def convert_hierarchy_to_unity_source_axes(root):
+    local_positions = {
+        obj: obj.matrix_local.to_translation().copy()
+        for obj in root.children_recursive
+    }
+
+    for obj in root.children_recursive:
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+        obj.location = Vector((0.0, 0.0, 0.0)) if obj.type == "MESH" else to_unity_source_axes(local_positions[obj])
+        obj.rotation_euler = (0.0, 0.0, 0.0)
+        obj.scale = (1.0, 1.0, 1.0)
+
+        if obj.type != "MESH":
+            continue
+
+        for vertex in obj.data.vertices:
+            vertex.co = to_unity_source_axes(vertex.co)
+
+        obj.data.update()
 
 
 def create_track_link(name, side, x, y, z, pitch, material, root, outer_offset=0.0, scale=(0.2, 0.18, 0.08)):
@@ -438,6 +561,8 @@ def build_artillery():
         cube(f"SPG_Side_Blue_Mark_{side}", (side * 1.39, 1.18, 1.32), (0.08, 0.72, 0.22), mat_blue, root)
         cube(f"SPG_Side_Toolbox_{side}", (side * 1.34, -1.58, 1.3), (0.18, 0.68, 0.32), mat_sand, root)
 
+    simplify_model_hierarchy(root, turret, gun)
+    convert_hierarchy_to_unity_source_axes(root)
     set_flat_low_poly()
 
     bpy.ops.object.light_add(type="AREA", location=(0.0, -4.0, 6.0))

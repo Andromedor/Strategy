@@ -7,64 +7,51 @@ using UnityEngine.AI;
 public class UnitCombat : MonoBehaviour, IDamageable
 {
     [Header("Data")]
-    [SerializeField] private UnitData _unitData;
-    
+    [SerializeField] protected UnitData _unitData;
+
     [Header("References")]
-    [SerializeField] private Transform _pointPosition;
-    [SerializeField] private TankCannonEffects _shotEffects;
-    
+    [SerializeField] protected Transform _pointPosition;
+    [SerializeField] protected TankCannonEffects _shotEffects;
+
     [Header("Aiming")]
-    [SerializeField] private Transform _turret; // Башня танка. Вона крутиться навколо Y.
-    [SerializeField] private Transform _gun; // Пушка танка. Вона піднімається/опускається по X.
+    [SerializeField] protected Transform _turret;
+    [SerializeField] protected Transform _gun;
 
-    
-    private NavMeshAgent _agent;
-    private Coroutine _attackCoroutine; //Поточна корутина атаки.
-    private Transform _manualAttackTarget; // Ціль, яку гравець задав вручну правим кліком.
-    private UnitHealth _health;
-    private TeamComponent _teamComponent;
-    private ArtilleryWeapon _artilleryWeapon;
+    protected NavMeshAgent _agent;
+    protected TeamComponent _teamComponent;
+
+    private Coroutine _attackCoroutine;
+    private Transform _manualAttackTarget;
     private Transform _currentAttackTarget;
-    private LayerMask _targetMask;
-    public TeamType Team => _teamComponent.Team;
-    
-    private bool _hasPlayerMoveCommand;
-// Чи є зараз активний наказ руху від гравця.
-
-    private Vector3 _playerMoveDestination;
-// Точка, куди гравець наказав рухатися.
     private Transform _aimTarget;
-    private float _lastTargetTime;
-    
-    private void Awake()
+    private Transform _cachedColliderTarget;
+    private Collider _cachedTargetCollider;
+    private UnitHealth _health;
+    private LayerMask _targetMask;
+    private bool _hasPlayerMoveCommand;
+    private Vector3 _playerMoveDestination;
+    protected float _lastTargetTime;
+
+    public TeamType Team => _teamComponent != null ? _teamComponent.Team : TeamType.Player;
+
+    protected virtual void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
         _teamComponent = GetComponent<TeamComponent>();
-        _artilleryWeapon = GetComponent<ArtilleryWeapon>();
-        _health = new UnitHealth(_unitData.MaxHealth);
-        
+
+        if (_unitData != null)
+            _health = new UnitHealth(_unitData.MaxHealth);
+
         if (_shotEffects == null)
             _shotEffects = GetComponent<TankCannonEffects>();
-        
+
         if (_shotEffects != null)
             _shotEffects.Configure(_gun, _pointPosition);
 
-        if (_artilleryWeapon != null)
-        {
-            _artilleryWeapon.Configure(
-                _unitData,
-                _turret,
-                _gun,
-                _pointPosition,
-                _shotEffects,
-                _agent,
-                _teamComponent);
-        }
-        
         SetupTargetMask();
     }
-    
-    private void Update()
+
+    protected virtual void Update()
     {
         if (IsTargetValid(_aimTarget))
         {
@@ -75,39 +62,34 @@ public class UnitCombat : MonoBehaviour, IDamageable
             HandleIdleTurret();
         }
     }
-    
-    private void OnEnable()
+
+    protected virtual void OnEnable()
     {
         EventManager.OnUnitMoveCommand += OnMoveCommand;
     }
 
-    private void OnDisable()
+    protected virtual void OnDisable()
     {
         EventManager.OnUnitMoveCommand -= OnMoveCommand;
+        StopAttack();
     }
-    
-    private void OnMoveCommand(GameObject unit, Vector3 destination)
-    {
-        if (unit != gameObject)
-            return;
 
-        _hasPlayerMoveCommand = true;
-        _playerMoveDestination = destination;
-    }
-    
-    private void Start()
+    protected virtual void Start()
     {
         InvokeRepeating(nameof(CheckEnemies), 0f, 0.25f);
     }
-    
+
     public void SetManualAttackTarget(Transform target)
     {
         _manualAttackTarget = target;
         EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
     }
-    
+
     public void TakeDamage(float damage)
     {
+        if (_health == null)
+            return;
+
         _health.TakeDamage(damage);
 
         if (_health.IsDead)
@@ -120,12 +102,22 @@ public class UnitCombat : MonoBehaviour, IDamageable
         Destroy(gameObject);
     }
 
+    private void OnMoveCommand(GameObject unit, Vector3 destination)
+    {
+        if (unit != gameObject)
+            return;
+
+        _hasPlayerMoveCommand = true;
+        _playerMoveDestination = destination;
+    }
+
     private void CheckEnemies()
     {
+        if (_unitData == null)
+            return;
+
         if (_hasPlayerMoveCommand && HasReachedPlayerMoveDestination())
-        {
             _hasPlayerMoveCommand = false;
-        }
 
         Transform target = _manualAttackTarget;
 
@@ -141,23 +133,16 @@ public class UnitCombat : MonoBehaviour, IDamageable
             _aimTarget = null;
             return;
         }
-        
+
         _aimTarget = target;
         _lastTargetTime = Time.time;
 
         float distance = Vector3.Distance(transform.position, target.position);
-// Якщо є наказ руху від гравця.
-        if (_hasPlayerMoveCommand)
-        {// Якщо ворог ще далеко.
-            if (distance <= _unitData.AttackRange)
-            {
-                bool isAimedMove = AimAtTarget(target); // Наводимо башню та пушку.
-                if (isAimedMove)
-                    StartAttackIfNeeded(target);
-                else
-                    StopAttack();
-            }
 
+        if (_hasPlayerMoveCommand)
+        {
+            if (distance <= _unitData.AttackRange && AimAtTarget(target))
+                StartAttackIfNeeded(target);
             else
                 StopAttack();
 
@@ -171,48 +156,49 @@ public class UnitCombat : MonoBehaviour, IDamageable
             return;
         }
 
-        _agent.ResetPath();
+        if (_agent != null && _agent.enabled)
+            _agent.ResetPath();
 
-        EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
-        
-        bool isAimed = AimAtTarget(target);
-
-        if (!isAimed)
+        if (!AimAtTarget(target))
         {
             StopAttack();
             return;
         }
-        
+
         StartAttackIfNeeded(target);
     }
-    
+
     private void StartAttackIfNeeded(Transform target)
     {
         EventManager.OnUnitAttackTargetChanged?.Invoke(gameObject, target);
 
-        if (_attackCoroutine == null || _currentAttackTarget != target)
-        {
-            StopAttack();
+        if (_attackCoroutine != null && _currentAttackTarget == target)
+            return;
 
-            _currentAttackTarget = target;
-            _attackCoroutine = StartCoroutine(Attack(target));
-        }
+        StopAttack();
+
+        _currentAttackTarget = target;
+        _attackCoroutine = StartCoroutine(Attack(target));
     }
 
     private bool HasReachedPlayerMoveDestination()
     {
-        if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + 0.2f)
+        if (_agent == null || !_agent.enabled)
             return true;
 
-        return false;
+        if (!_agent.hasPath && !_agent.pathPending)
+            return false;
+
+        return !_agent.pathPending &&
+               _agent.remainingDistance <= _agent.stoppingDistance + 0.2f;
     }
-    
+
     private Transform FindAutoTarget()
     {
         Collider[] hits = Physics.OverlapSphere(
             transform.position,
-            _unitData.AttackRange,_targetMask
-        );
+            _unitData.AttackRange,
+            _targetMask);
 
         Transform closestTarget = null;
         float closestDistanceSqr = float.MaxValue;
@@ -221,10 +207,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
         {
             ITeam targetTeam = hit.GetComponentInParent<ITeam>();
 
-            if (targetTeam == null)
-                continue;
-
-            if (targetTeam.Team == Team)
+            if (targetTeam == null || targetTeam.Team == Team)
                 continue;
 
             Transform target = hit.transform;
@@ -234,18 +217,21 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
             float distanceSqr = (target.position - transform.position).sqrMagnitude;
 
-            if (distanceSqr < closestDistanceSqr)
-            {
-                closestDistanceSqr = distanceSqr;
-                closestTarget = target;
-            }
+            if (distanceSqr >= closestDistanceSqr)
+                continue;
+
+            closestDistanceSqr = distanceSqr;
+            closestTarget = target;
         }
 
         return closestTarget;
     }
-    
+
     private void MoveToAttackRange(Transform target)
     {
+        if (_agent == null || !_agent.enabled)
+            return;
+
         Vector3 directionFromTarget = (transform.position - target.position).normalized;
 
         if (directionFromTarget.sqrMagnitude < 0.01f)
@@ -257,29 +243,14 @@ public class UnitCombat : MonoBehaviour, IDamageable
         _agent.SetDestination(attackPosition);
     }
 
-
     private IEnumerator Attack(Transform target)
     {
         while (IsTargetValid(target))
         {
-            if (_artilleryWeapon != null)
-            {
-                yield return _artilleryWeapon.Fire(target, gameObject);
-            }
-            else
-            {
-                GameObject bullet = BulletPool.Instance.GetBullet();
-
-                bullet.transform.position = _pointPosition.position;
-                bullet.transform.rotation = _pointPosition.rotation;
-
-                BulletController bulletController = bullet.GetComponent<BulletController>();
-                bulletController.Initialize(_unitData.Damage, _unitData.Speed, target, gameObject);
-                _shotEffects?.PlayShotEffect();
-            }
-            
+            yield return FireAtTarget(target);
             yield return new WaitForSeconds(_unitData.AttackDelay);
         }
+
         if (_manualAttackTarget == target)
             _manualAttackTarget = null;
 
@@ -288,7 +259,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
         _attackCoroutine = null;
     }
-    
+
     private void StopAttack()
     {
         if (_attackCoroutine != null)
@@ -299,29 +270,50 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
         _currentAttackTarget = null;
     }
-    
+
     private void SetupTargetMask()
     {
-        if (Team == TeamType.Player)
-        {
-            _targetMask =
-                LayerMask.GetMask("EnemyUnit");
-        }
-        else
-        {
-            _targetMask =
-                LayerMask.GetMask("PlayerUnit");
-        }
+        _targetMask = Team == TeamType.Player
+            ? LayerMask.GetMask("EnemyUnit")
+            : LayerMask.GetMask("PlayerUnit");
     }
 
-    /// <summary>
-    /// Повертає башню по локальній Y-осі відносно корпусу танка.
-    /// Це прибирає смикання, бо ми не задаємо world rotation напряму.
-    /// </summary>
-    private bool RotateTurretToTarget(Transform target)
+    protected virtual IEnumerator FireAtTarget(Transform target)
+    {
+        if (_unitData == null || _pointPosition == null || target == null)
+            yield break;
+
+        GameObject bullet = BulletPool.Instance.GetBullet();
+
+        bullet.transform.position = _pointPosition.position;
+        bullet.transform.rotation = _pointPosition.rotation;
+
+        BulletController bulletController = bullet.GetComponent<BulletController>();
+
+        if (bulletController == null)
+        {
+            BulletPool.Instance.ReturnBullet(bullet);
+            yield break;
+        }
+
+        bulletController.Initialize(_unitData.Damage, _unitData.Speed, target, gameObject);
+        _shotEffects?.PlayShotEffect();
+    }
+
+    protected virtual bool AimAtTarget(Transform target)
+    {
+        if (target == null || _turret == null || _gun == null || _unitData == null)
+            return false;
+
+        bool turretReady = RotateTurretToTarget(target);
+        bool gunReady = RotateGunToTarget(target);
+
+        return turretReady && gunReady;
+    }
+
+    protected virtual bool RotateTurretToTarget(Transform target)
     {
         Vector3 worldDirection = target.position - _turret.position;
-
         Vector3 localDirection = transform.InverseTransformDirection(worldDirection);
         localDirection.y = 0f;
 
@@ -329,114 +321,106 @@ public class UnitCombat : MonoBehaviour, IDamageable
             return true;
 
         float targetYaw = Mathf.Atan2(localDirection.x, localDirection.z) * Mathf.Rad2Deg;
-
         float currentYaw = _turret.localEulerAngles.y;
-
         float newYaw = Mathf.MoveTowardsAngle(
             currentYaw,
             targetYaw,
-            _unitData.TurretRotationSpeed * Time.deltaTime
-        );
+            _unitData.TurretRotationSpeed * Time.deltaTime);
 
         _turret.localRotation = Quaternion.Euler(0f, newYaw, 0f);
 
-        float angle = Mathf.Abs(Mathf.DeltaAngle(newYaw, targetYaw));
-
-        return angle <= _unitData.AimAngleTolerance;
+        return Mathf.Abs(Mathf.DeltaAngle(newYaw, targetYaw)) <= _unitData.AimAngleTolerance;
     }
-    
-    /// <summary>
-    /// Піднімає або опускає пушку по локальній X-осі.
-    /// Працює відносно башні.
-    /// </summary>
-    private bool RotateGunToTarget(Transform target)
+
+    protected virtual bool RotateGunToTarget(Transform target)
     {
         Vector3 worldDirection = target.position - _gun.position;
-
         Vector3 localDirection = _turret.InverseTransformDirection(worldDirection);
-
-        float horizontalDistance = new Vector2(
-            localDirection.x,
-            localDirection.z
-        ).magnitude;
-
+        float horizontalDistance = new Vector2(localDirection.x, localDirection.z).magnitude;
         float targetPitch = -Mathf.Atan2(localDirection.y, horizontalDistance) * Mathf.Rad2Deg;
+        targetPitch = Mathf.Clamp(targetPitch, _unitData.MinGunPitch, _unitData.MaxGunPitch);
 
-        targetPitch = Mathf.Clamp(
-            targetPitch,
-            _unitData.MinGunPitch,
-            _unitData.MaxGunPitch
-        );
+        return MoveGunPitch(targetPitch);
+    }
 
+    protected bool MoveGunPitch(float targetPitch)
+    {
         float currentPitch = _gun.localEulerAngles.x;
-
         float newPitch = Mathf.MoveTowardsAngle(
             currentPitch,
             targetPitch,
-            _unitData.GunPitchSpeed * Time.deltaTime
-        );
+            _unitData.GunPitchSpeed * Time.deltaTime);
 
         _gun.localRotation = Quaternion.Euler(newPitch, 0f, 0f);
 
-        float angle = Mathf.Abs(Mathf.DeltaAngle(newPitch, targetPitch));
-
-        return angle <= _unitData.AimAngleTolerance;
+        return Mathf.Abs(Mathf.DeltaAngle(newPitch, targetPitch)) <= _unitData.AimAngleTolerance;
     }
-    
-    /// <summary>
-    /// Повертає башню вперед,
-    /// якщо давно нема target.
-    /// </summary>
-    private void HandleIdleTurret()
+
+    protected virtual void HandleIdleTurret()
     {
-        // Ще рано повертати.
+        if (_unitData == null || _turret == null || _gun == null)
+            return;
+
         if (Time.time < _lastTargetTime + _unitData.ReturnTurretDelay)
             return;
 
         float currentYaw = _turret.localEulerAngles.y;
-
         float newYaw = Mathf.MoveTowardsAngle(
             currentYaw,
             0f,
-            _unitData.IdleTurretRotationSpeed * Time.deltaTime
-        );
+            _unitData.IdleTurretRotationSpeed * Time.deltaTime);
 
-        _turret.localRotation =
-            Quaternion.Euler(0f, newYaw, 0f);
+        _turret.localRotation = Quaternion.Euler(0f, newYaw, 0f);
 
-        // Пушку теж повертаємо.
-        float currentPitch = _gun.localEulerAngles.x;
-
-        float newPitch = Mathf.MoveTowardsAngle(
-            currentPitch,
-            0f,
-            _unitData.GunPitchSpeed * Time.deltaTime
-        );
-
-        _gun.localRotation =
-            Quaternion.Euler(newPitch, 0f, 0f);
+        MoveGunPitch(0f);
     }
-    
-    /// <summary>
-    /// Повертає башню і пушку до цілі.
-    /// Повертає true тільки тоді, коли наведення майже завершене.
-    /// </summary>
-    private bool AimAtTarget(Transform target)
-    {
-        if (target == null)
-            return false;
 
-        if (_artilleryWeapon != null)
-            return _artilleryWeapon.AimAtTarget(target);
-
-        bool turretReady = RotateTurretToTarget(target);
-        bool gunReady = RotateGunToTarget(target);
-
-        return turretReady && gunReady;
-    }
-    
-    private bool IsTargetValid(Transform target)
+    protected bool IsTargetValid(Transform target)
     {
         return target != null && target.gameObject.activeInHierarchy;
+    }
+
+    protected Vector3 GetTargetPoint(Transform target)
+    {
+        if (target != _cachedColliderTarget)
+        {
+            _cachedColliderTarget = target;
+            _cachedTargetCollider = target.GetComponentInParent<Collider>();
+        }
+
+        if (_cachedTargetCollider != null)
+            return _cachedTargetCollider.bounds.center;
+
+        return target.position;
+    }
+
+    protected float GetDistanceRatio(Vector3 targetPoint)
+    {
+        Vector2 from = new Vector2(transform.position.x, transform.position.z);
+        Vector2 to = new Vector2(targetPoint.x, targetPoint.z);
+        float distance = Vector2.Distance(from, to);
+
+        if (_unitData == null || _unitData.AttackRange <= 0f)
+            return 1f;
+
+        return Mathf.Clamp01(distance / _unitData.AttackRange);
+    }
+
+    protected bool IsMoving(float speedThreshold)
+    {
+        if (_agent == null || !_agent.enabled)
+            return false;
+
+        return _agent.velocity.magnitude >= speedThreshold;
+    }
+
+    protected Vector3 SnapToGround(Vector3 point)
+    {
+        Vector3 origin = point + Vector3.up * 30f;
+
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 80f, ~0, QueryTriggerInteraction.Ignore))
+            return hit.point;
+
+        return point;
     }
 }
