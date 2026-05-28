@@ -9,6 +9,7 @@ namespace UnitController
     {
         [SerializeField] private NavMeshAgent _agent;
         [SerializeField] private int _segmentsPerRun = 10;
+        [SerializeField] private int _endSegmentsPerLoop = 6;
         [SerializeField] private float _trackHalfWidth = 1.58f;
         [SerializeField] private float _trackLength = 4.45f;
         [SerializeField] private float _trackCenterY = 0.42f;
@@ -24,6 +25,7 @@ namespace UnitController
         private Vector3 _lastPosition;
         private float _trackOffset;
         private bool _hasLastPosition;
+        private float _loopLength;
 
         private static Mesh _segmentMesh;
 
@@ -53,6 +55,9 @@ namespace UnitController
             float speed = velocity.magnitude;
 
             if (speed < _moveThreshold)
+                return;
+
+            if (_loopLength <= 0f)
                 return;
 
             float direction = Mathf.Abs(localVelocity.z) > 0.02f
@@ -88,23 +93,22 @@ namespace UnitController
 
             _trackMaterial = CreateTrackMaterial();
             Mesh mesh = GetSegmentMesh();
-            float spacing = _trackLength / _segmentsPerRun;
+            _loopLength = CalculateLoopLength();
+            int segmentCount = Mathf.Max(8, _segmentsPerRun * 2 + _endSegmentsPerLoop * 2);
 
-            CreateRun(-1f, false, spacing, mesh);
-            CreateRun(-1f, true, spacing, mesh);
-            CreateRun(1f, false, spacing, mesh);
-            CreateRun(1f, true, spacing, mesh);
+            CreateLoop(-1f, segmentCount, mesh);
+            CreateLoop(1f, segmentCount, mesh);
 
             UpdateSegmentPositions();
         }
 
-        private void CreateRun(float side, bool topRun, float spacing, Mesh mesh)
+        private void CreateLoop(float side, int segmentCount, Mesh mesh)
         {
-            float startZ = -_trackLength * 0.5f + spacing * 0.5f;
+            float spacing = _loopLength / segmentCount;
 
-            for (int i = 0; i < _segmentsPerRun; i++)
+            for (int i = 0; i < segmentCount; i++)
             {
-                GameObject segmentObject = new GameObject(topRun ? "Track Top Segment" : "Track Bottom Segment");
+                GameObject segmentObject = new GameObject("Animated Track Pad");
                 segmentObject.layer = gameObject.layer;
                 segmentObject.transform.SetParent(_trackRoot, false);
                 segmentObject.transform.localScale = _segmentScale;
@@ -120,8 +124,7 @@ namespace UnitController
                 _segments.Add(new TrackSegment(
                     segmentObject.transform,
                     side,
-                    topRun,
-                    startZ + i * spacing));
+                    i * spacing));
             }
         }
 
@@ -151,23 +154,68 @@ namespace UnitController
             for (int i = 0; i < _segments.Count; i++)
             {
                 TrackSegment segment = _segments[i];
-                float runOffset = segment.IsTopRun ? -_trackOffset : _trackOffset;
-                float z = WrapZ(segment.BaseZ + runOffset);
-                float y = _trackCenterY + (segment.IsTopRun ? 0.5f : -0.5f) * _trackVerticalSpacing;
+                float distance = Mathf.Repeat(segment.BaseDistance + _trackOffset, _loopLength);
+                TrackPose pose = EvaluateTrackPose(distance);
 
-                segment.Transform.localPosition = new Vector3(segment.Side * _trackHalfWidth, y, z);
-                segment.Transform.localRotation = Quaternion.identity;
+                segment.Transform.localPosition = new Vector3(segment.Side * _trackHalfWidth, pose.Y, pose.Z);
+                segment.Transform.localRotation = Quaternion.Euler(pose.Pitch, 0f, 0f);
             }
         }
 
         private float WrapOffset(float offset)
         {
-            return Mathf.Repeat(offset, _trackLength);
+            return Mathf.Repeat(offset, _loopLength);
         }
 
-        private float WrapZ(float z)
+        private float CalculateLoopLength()
         {
-            return Mathf.Repeat(z + _trackLength * 0.5f, _trackLength) - _trackLength * 0.5f;
+            float radius = GetTrackRadius();
+            return _trackLength * 2f + Mathf.PI * radius * 2f;
+        }
+
+        private TrackPose EvaluateTrackPose(float distance)
+        {
+            float radius = GetTrackRadius();
+            float halfLength = _trackLength * 0.5f;
+            float arcLength = Mathf.PI * radius;
+
+            if (distance < _trackLength)
+            {
+                float z = -halfLength + distance;
+                return new TrackPose(_trackCenterY + radius, z, 0f);
+            }
+
+            distance -= _trackLength;
+
+            if (distance < arcLength)
+            {
+                float radians = Mathf.PI * 0.5f - distance / radius;
+                float y = _trackCenterY + Mathf.Sin(radians) * radius;
+                float z = halfLength + Mathf.Cos(radians) * radius;
+                float pitch = -90f + distance / arcLength * 180f;
+                return new TrackPose(y, z, pitch);
+            }
+
+            distance -= arcLength;
+
+            if (distance < _trackLength)
+            {
+                float z = halfLength - distance;
+                return new TrackPose(_trackCenterY - radius, z, 180f);
+            }
+
+            distance -= _trackLength;
+
+            float rearRadians = -Mathf.PI * 0.5f - distance / radius;
+            float rearY = _trackCenterY + Mathf.Sin(rearRadians) * radius;
+            float rearZ = -halfLength + Mathf.Cos(rearRadians) * radius;
+            float rearPitch = 90f + distance / arcLength * 180f;
+            return new TrackPose(rearY, rearZ, rearPitch);
+        }
+
+        private float GetTrackRadius()
+        {
+            return Mathf.Max(0.05f, _trackVerticalSpacing * 0.5f);
         }
 
         private Material CreateTrackMaterial()
@@ -198,53 +246,82 @@ namespace UnitController
 
             _segmentMesh = new Mesh
             {
-                name = "Runtime Track Segment"
+                name = "Runtime Detailed Track Segment"
             };
 
-            Vector3[] vertices =
-            {
-                new Vector3(-0.5f, -0.5f, -0.5f),
-                new Vector3(0.5f, -0.5f, -0.5f),
-                new Vector3(0.5f, 0.5f, -0.5f),
-                new Vector3(-0.5f, 0.5f, -0.5f),
-                new Vector3(-0.5f, -0.5f, 0.5f),
-                new Vector3(0.5f, -0.5f, 0.5f),
-                new Vector3(0.5f, 0.5f, 0.5f),
-                new Vector3(-0.5f, 0.5f, 0.5f)
-            };
+            List<Vector3> vertices = new List<Vector3>();
+            List<int> triangles = new List<int>();
 
-            int[] triangles =
-            {
-                0, 2, 1, 0, 3, 2,
-                4, 5, 6, 4, 6, 7,
-                0, 1, 5, 0, 5, 4,
-                2, 3, 7, 2, 7, 6,
-                1, 2, 6, 1, 6, 5,
-                3, 0, 4, 3, 4, 7
-            };
+            AddBox(vertices, triangles, Vector3.zero, new Vector3(1f, 0.42f, 0.78f));
+            AddBox(vertices, triangles, new Vector3(0f, 0.28f, -0.24f), new Vector3(0.92f, 0.18f, 0.12f));
+            AddBox(vertices, triangles, new Vector3(0f, 0.28f, 0.24f), new Vector3(0.92f, 0.18f, 0.12f));
+            AddBox(vertices, triangles, new Vector3(-0.52f, 0.02f, 0f), new Vector3(0.12f, 0.36f, 0.62f));
+            AddBox(vertices, triangles, new Vector3(0.52f, 0.02f, 0f), new Vector3(0.12f, 0.36f, 0.62f));
+            AddBox(vertices, triangles, new Vector3(0f, -0.18f, -0.39f), new Vector3(0.84f, 0.16f, 0.08f));
+            AddBox(vertices, triangles, new Vector3(0f, -0.18f, 0.39f), new Vector3(0.84f, 0.16f, 0.08f));
 
-            _segmentMesh.vertices = vertices;
-            _segmentMesh.triangles = triangles;
+            _segmentMesh.SetVertices(vertices);
+            _segmentMesh.SetTriangles(triangles, 0);
             _segmentMesh.RecalculateNormals();
             _segmentMesh.RecalculateBounds();
 
             return _segmentMesh;
         }
 
+        private static void AddBox(List<Vector3> vertices, List<int> triangles, Vector3 center, Vector3 size)
+        {
+            int start = vertices.Count;
+            Vector3 half = size * 0.5f;
+
+            vertices.Add(center + new Vector3(-half.x, -half.y, -half.z));
+            vertices.Add(center + new Vector3(half.x, -half.y, -half.z));
+            vertices.Add(center + new Vector3(half.x, half.y, -half.z));
+            vertices.Add(center + new Vector3(-half.x, half.y, -half.z));
+            vertices.Add(center + new Vector3(-half.x, -half.y, half.z));
+            vertices.Add(center + new Vector3(half.x, -half.y, half.z));
+            vertices.Add(center + new Vector3(half.x, half.y, half.z));
+            vertices.Add(center + new Vector3(-half.x, half.y, half.z));
+
+            AddFace(triangles, start, 0, 2, 1, 0, 3, 2);
+            AddFace(triangles, start, 4, 5, 6, 4, 6, 7);
+            AddFace(triangles, start, 0, 1, 5, 0, 5, 4);
+            AddFace(triangles, start, 2, 3, 7, 2, 7, 6);
+            AddFace(triangles, start, 1, 2, 6, 1, 6, 5);
+            AddFace(triangles, start, 3, 0, 4, 3, 4, 7);
+        }
+
+        private static void AddFace(List<int> triangles, int start, params int[] indices)
+        {
+            for (int i = 0; i < indices.Length; i++)
+                triangles.Add(start + indices[i]);
+        }
+
         private readonly struct TrackSegment
         {
-            public TrackSegment(Transform transform, float side, bool isTopRun, float baseZ)
+            public TrackSegment(Transform transform, float side, float baseDistance)
             {
                 Transform = transform;
                 Side = side;
-                IsTopRun = isTopRun;
-                BaseZ = baseZ;
+                BaseDistance = baseDistance;
             }
 
             public Transform Transform { get; }
             public float Side { get; }
-            public bool IsTopRun { get; }
-            public float BaseZ { get; }
+            public float BaseDistance { get; }
+        }
+
+        private readonly struct TrackPose
+        {
+            public TrackPose(float y, float z, float pitch)
+            {
+                Y = y;
+                Z = z;
+                Pitch = pitch;
+            }
+
+            public float Y { get; }
+            public float Z { get; }
+            public float Pitch { get; }
         }
     }
 }

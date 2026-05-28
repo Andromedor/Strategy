@@ -23,6 +23,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     private Transform _manualAttackTarget; // Ціль, яку гравець задав вручну правим кліком.
     private UnitHealth _health;
     private TeamComponent _teamComponent;
+    private ArtilleryWeapon _artilleryWeapon;
     private Transform _currentAttackTarget;
     private LayerMask _targetMask;
     public TeamType Team => _teamComponent.Team;
@@ -39,6 +40,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     {
         _agent = GetComponent<NavMeshAgent>();
         _teamComponent = GetComponent<TeamComponent>();
+        _artilleryWeapon = GetComponent<ArtilleryWeapon>();
         _health = new UnitHealth(_unitData.MaxHealth);
         
         if (_shotEffects == null)
@@ -46,6 +48,18 @@ public class UnitCombat : MonoBehaviour, IDamageable
         
         if (_shotEffects != null)
             _shotEffects.Configure(_gun, _pointPosition);
+
+        if (_artilleryWeapon != null)
+        {
+            _artilleryWeapon.Configure(
+                _unitData,
+                _turret,
+                _gun,
+                _pointPosition,
+                _shotEffects,
+                _agent,
+                _teamComponent);
+        }
         
         SetupTargetMask();
     }
@@ -248,14 +262,21 @@ public class UnitCombat : MonoBehaviour, IDamageable
     {
         while (IsTargetValid(target))
         {
-            GameObject bullet = BulletPool.Instance.GetBullet();
+            if (_artilleryWeapon != null)
+            {
+                yield return _artilleryWeapon.Fire(target, gameObject);
+            }
+            else
+            {
+                GameObject bullet = BulletPool.Instance.GetBullet();
 
-            bullet.transform.position = _pointPosition.position;
-            bullet.transform.rotation = _pointPosition.rotation;
+                bullet.transform.position = _pointPosition.position;
+                bullet.transform.rotation = _pointPosition.rotation;
 
-            BulletController bulletController = bullet.GetComponent<BulletController>();
-            bulletController.Initialize(_unitData.Damage, _unitData.Speed, target, gameObject);
-            _shotEffects?.PlayShotEffect();
+                BulletController bulletController = bullet.GetComponent<BulletController>();
+                bulletController.Initialize(_unitData.Damage, _unitData.Speed, target, gameObject);
+                _shotEffects?.PlayShotEffect();
+            }
             
             yield return new WaitForSeconds(_unitData.AttackDelay);
         }
@@ -404,6 +425,9 @@ public class UnitCombat : MonoBehaviour, IDamageable
     {
         if (target == null)
             return false;
+
+        if (_artilleryWeapon != null)
+            return _artilleryWeapon.AimAtTarget(target);
 
         bool turretReady = RotateTurretToTarget(target);
         bool gunReady = RotateGunToTarget(target);

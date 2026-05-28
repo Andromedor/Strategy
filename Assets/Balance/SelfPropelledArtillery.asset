@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e48060335b59034cb6b3718be1e9fc1, type: 3}
+  m_Name: SelfPropelledArtillery
+  m_EditorClassIdentifier: Assembly-CSharp::UnitData
+  Prefab: {fileID: 1062518315741475719, guid: 8d5e0617c6ea51844ae50be718de31de, type: 3}
+  MaxHealth: 135
+  Damage: 110
+  Speed: 28
+  AttackRange: 95
+  AttackDelay: 6.5
+  FormationSpacing: 6.2
+  TurretRotationSpeed: 70
+  GunPitchSpeed: 38
+  MinGunPitch: -70
+  MaxGunPitch: 8
+  AimAngleTolerance: 4
+  ReturnTurretDelay: 3
+  IdleTurretRotationSpeed: 45
