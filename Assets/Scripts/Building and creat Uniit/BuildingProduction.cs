@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Building_and_creat_Uniit;
 using Data;
+using DefaultNamespace;
 using UnitController;
 
 public class BuildingProduction : MonoBehaviour
@@ -31,12 +32,25 @@ public class BuildingProduction : MonoBehaviour
       _teamComponent = GetComponent<TeamComponent>();
    }
    
-   public void AddToQueue(ProductionItemData item)
+   public bool AddToQueue(ProductionItemData item)
    {
+      if (item == null)
+         return false;
+
+      if (_teamComponent != null &&
+          _teamComponent.Team == TeamType.Player &&
+          ResourceManager.Instance != null &&
+          !ResourceManager.Instance.Spend(item.Cost))
+      {
+         return false;
+      }
+
       _queue.Enqueue(item);
       
       if (!_isProducing)
          StartCoroutine(ProcessQueue());
+
+      return true;
    }
    
    private IEnumerator ProcessQueue()
