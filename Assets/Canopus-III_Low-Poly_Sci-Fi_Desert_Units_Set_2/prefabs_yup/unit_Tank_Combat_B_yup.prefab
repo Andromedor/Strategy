@@ -105,6 +105,8 @@ GameObject:
   - component: {fileID: -8046889833657241972}
   - component: {fileID: -4117835467028166563}
   - component: {fileID: -3702408031891699130}
+  - component: {fileID: 5088860198510205511}
+  - component: {fileID: 5088860198510205512}
   - component: {fileID: -9175592574965767625}
   - component: {fileID: 6957457836845118336}
   - component: {fileID: 1774104326976623934}
@@ -273,8 +275,52 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitCombat
   _unitData: {fileID: 11400000, guid: a750e01c2cf13eb4cbc5196212e50b2c, type: 2}
   _pointPosition: {fileID: 4724319063246611970}
+  _shotEffects: {fileID: 5088860198510205512}
   _turret: {fileID: 5409456296903071416}
   _gun: {fileID: 7916088658372255724}
+--- !u!114 &5088860198510205511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2218461069028294333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3f54e9d28904d058acb89e015fd84af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.TankTrackAnimator
+  _agent: {fileID: -8046889833657241972}
+  _segmentsPerRun: 10
+  _trackHalfWidth: 1.58
+  _trackLength: 4.45
+  _trackCenterY: 0.42
+  _trackVerticalSpacing: 0.42
+  _segmentScale: {x: 0.24, y: 0.075, z: 0.34}
+  _scrollSpeedMultiplier: 1.55
+  _moveThreshold: 0.08
+  _trackColor: {r: 0.075, g: 0.07, b: 0.06, a: 1}
+--- !u!114 &5088860198510205512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2218461069028294333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f98bc0d61d849f594d2d59a94d0e191, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.TankCannonEffects
+  _gun: {fileID: 7916088658372255724}
+  _muzzle: {fileID: 4724319063246611970}
+  _recoilLocalDirection: {x: 0, y: 0, z: -1}
+  _recoilDistance: 0.35
+  _recoilBackDuration: 0.045
+  _recoilReturnDuration: 0.16
+  _flashParticles: 18
+  _smokeParticles: 24
+  _useMuzzleLight: 1
 --- !u!114 &-9175592574965767625
 MonoBehaviour:
   m_ObjectHideFlags: 0
