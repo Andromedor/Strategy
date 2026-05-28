@@ -11,6 +11,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     
     [Header("References")]
     [SerializeField] private Transform _pointPosition;
+    [SerializeField] private TankCannonEffects _shotEffects;
     
     [Header("Aiming")]
     [SerializeField] private Transform _turret; // Башня танка. Вона крутиться навколо Y.
@@ -39,6 +40,13 @@ public class UnitCombat : MonoBehaviour, IDamageable
         _agent = GetComponent<NavMeshAgent>();
         _teamComponent = GetComponent<TeamComponent>();
         _health = new UnitHealth(_unitData.MaxHealth);
+        
+        if (_shotEffects == null)
+            _shotEffects = GetComponent<TankCannonEffects>();
+        
+        if (_shotEffects != null)
+            _shotEffects.Configure(_gun, _pointPosition);
+        
         SetupTargetMask();
     }
     
@@ -243,10 +251,11 @@ public class UnitCombat : MonoBehaviour, IDamageable
             GameObject bullet = BulletPool.Instance.GetBullet();
 
             bullet.transform.position = _pointPosition.position;
-            bullet.transform.rotation = Quaternion.identity;
+            bullet.transform.rotation = _pointPosition.rotation;
 
             BulletController bulletController = bullet.GetComponent<BulletController>();
             bulletController.Initialize(_unitData.Damage, _unitData.Speed, target, gameObject);
+            _shotEffects?.PlayShotEffect();
             
             yield return new WaitForSeconds(_unitData.AttackDelay);
         }

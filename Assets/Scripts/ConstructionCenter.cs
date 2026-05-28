@@ -55,14 +55,30 @@ namespace DefaultNamespace
 
         public void ShowBuildArea()
         {
-            if (_buildAreaVisual != null)
-                _buildAreaVisual.SetActive(true);
+            SetBuildAreaVisualVisible(true);
         }
 
         public void HideBuildArea()
         {
-            if (_buildAreaVisual != null)
-                _buildAreaVisual.SetActive(false);
+            SetBuildAreaVisualVisible(false);
+        }
+
+        private void SetBuildAreaVisualVisible(bool visible)
+        {
+            if (_buildAreaVisual == null)
+                return;
+
+            if (_buildAreaVisual == gameObject)
+            {
+                Renderer visualRenderer = _buildAreaVisual.GetComponent<Renderer>();
+
+                if (visualRenderer != null)
+                    visualRenderer.enabled = visible;
+
+                return;
+            }
+
+            _buildAreaVisual.SetActive(visible);
         }
     }
 }

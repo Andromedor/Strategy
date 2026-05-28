@@ -23,4 +23,5 @@ public static class EventManager
     public static Action<ConstructionCenter> OnConstructionCenterSelected;
     public static Action OnConstructionClosed;
     public static Action OnConstructionCentersChanged;
+    public static Action<Outpost> OnOutpostSelected;
 }

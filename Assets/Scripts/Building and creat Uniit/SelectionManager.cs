@@ -1,5 +1,6 @@
 using System;
 using DefaultNamespace;
+using UnitController;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -41,6 +42,24 @@ public class SelectionManager : MonoBehaviour
             EventManager.OnConstructionCenterSelected?.Invoke(constructionCenter);
             EventManager.OnOpenPanel?.Invoke(PanelType.Construction);
 
+            return;
+         }
+         
+         Outpost outpost = hit.collider.GetComponentInParent<Outpost>();
+
+         if (outpost != null)
+         {
+            SelectedFactory = null;
+
+            if (outpost.Owner != TeamType.Player)
+            {
+               EventManager.OnConstructionClosed?.Invoke();
+               EventManager.OnOpenPanel?.Invoke(PanelType.MainMenu);
+               return;
+            }
+
+            EventManager.OnOpenPanel?.Invoke(PanelType.Outpost);
+            EventManager.OnOutpostSelected?.Invoke(outpost);
             return;
          }
 
