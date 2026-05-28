@@ -106,6 +106,7 @@ GameObject:
   - component: {fileID: 6504696068080546867}
   - component: {fileID: 1696105312784431322}
   - component: {fileID: 6776314563884587631}
+  - component: {fileID: 8458640277384834160}
   - component: {fileID: 6576288370569884980}
   - component: {fileID: 2318805463429717440}
   m_Layer: 7
@@ -219,9 +220,10 @@ MonoBehaviour:
   _shotEffects: {fileID: 6504696068080546867}
   _turret: {fileID: 3807566548447672230}
   _gun: {fileID: 8786039625349815243}
-  _minElevationAngle: 20
-  _maxElevationAngle: 70
-  _minElevationDistanceRatio: 0.1
+  _minElevationAngle: 10
+  _maxElevationAngle: 52
+  _minElevationDistanceRatio: 0.08
+  _elevationCurvePower: 2.1
   _closeStationaryHitChance: 0.95
   _maxRangeStationaryHitChance: 0.5
   _closeMovingHitChance: 0.55
@@ -294,6 +296,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.UnitSelectionState
   _selectionVisual: {fileID: 383589737143371648}
+--- !u!114 &8458640277384834160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062518315741475719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db7be3129ebed54f8ba75e23b19f991, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.ArtilleryRangeIndicator
+  _combat: {fileID: 8816389866788046823}
+  _showWhileSelected: 1
+  _toggleWithKey: 0
+  _toggleKey: 40
+  _segments: 160
+  _lineWidth: 0.16
+  _heightOffset: 0.08
+  _lineColor: {r: 0.14, g: 0.85, b: 1, a: 0.95}
 --- !u!114 &6576288370569884980
 MonoBehaviour:
   m_ObjectHideFlags: 0

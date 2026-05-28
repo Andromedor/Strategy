@@ -33,6 +33,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     protected float _lastTargetTime;
 
     public TeamType Team => _teamComponent != null ? _teamComponent.Team : TeamType.Player;
+    public float AttackRange => _unitData != null ? _unitData.AttackRange : 0f;
 
     protected virtual void Awake()
     {
@@ -107,6 +108,10 @@ public class UnitCombat : MonoBehaviour, IDamageable
         if (unit != gameObject)
             return;
 
+        _manualAttackTarget = null;
+        _aimTarget = null;
+        StopAttack();
+
         _hasPlayerMoveCommand = true;
         _playerMoveDestination = destination;
     }
@@ -119,18 +124,14 @@ public class UnitCombat : MonoBehaviour, IDamageable
         if (_hasPlayerMoveCommand && HasReachedPlayerMoveDestination())
             _hasPlayerMoveCommand = false;
 
-        Transform target = _manualAttackTarget;
-
-        if (!IsTargetValid(target))
-        {
-            _manualAttackTarget = null;
-            target = FindAutoTarget();
-        }
+        bool hasManualTarget = IsTargetValid(_manualAttackTarget);
+        Transform target = hasManualTarget ? _manualAttackTarget : FindAutoTarget();
 
         if (!IsTargetValid(target))
         {
             StopAttack();
             _aimTarget = null;
+            _manualAttackTarget = null;
             return;
         }
 
@@ -144,15 +145,24 @@ public class UnitCombat : MonoBehaviour, IDamageable
             if (distance <= _unitData.AttackRange && AimAtTarget(target))
                 StartAttackIfNeeded(target);
             else
+            {
                 StopAttack();
+
+                if (distance > _unitData.AttackRange)
+                    _aimTarget = null;
+            }
 
             return;
         }
 
         if (distance > _unitData.AttackRange)
         {
-            MoveToAttackRange(target);
             StopAttack();
+            _aimTarget = null;
+
+            if (hasManualTarget)
+                MoveToAttackRange(target);
+
             return;
         }
 

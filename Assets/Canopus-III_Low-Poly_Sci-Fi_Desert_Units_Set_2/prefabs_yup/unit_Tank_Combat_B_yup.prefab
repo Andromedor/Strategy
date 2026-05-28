@@ -110,6 +110,7 @@ GameObject:
   - component: {fileID: -9175592574965767625}
   - component: {fileID: 6957457836845118336}
   - component: {fileID: 1774104326976623934}
+  - component: {fileID: 5679036690234447122}
   m_Layer: 7
   m_Name: unit_Tank_Combat_B_yup
   m_TagString: Player
@@ -292,6 +293,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.TankTrackAnimator
   _agent: {fileID: -8046889833657241972}
   _segmentsPerRun: 10
+  _endSegmentsPerLoop: 6
   _trackHalfWidth: 1.58
   _trackLength: 4.45
   _trackCenterY: 0.42
@@ -361,6 +363,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Building_and_creat_Uniit.UnitSpawnActivator
   _exitMoveSpeed: 4
   _exitDistance: 0.2
+--- !u!114 &5679036690234447122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2218461069028294333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3f64646b45220945bf1da2bafcb6ec2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.UnitAttackRangeIndicator
+  _combat: {fileID: -3702408031891699130}
+  _showWhileSelected: 0
+  _toggleWithKey: 1
+  _toggleKey: 40
+  _segments: 128
+  _lineWidth: 0.13
+  _heightOffset: 0.08
+  _lineColor: {r: 0.14, g: 0.85, b: 1, a: 0.95}
 --- !u!1 &4622839955750878818
 GameObject:
   m_ObjectHideFlags: 0

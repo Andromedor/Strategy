@@ -6,9 +6,10 @@ namespace UnitController
     public class ArtilleryWeapon : UnitCombat
     {
         [Header("Artillery Aiming")]
-        [SerializeField] private float _minElevationAngle = 20f;
-        [SerializeField] private float _maxElevationAngle = 70f;
-        [SerializeField, Range(0f, 1f)] private float _minElevationDistanceRatio = 0.1f;
+        [SerializeField] private float _minElevationAngle = 10f;
+        [SerializeField] private float _maxElevationAngle = 52f;
+        [SerializeField, Range(0f, 1f)] private float _minElevationDistanceRatio = 0.08f;
+        [SerializeField, Min(0.1f)] private float _elevationCurvePower = 2.1f;
 
         [Header("Artillery Accuracy")]
         [SerializeField] private float _closeStationaryHitChance = 0.95f;
@@ -47,6 +48,7 @@ namespace UnitController
             Vector3 targetPoint = GetTargetPoint(target);
             float distanceRatio = GetDistanceRatio(targetPoint);
             float elevationRatio = Mathf.InverseLerp(_minElevationDistanceRatio, 1f, distanceRatio);
+            elevationRatio = Mathf.Pow(elevationRatio, _elevationCurvePower);
             float targetElevation = Mathf.Lerp(_minElevationAngle, _maxElevationAngle, elevationRatio);
             float targetPitch = Mathf.Clamp(-targetElevation, _unitData.MinGunPitch, _unitData.MaxGunPitch);
 

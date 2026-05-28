@@ -98,6 +98,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         TankCannonEffects cannonEffects = root.AddComponent<TankCannonEffects>();
         TankTrackAnimator trackAnimator = root.AddComponent<TankTrackAnimator>();
         UnitSelectionState selectionState = root.AddComponent<UnitSelectionState>();
+        ArtilleryRangeIndicator rangeIndicator = root.AddComponent<ArtilleryRangeIndicator>();
         TeamComponent teamComponent = root.AddComponent<TeamComponent>();
         UnitSpawnActivator spawnActivator = root.AddComponent<UnitSpawnActivator>();
 
@@ -115,9 +116,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetInt(cannonEffects, "_flashParticles", 26);
         SetInt(cannonEffects, "_smokeParticles", 36);
 
-        SetFloat(combat, "_minElevationAngle", 20f);
-        SetFloat(combat, "_maxElevationAngle", 70f);
-        SetFloat(combat, "_minElevationDistanceRatio", 0.1f);
+        SetFloat(combat, "_minElevationAngle", 10f);
+        SetFloat(combat, "_maxElevationAngle", 52f);
+        SetFloat(combat, "_minElevationDistanceRatio", 0.08f);
+        SetFloat(combat, "_elevationCurvePower", 2.1f);
         SetFloat(combat, "_maxRangeStationaryHitChance", 0.5f);
         SetFloat(combat, "_maxRangeMovingHitChance", 0.1f);
         SetFloat(combat, "_splashRadius", 4.6f);
@@ -133,6 +135,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetVector3(trackAnimator, "_segmentScale", new Vector3(0.15f, 0.09f, 0.22f));
 
         SetObjectReference(selectionState, "_selectionVisual", selectionVisual);
+        SetObjectReference(rangeIndicator, "_combat", combat);
+        SetInt(rangeIndicator, "_segments", 160);
+        SetFloat(rangeIndicator, "_lineWidth", 0.16f);
+        SetFloat(rangeIndicator, "_heightOffset", 0.08f);
         SetInt(teamComponent, "_team", (int)TeamType.Player);
         SetFloat(spawnActivator, "_exitMoveSpeed", 3.4f);
         SetFloat(spawnActivator, "_exitDistance", 0.25f);
