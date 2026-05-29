@@ -28,6 +28,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
     private Collider _cachedTargetCollider;
     private UnitHealth _health;
     private LayerMask _targetMask;
+    private const float AttackPositionSampleRadius = 4f;
     private bool _hasPlayerMoveCommand;
     private Vector3 _playerMoveDestination;
     protected float _lastTargetTime;
@@ -196,6 +197,12 @@ public class UnitCombat : MonoBehaviour, IDamageable
         if (_agent == null || !_agent.enabled)
             return true;
 
+        Vector3 destinationOffset = _playerMoveDestination - transform.position;
+        destinationOffset.y = 0f;
+
+        if (destinationOffset.magnitude <= _agent.stoppingDistance + 0.35f)
+            return true;
+
         if (!_agent.hasPath && !_agent.pathPending)
             return false;
 
@@ -239,7 +246,7 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
     private void MoveToAttackRange(Transform target)
     {
-        if (_agent == null || !_agent.enabled)
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
             return;
 
         Vector3 directionFromTarget = (transform.position - target.position).normalized;
@@ -250,7 +257,49 @@ public class UnitCombat : MonoBehaviour, IDamageable
         Vector3 attackPosition =
             target.position + directionFromTarget * (_unitData.AttackRange * 0.85f);
 
+        if (!TryResolveAttackDestination(attackPosition, out attackPosition))
+            return;
+
         _agent.SetDestination(attackPosition);
+    }
+
+    private bool TryResolveAttackDestination(Vector3 requestedPosition, out Vector3 resolvedPosition)
+    {
+        resolvedPosition = requestedPosition;
+
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+            return false;
+
+        if (NavMesh.SamplePosition(
+                requestedPosition,
+                out NavMeshHit navHit,
+                AttackPositionSampleRadius,
+                _agent.areaMask))
+        {
+            resolvedPosition = navHit.position;
+        }
+
+        NavMeshPath path = new NavMeshPath();
+
+        if (!_agent.CalculatePath(resolvedPosition, path))
+            return false;
+
+        if (path.status == NavMeshPathStatus.PathComplete)
+            return true;
+
+        if (path.status != NavMeshPathStatus.PathPartial ||
+            path.corners == null ||
+            path.corners.Length < 2)
+            return false;
+
+        Vector3 reachablePoint = path.corners[path.corners.Length - 1];
+        float minMoveDistance = Mathf.Max(0.25f, _agent.stoppingDistance + 0.1f);
+
+        if ((reachablePoint - transform.position).sqrMagnitude <= minMoveDistance * minMoveDistance)
+            return false;
+
+        resolvedPosition = reachablePoint;
+        return true;
     }
 
     private IEnumerator Attack(Transform target)

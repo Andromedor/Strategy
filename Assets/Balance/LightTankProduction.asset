@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 206e8dc0e61644efb36a07539a3d2c70, type: 3}
   m_Name: LightTankProduction
   m_EditorClassIdentifier: Assembly-CSharp::Data.ProductionItemData
-  ItemName: LightTank
+  ItemName: Quad Autocannon
   Icon: {fileID: 0}
   UnitData: {fileID: 11400000, guid: 5be1363536baadc4e93a2c83066f75f7, type: 2}
-  Cost: 0
+  Cost: 30
   ProductionTime: 2

@@ -963,7 +963,7 @@ MonoBehaviour:
   m_Center: {x: 0, y: 2, z: 0}
   m_LayerMask:
     serializedVersion: 2
-    m_Bits: 631
+    m_Bits: 1783
   m_UseGeometry: 0
   m_DefaultArea: 0
   m_GenerateLinks: 0
@@ -2289,6 +2289,8 @@ MonoBehaviour:
     m_Bits: 128
   _selections: []
   _formationSpacing: 4
+  _navMeshSampleRadius: 3
+  _navMeshFallbackSampleRadius: 8
 --- !u!1001 &330853669
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -13,6 +13,8 @@ public class UnitCommandController : MonoBehaviour
     [SerializeField] private LayerMask _selectedLayerMask;
     [SerializeField] private List<GameObject> _selections;
     [SerializeField] private float _formationSpacing = 4f;
+    [SerializeField] private float _navMeshSampleRadius = 3f;
+    [SerializeField] private float _navMeshFallbackSampleRadius = 8f;
    
     private Camera _camera;
     private GameObject _currentSelection;
@@ -102,16 +104,90 @@ public class UnitCommandController : MonoBehaviour
             if (agent == null)
                 continue;
 
-            Vector3 destination = index == 0
+            int formationIndex = index++;
+            Vector3 destination = formationIndex == 0
                 ? targetPoint
-                : GetChessFormationPosition(targetPoint, index, _formationSpacing, rotation);
+                : GetChessFormationPosition(targetPoint, formationIndex, _formationSpacing, rotation);
 
-            agent.SetDestination(destination);
+            if (!TryResolveNavMeshDestination(agent, destination, out destination))
+                continue;
+
+            if (!agent.SetDestination(destination))
+                continue;
 
             EventManager.OnUnitMoveCommand?.Invoke(selection, destination);
-
-            index++;
         }
+    }
+
+    private bool TryResolveNavMeshDestination(
+        NavMeshAgent agent,
+        Vector3 requestedDestination,
+        out Vector3 resolvedDestination)
+    {
+        resolvedDestination = requestedDestination;
+
+        if (agent == null || !agent.enabled || !TryEnsureAgentOnNavMesh(agent))
+            return false;
+
+        if (!TrySampleDestination(agent, requestedDestination, _navMeshSampleRadius, out NavMeshHit navHit) &&
+            !TrySampleDestination(agent, requestedDestination, _navMeshFallbackSampleRadius, out navHit))
+            return false;
+
+        resolvedDestination = navHit.position;
+
+        NavMeshPath path = new NavMeshPath();
+
+        if (!agent.CalculatePath(resolvedDestination, path))
+            return false;
+
+        if (path.status == NavMeshPathStatus.PathComplete)
+            return true;
+
+        if (path.status != NavMeshPathStatus.PathPartial ||
+            path.corners == null ||
+            path.corners.Length < 2)
+            return false;
+
+        Vector3 reachablePoint = path.corners[path.corners.Length - 1];
+        float minMoveDistance = Mathf.Max(0.25f, agent.stoppingDistance + 0.1f);
+
+        if ((reachablePoint - agent.transform.position).sqrMagnitude <= minMoveDistance * minMoveDistance)
+            return false;
+
+        resolvedDestination = reachablePoint;
+        return true;
+    }
+
+    private static bool TrySampleDestination(
+        NavMeshAgent agent,
+        Vector3 destination,
+        float radius,
+        out NavMeshHit hit)
+    {
+        return NavMesh.SamplePosition(
+            destination,
+            out hit,
+            Mathf.Max(0.05f, radius),
+            agent.areaMask);
+    }
+
+    private bool TryEnsureAgentOnNavMesh(NavMeshAgent agent)
+    {
+        if (agent.isOnNavMesh)
+            return true;
+
+        if (!NavMesh.SamplePosition(
+                agent.transform.position,
+                out NavMeshHit hit,
+                _navMeshFallbackSampleRadius,
+                agent.areaMask))
+        {
+            return false;
+        }
+
+        agent.transform.position = hit.position;
+        agent.Warp(hit.position);
+        return agent.isOnNavMesh;
     }
     
     private Vector3 GetChessFormationPosition(
