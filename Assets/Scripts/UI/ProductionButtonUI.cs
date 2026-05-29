@@ -7,22 +7,35 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    public class ProductionButtonUI: MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler
+    public class ProductionButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler
     {
         private const float TooltipPadding = 12f;
+        private static readonly Vector2 ButtonSize = new Vector2(116f, 108f);
+        private static readonly Color ButtonFillColor = new Color(0.03f, 0.45f, 0.85f, 1f);
+        private static readonly Color DisabledFillColor = new Color(0.48f, 0.54f, 0.58f, 0.85f);
 
         [SerializeField] private Image _icon;
+        [SerializeField] private TMP_Text _fallbackText;
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TMP_Text _costText;
         [SerializeField] private TMP_Text _timeText;
         [SerializeField] private Button _button;
         [SerializeField] private Vector2 _tooltipOffset = new Vector2(0f, 10f);
+        [SerializeField] private TMP_FontAsset _fontAsset;
+        [SerializeField] private Sprite _buttonSprite;
 
         private ProductionItemData _item;
         private Action<ProductionItemData> _onClick;
+        private Image _background;
         private static RectTransform _tooltipRoot;
         private static TMP_Text _tooltipText;
         private static Canvas _tooltipCanvas;
+
+        public void SetStyle(TMP_FontAsset fontAsset, Sprite buttonSprite)
+        {
+            _fontAsset = fontAsset;
+            _buttonSprite = buttonSprite;
+        }
 
         public void Initialize(ProductionItemData item, Action<ProductionItemData> onClick)
         {
@@ -38,17 +51,26 @@ namespace UI
                 return;
             }
 
-            if (item.Icon != null && _icon != null)
+            if (_icon != null)
+            {
                 _icon.sprite = item.Icon;
+                _icon.enabled = item.Icon != null;
+            }
+
+            if (_fallbackText != null)
+            {
+                _fallbackText.text = "UNIT";
+                _fallbackText.gameObject.SetActive(item.Icon == null);
+            }
 
             if (_nameText != null)
                 _nameText.text = FormatDisplayName(item.ItemName);
 
             if (_costText != null)
-                _costText.text = $"Ціна: {FormatCost(item.Cost)}";
+                _costText.text = "$" + FormatCost(item.Cost);
 
             if (_timeText != null)
-                _timeText.text = $"Час: {FormatSeconds(item.ProductionTime)}";
+                _timeText.text = FormatSeconds(item.ProductionTime);
 
             if (_button != null)
             {
@@ -63,6 +85,11 @@ namespace UI
                 return;
 
             _button.interactable = _item.Cost <= playerResource;
+
+            if (_background != null)
+                _background.color = _button.interactable
+                    ? ButtonFillColor
+                    : DisabledFillColor;
         }
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -95,17 +122,24 @@ namespace UI
             if (_button == null)
                 _button = GetComponent<Button>();
 
-            if (_icon == null)
-                _icon = GetComponent<Image>();
+            _background = GetComponent<Image>();
+
+            if (_icon == null || _icon.transform == transform)
+                _icon = FindChild<Image>("Icon") ?? CreateImage("Icon");
 
             if (_nameText == null)
-                _nameText = GetComponentInChildren<TMP_Text>(true);
+                _nameText = FindChild<TMP_Text>("NameText") ??
+                    FindChild<TMP_Text>("Text (TMP)") ??
+                    CreateText("NameText");
 
             if (_costText == null)
-                _costText = CreateText("CostText");
+                _costText = FindChild<TMP_Text>("CostText") ?? CreateText("CostText");
 
             if (_timeText == null)
-                _timeText = CreateText("TimeText");
+                _timeText = FindChild<TMP_Text>("TimeText") ?? CreateText("TimeText");
+
+            if (_fallbackText == null)
+                _fallbackText = FindChild<TMP_Text>("FallbackIcon") ?? CreateText("FallbackIcon");
         }
 
         private void ApplyLayout()
@@ -113,32 +147,71 @@ namespace UI
             RectTransform rootRect = transform as RectTransform;
 
             if (rootRect != null)
-                rootRect.sizeDelta = new Vector2(190f, 64f);
+                rootRect.sizeDelta = ButtonSize;
+
+            if (_background != null)
+            {
+                _background.color = ButtonFillColor;
+                _background.sprite = null;
+                _background.type = Image.Type.Simple;
+            }
+
+            Outline outline = GetComponent<Outline>();
+            if (outline == null)
+                outline = gameObject.AddComponent<Outline>();
+
+            outline.effectColor = new Color(1f, 1f, 1f, 0.88f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            if (_button != null && _background != null)
+            {
+                _button.targetGraphic = _background;
+                ColorBlock colors = _button.colors;
+                colors.normalColor = Color.white;
+                colors.highlightedColor = new Color(0.78f, 0.86f, 1f, 1f);
+                colors.pressedColor = Color.white;
+                colors.selectedColor = new Color(0.78f, 0.86f, 1f, 1f);
+                colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.78f);
+                _button.colors = colors;
+            }
 
             if (_icon != null)
-                _icon.color = new Color(0.92f, 0.94f, 0.96f, 1f);
+            {
+                _icon.color = Color.white;
+                _icon.preserveAspect = true;
+                _icon.raycastTarget = false;
+            }
 
-            SetTextStyle(_nameText, 18f, FontStyles.Bold, TextAlignmentOptions.Left);
-            SetTextStyle(_costText, 15f, FontStyles.Normal, TextAlignmentOptions.Left);
-            SetTextStyle(_timeText, 15f, FontStyles.Normal, TextAlignmentOptions.Right);
+            SetTextStyle(_fallbackText, 20f, FontStyles.Bold, TextAlignmentOptions.Center);
+            SetTextStyle(_nameText, 16f, FontStyles.Bold, TextAlignmentOptions.Center);
+            SetTextStyle(_costText, 14f, FontStyles.Normal, TextAlignmentOptions.Left);
+            SetTextStyle(_timeText, 14f, FontStyles.Normal, TextAlignmentOptions.Right);
 
-            SetRect(
-                _nameText != null ? _nameText.rectTransform : null,
-                new Vector2(10f, -7f),
-                new Vector2(170f, 24f),
-                true);
+            SetTopRect(_icon != null ? _icon.rectTransform : null, new Vector2(0f, -26f), new Vector2(54f, 34f));
+            SetTopRect(_fallbackText != null ? _fallbackText.rectTransform : null, new Vector2(0f, -26f), new Vector2(82f, 32f));
+            SetTopRect(_nameText != null ? _nameText.rectTransform : null, new Vector2(0f, -60f), new Vector2(106f, 30f));
+            SetBottomLeftRect(_costText != null ? _costText.rectTransform : null, new Vector2(9f, 8f), new Vector2(48f, 21f));
+            SetBottomRightRect(_timeText != null ? _timeText.rectTransform : null, new Vector2(-9f, 8f), new Vector2(50f, 21f));
+        }
 
-            SetRect(
-                _costText != null ? _costText.rectTransform : null,
-                new Vector2(10f, 8f),
-                new Vector2(82f, 22f),
-                false);
+        private T FindChild<T>(string objectName) where T : Component
+        {
+            Transform child = transform.Find(objectName);
+            return child != null ? child.GetComponent<T>() : null;
+        }
 
-            SetRect(
-                _timeText != null ? _timeText.rectTransform : null,
-                new Vector2(-10f, 8f),
-                new Vector2(82f, 22f),
-                false);
+        private Image CreateImage(string objectName)
+        {
+            GameObject imageObject = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            imageObject.transform.SetParent(transform, false);
+            Image image = imageObject.GetComponent<Image>();
+            image.raycastTarget = false;
+            return image;
         }
 
         private TMP_Text CreateText(string objectName)
@@ -153,7 +226,6 @@ namespace UI
 
             TMP_Text text = textObject.GetComponent<TMP_Text>();
             text.raycastTarget = false;
-
             return text;
         }
 
@@ -166,48 +238,54 @@ namespace UI
             if (text == null)
                 return;
 
+            ProductionButtonUI owner = text.GetComponentInParent<ProductionButtonUI>();
+            if (owner != null && owner._fontAsset != null)
+                text.font = owner._fontAsset;
+
             text.fontSize = maxFontSize;
             text.fontStyle = fontStyle;
             text.enableAutoSizing = true;
-            text.fontSizeMin = 10f;
+            text.fontSizeMin = maxFontSize <= 14f ? 12f : 14f;
             text.fontSizeMax = maxFontSize;
             text.alignment = alignment;
-            text.color = new Color(0.1f, 0.12f, 0.14f, 1f);
+            text.color = Color.white;
             text.raycastTarget = false;
             text.overflowMode = TextOverflowModes.Ellipsis;
         }
 
-        private static void SetRect(
-            RectTransform rectTransform,
-            Vector2 offset,
-            Vector2 size,
-            bool topRow)
+        private static void SetTopRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
         {
             if (rectTransform == null)
                 return;
 
-            if (topRow)
-            {
-                rectTransform.anchorMin = new Vector2(0f, 1f);
-                rectTransform.anchorMax = new Vector2(0f, 1f);
-                rectTransform.pivot = new Vector2(0f, 1f);
-                rectTransform.anchoredPosition = offset;
-            }
-            else if (offset.x < 0f)
-            {
-                rectTransform.anchorMin = new Vector2(1f, 0f);
-                rectTransform.anchorMax = new Vector2(1f, 0f);
-                rectTransform.pivot = new Vector2(1f, 0f);
-                rectTransform.anchoredPosition = offset;
-            }
-            else
-            {
-                rectTransform.anchorMin = Vector2.zero;
-                rectTransform.anchorMax = Vector2.zero;
-                rectTransform.pivot = Vector2.zero;
-                rectTransform.anchoredPosition = offset;
-            }
+            rectTransform.anchorMin = new Vector2(0.5f, 1f);
+            rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            rectTransform.pivot = new Vector2(0.5f, 1f);
+            rectTransform.anchoredPosition = offset;
+            rectTransform.sizeDelta = size;
+        }
 
+        private static void SetBottomLeftRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
+        {
+            if (rectTransform == null)
+                return;
+
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.zero;
+            rectTransform.pivot = Vector2.zero;
+            rectTransform.anchoredPosition = offset;
+            rectTransform.sizeDelta = size;
+        }
+
+        private static void SetBottomRightRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
+        {
+            if (rectTransform == null)
+                return;
+
+            rectTransform.anchorMin = new Vector2(1f, 0f);
+            rectTransform.anchorMax = new Vector2(1f, 0f);
+            rectTransform.pivot = new Vector2(1f, 0f);
+            rectTransform.anchoredPosition = offset;
             rectTransform.sizeDelta = size;
         }
 
@@ -226,7 +304,7 @@ namespace UI
 
             _tooltipRoot.sizeDelta = new Vector2(
                 300f,
-                Mathf.Max(210f, _tooltipText.preferredHeight + TooltipPadding * 2f));
+                Mathf.Max(170f, _tooltipText.preferredHeight + TooltipPadding * 2f));
 
             _tooltipRoot.gameObject.SetActive(true);
             _tooltipRoot.SetAsLastSibling();
@@ -262,11 +340,7 @@ namespace UI
             float minY = canvasCorners[0].y + _tooltipRoot.rect.height + TooltipPadding;
             float maxY = canvasCorners[2].y - TooltipPadding;
 
-            if (x > maxX)
-                x = maxX;
-
-            if (x < minX)
-                x = minX;
+            x = Mathf.Clamp(x, minX, maxX);
 
             if (y > maxY)
                 y = buttonCorners[0].y - _tooltipOffset.y;
@@ -310,7 +384,7 @@ namespace UI
             _tooltipRoot.SetAsLastSibling();
 
             Image background = tooltipObject.GetComponent<Image>();
-            background.color = new Color(0.96f, 0.98f, 1f, 0.96f);
+            background.color = new Color(0.95f, 0.98f, 1f, 0.97f);
             background.raycastTarget = false;
 
             GameObject textObject = new GameObject(
@@ -328,10 +402,13 @@ namespace UI
             textRect.offsetMax = new Vector2(-TooltipPadding, -TooltipPadding);
 
             _tooltipText = textObject.GetComponent<TMP_Text>();
-            _tooltipText.fontSize = 16f;
+            if (_fontAsset != null)
+                _tooltipText.font = _fontAsset;
+
+            _tooltipText.fontSize = 18f;
             _tooltipText.enableAutoSizing = true;
-            _tooltipText.fontSizeMin = 12f;
-            _tooltipText.fontSizeMax = 16f;
+            _tooltipText.fontSizeMin = 14f;
+            _tooltipText.fontSizeMax = 18f;
             _tooltipText.color = new Color(0.08f, 0.1f, 0.12f, 1f);
             _tooltipText.alignment = TextAlignmentOptions.TopLeft;
             _tooltipText.raycastTarget = false;
@@ -347,29 +424,27 @@ namespace UI
             {
                 return
                     $"{FormatDisplayName(item.ItemName)}\n" +
-                    $"Ціна: {FormatCost(item.Cost)}\n" +
-                    $"Час виробництва: {FormatSeconds(item.ProductionTime)}";
+                    $"Cost: {FormatCost(item.Cost)}\n" +
+                    $"Build time: {FormatSeconds(item.ProductionTime)}";
             }
 
             return
                 $"{FormatDisplayName(item.ItemName)}\n" +
-                $"Ціна: {FormatCost(item.Cost)}\n" +
-                $"Час виробництва: {FormatSeconds(item.ProductionTime)}\n\n" +
-                "Характеристики\n" +
-                $"Здоров'я: {FormatNumber(unit.MaxHealth)}\n" +
-                $"Шкода: {FormatNumber(unit.Damage)}\n" +
-                $"Дальність атаки: {FormatNumber(unit.AttackRange)}\n" +
-                $"Затримка атаки: {FormatSeconds(unit.AttackDelay)}\n" +
-                $"Швидкість: {FormatNumber(unit.Speed)}\n" +
-                $"Дистанція формації: {FormatNumber(unit.FormationSpacing)}\n" +
-                $"Поворот башти: {FormatNumber(unit.TurretRotationSpeed)} град/с\n" +
-                $"Нахил гармати: {FormatNumber(unit.MinGunPitch)} - {FormatNumber(unit.MaxGunPitch)} град";
+                $"Cost: {FormatCost(item.Cost)}\n" +
+                $"Build time: {FormatSeconds(item.ProductionTime)}\n\n" +
+                "Stats\n" +
+                $"Health: {FormatNumber(unit.MaxHealth)}\n" +
+                $"Damage: {FormatNumber(unit.Damage)}\n" +
+                $"Range: {FormatNumber(unit.AttackRange)}\n" +
+                $"Attack delay: {FormatSeconds(unit.AttackDelay)}\n" +
+                $"Speed: {FormatNumber(unit.Speed)}\n" +
+                $"Formation: {FormatNumber(unit.FormationSpacing)}";
         }
 
         private static string FormatDisplayName(string itemName)
         {
             if (string.IsNullOrWhiteSpace(itemName))
-                return "Невідомий юніт";
+                return "Unknown";
 
             return itemName
                 .Replace("Meadl", "Medium")
@@ -384,7 +459,7 @@ namespace UI
 
         private static string FormatSeconds(float seconds)
         {
-            return $"{FormatNumber(seconds)} с";
+            return $"{FormatNumber(seconds)}s";
         }
 
         private static string FormatNumber(float value)

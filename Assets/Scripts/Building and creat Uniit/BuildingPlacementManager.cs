@@ -52,7 +52,9 @@ public class BuildingPlacementManager : MonoBehaviour
     
     private void SetConstructionCenter(ConstructionCenter constructionCenter)
     {
-        _currentConstructionCenter = constructionCenter;
+        _currentConstructionCenter = IsConstructionCenterForCurrentTeam(constructionCenter)
+            ? constructionCenter
+            : null;
     }
 
     private void ClearConstructionCenter()
@@ -104,7 +106,7 @@ public class BuildingPlacementManager : MonoBehaviour
         if (buildingData == null || buildingData.prefab == null)
             return;
 
-        if (ConstructionCenter.All.Count == 0)
+        if (!HasAvailableConstructionArea())
             return;
 
         _currentBuildingData = buildingData;
@@ -193,7 +195,7 @@ public class BuildingPlacementManager : MonoBehaviour
     {
         _isValidPlacement = true;
 
-        if (ConstructionCenter.All.Count == 0)
+        if (!HasAvailableConstructionArea())
         {
             _isValidPlacement = false;
             return;
@@ -230,7 +232,7 @@ public class BuildingPlacementManager : MonoBehaviour
     {
         foreach (ConstructionCenter center in ConstructionCenter.All)
         {
-            if (center != null && center.IsInsideBuildArea(position))
+            if (IsConstructionCenterForCurrentTeam(center) && center.IsInsideBuildArea(position))
                 return true;
         }
 
@@ -323,7 +325,7 @@ public class BuildingPlacementManager : MonoBehaviour
     {
         foreach (ConstructionCenter center in ConstructionCenter.All)
         {
-            if (center != null)
+            if (IsConstructionCenterForCurrentTeam(center))
                 center.ShowBuildArea();
         }
     }
@@ -332,9 +334,29 @@ public class BuildingPlacementManager : MonoBehaviour
     {
         foreach (ConstructionCenter center in ConstructionCenter.All)
         {
-            if (center != null)
+            if (IsConstructionCenterForCurrentTeam(center))
                 center.HideBuildArea();
         }
+    }
+
+    private bool HasAvailableConstructionArea()
+    {
+        foreach (ConstructionCenter center in ConstructionCenter.All)
+        {
+            if (IsConstructionCenterForCurrentTeam(center))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsConstructionCenterForCurrentTeam(ConstructionCenter center)
+    {
+        if (center == null || !center.isActiveAndEnabled)
+            return false;
+
+        TeamComponent teamComponent = center.GetComponentInParent<TeamComponent>();
+        return teamComponent == null || teamComponent.Team == _currentTeam;
     }
 
     private struct BehaviourState

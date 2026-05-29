@@ -11,18 +11,19 @@ namespace UI
         [Header("References")]
         [SerializeField] private Canvas _canvas;
         [SerializeField] private TMP_Text _statusText;
+        [SerializeField] private TMP_FontAsset _fontAsset;
 
         [Header("Layout")]
         [SerializeField] private Vector2 _anchoredPosition = new Vector2(-18f, -18f);
-        [SerializeField] private Vector2 _textSize = new Vector2(320f, 132f);
+        [SerializeField] private Vector2 _textSize = new Vector2(320f, 96f);
 
         [Header("Style")]
-        [SerializeField] private Color _textColor = new Color(0.04f, 0.07f, 0.1f, 1f);
-        [SerializeField] private Color _backgroundColor = new Color(1f, 0.96f, 0.76f, 0.96f);
-        [SerializeField] private Color _accentColor = new Color(0.04f, 0.45f, 0.85f, 1f);
-        [SerializeField] private Color _labelColor = new Color(0.22f, 0.27f, 0.3f, 1f);
-        [SerializeField] private Color _moneyColor = new Color(0.55f, 0.29f, 0f, 1f);
-        [SerializeField] private Color _incomeColor = new Color(0f, 0.38f, 0.12f, 1f);
+        [SerializeField] private Color _textColor = new Color(0.04f, 0.075f, 0.11f, 1f);
+        [SerializeField] private Color _backgroundColor = new Color(0.95f, 0.98f, 1f, 0.94f);
+        [SerializeField] private Color _accentColor = new Color(0.03f, 0.38f, 0.75f, 1f);
+        [SerializeField] private Color _labelColor = new Color(0.24f, 0.36f, 0.46f, 1f);
+        [SerializeField] private Color _moneyColor = new Color(0.58f, 0.34f, 0.02f, 1f);
+        [SerializeField] private Color _incomeColor = new Color(0.05f, 0.45f, 0.16f, 1f);
 
         private void OnEnable()
         {
@@ -57,55 +58,32 @@ namespace UI
             int playerResource = ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0;
             int capturedOutposts = Outpost.GetOwnedCount(TeamType.Player);
             int resourcePerMinute = Mathf.RoundToInt(Outpost.GetResourcePerMinute(TeamType.Player));
-            int ticksPerMinute = Mathf.RoundToInt(Outpost.GetResourceTicksPerMinute(TeamType.Player));
-            int secondsPerTick = ticksPerMinute > 0
-                ? Mathf.RoundToInt(60f / ticksPerMinute)
-                : 0;
-
-            string generationFrequency = secondsPerTick > 0
-                ? $"кожні {secondsPerTick} с"
-                : "немає";
 
             _statusText.text =
-                $"<size=20><b><color=#{ColorUtility.ToHtmlStringRGB(_accentColor)}>РЕСУРСИ</color></b></size>\n" +
-                $"{Label("Зони")} {Value(capturedOutposts.ToString(), _textColor)}\n" +
-                $"{Label("Гроші")} {Value(playerResource.ToString(), _moneyColor)}\n" +
-                $"{Label("Дохід/хв")} {Value($"+{resourcePerMinute}", _incomeColor)}\n" +
-                $"{Label("Нарахування")} {Value(generationFrequency, _textColor)}";
+                $"<b><color=#{ColorUtility.ToHtmlStringRGB(_accentColor)}>RESOURCES</color></b>  " +
+                $"{Label("Zones")} {Value(capturedOutposts.ToString(), _textColor)}   " +
+                $"{Label("Money")} {Value(playerResource.ToString(), _moneyColor)}   " +
+                $"{Label("Income/min")} {Value("+" + resourcePerMinute, _incomeColor)}";
         }
 
         private void EnsureStatusText()
         {
-            if (_statusText != null)
+            if (_statusText == null)
                 return;
 
-            if (_canvas == null)
-                _canvas = FindFirstObjectByType<Canvas>();
+            if (_fontAsset != null)
+                _statusText.font = _fontAsset;
 
-            if (_canvas == null)
-                return;
-
-            GameObject panelObject = new GameObject(
-                "OutpostStatusPanel",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-
-            panelObject.transform.SetParent(_canvas.transform, false);
-
-            RectTransform panelRect = (RectTransform)panelObject.transform;
-            panelRect.anchorMin = new Vector2(1f, 1f);
-            panelRect.anchorMax = new Vector2(1f, 1f);
-            panelRect.pivot = new Vector2(1f, 1f);
-            panelRect.anchoredPosition = _anchoredPosition;
-            panelRect.sizeDelta = _textSize;
-
-            Image background = panelObject.GetComponent<Image>();
-            background.color = _backgroundColor;
-            background.raycastTarget = false;
-
-            CreateAccent(panelObject.transform);
-            CreateStatusText(panelObject.transform);
+            _statusText.color = _textColor;
+            _statusText.fontSize = 28f;
+            _statusText.fontStyle = FontStyles.Bold;
+            _statusText.enableAutoSizing = true;
+            _statusText.fontSizeMin = 18f;
+            _statusText.fontSizeMax = 28f;
+            _statusText.alignment = TextAlignmentOptions.MidlineLeft;
+            _statusText.overflowMode = TextOverflowModes.Ellipsis;
+            _statusText.raycastTarget = false;
+            _statusText.richText = true;
         }
 
         private void CreateAccent(Transform parent)
@@ -133,7 +111,7 @@ namespace UI
         private void CreateStatusText(Transform parent)
         {
             GameObject textObject = new GameObject(
-                "OutpostStatusText",
+                "ResourceText",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
                 typeof(TextMeshProUGUI));
@@ -143,15 +121,20 @@ namespace UI
             RectTransform textRect = (RectTransform)textObject.transform;
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = new Vector2(16f, 10f);
-            textRect.offsetMax = new Vector2(-12f, -10f);
+            textRect.offsetMin = new Vector2(16f, 8f);
+            textRect.offsetMax = new Vector2(-12f, -8f);
 
             _statusText = textObject.GetComponent<TextMeshProUGUI>();
+            if (_fontAsset != null)
+                _statusText.font = _fontAsset;
+
             _statusText.color = _textColor;
             _statusText.fontSize = 18f;
             _statusText.fontStyle = FontStyles.Bold;
-            _statusText.lineSpacing = 1f;
-            _statusText.alignment = TextAlignmentOptions.TopLeft;
+            _statusText.enableAutoSizing = true;
+            _statusText.fontSizeMin = 12f;
+            _statusText.fontSizeMax = 18f;
+            _statusText.alignment = TextAlignmentOptions.MidlineLeft;
             _statusText.raycastTarget = false;
             _statusText.richText = true;
         }

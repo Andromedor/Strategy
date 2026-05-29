@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Data;
 using DefaultNamespace;
+using TMPro;
+using UnitController;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +13,10 @@ namespace UI
         [Header("UI")]
         [SerializeField] private Transform _contentRoot;
         [SerializeField] private ProductionButtonUI _buttonPrefab;
+        [SerializeField] private TMP_Text _emptyText;
+        [SerializeField] private TeamType _team = TeamType.Player;
+        [SerializeField] private TMP_FontAsset _fontAsset;
+        [SerializeField] private Sprite _buttonSprite;
 
         private readonly List<ProductionButtonUI> _buttons = new();
         private BuildingProduction _currentFactory;
@@ -19,6 +25,7 @@ namespace UI
         {
             EventManager.OnFactorySelected += OpenFactory;
             ResourceManager.OnResourceChanged += RefreshButtons;
+            OpenFactory(GetInitialFactory());
         }
 
         private void OnDisable()
@@ -29,6 +36,9 @@ namespace UI
 
         private void OpenFactory(BuildingProduction factory)
         {
+            if (factory != null && !BelongsToTeam(factory))
+                factory = null;
+
             _currentFactory = factory;
 
             ClearButtons();
@@ -37,7 +47,12 @@ namespace UI
             ApplyLayout(validItems);
 
             if (factory == null)
+            {
+                SetEmptyText(string.Empty);
                 return;
+            }
+
+            SetEmptyText(string.Empty);
 
             foreach (ProductionItemData item in factory.Items)
             {
@@ -47,10 +62,12 @@ namespace UI
                 ProductionButtonUI button =
                     Instantiate(_buttonPrefab, _contentRoot);
 
+                button.SetStyle(_fontAsset, _buttonSprite);
                 button.Initialize(item, OnItemClicked);
                 _buttons.Add(button);
             }
 
+            RebuildLayout();
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
         }
 
@@ -74,6 +91,12 @@ namespace UI
 
         private void ClearButtons()
         {
+            if (_contentRoot == null)
+            {
+                _buttons.Clear();
+                return;
+            }
+
             foreach (Transform child in _contentRoot)
             {
                 Destroy(child.gameObject);
@@ -84,33 +107,40 @@ namespace UI
 
         private void ApplyLayout(int itemCount)
         {
-            RectTransform panelRect = transform as RectTransform;
+            GridLayoutGroup grid = _contentRoot != null
+                ? _contentRoot.GetComponent<GridLayoutGroup>()
+                : null;
 
-            if (panelRect != null)
-                panelRect.sizeDelta = new Vector2(Mathf.Max(210f, itemCount * 198f), 76f);
+            if (grid != null)
+            {
+                grid.cellSize = new Vector2(116f, 108f);
+                grid.spacing = new Vector2(8f, 8f);
+                grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                grid.constraintCount = 3;
+                grid.childAlignment = TextAnchor.UpperLeft;
+            }
 
-            RectTransform contentRect = _contentRoot as RectTransform;
+            ContentSizeFitter fitter = _contentRoot != null
+                ? _contentRoot.GetComponent<ContentSizeFitter>()
+                : null;
 
-            if (contentRect != null)
-                contentRect.sizeDelta = new Vector2(Mathf.Max(210f, itemCount * 198f), 76f);
-
-            ApplyHorizontalLayout(GetComponent<HorizontalLayoutGroup>());
-
-            if (_contentRoot != null)
-                ApplyHorizontalLayout(_contentRoot.GetComponent<HorizontalLayoutGroup>());
+            if (fitter != null)
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
-        private static void ApplyHorizontalLayout(HorizontalLayoutGroup layout)
+        private void RebuildLayout()
         {
-            if (layout == null)
+            if (_contentRoot is RectTransform rect)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        }
+
+        private void SetEmptyText(string message)
+        {
+            if (_emptyText == null)
                 return;
 
-            layout.spacing = 8f;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
+            _emptyText.text = message;
+            _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
         private static int CountValidItems(BuildingProduction factory)
@@ -127,6 +157,30 @@ namespace UI
             }
 
             return count;
+        }
+
+        private BuildingProduction GetInitialFactory()
+        {
+            if (SelectionManager.SelectedFactory != null && BelongsToTeam(SelectionManager.SelectedFactory))
+                return SelectionManager.SelectedFactory;
+
+            BuildingProduction[] factories = FindObjectsByType<BuildingProduction>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            for (int i = 0; i < factories.Length; i++)
+            {
+                if (factories[i] != null && factories[i].isActiveAndEnabled && BelongsToTeam(factories[i]))
+                    return factories[i];
+            }
+
+            return null;
+        }
+
+        private bool BelongsToTeam(Component component)
+        {
+            TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();
+            return teamComponent == null || teamComponent.Team == _team;
         }
     }
 }

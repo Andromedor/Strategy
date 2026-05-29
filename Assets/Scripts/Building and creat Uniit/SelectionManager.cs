@@ -37,6 +37,15 @@ public class SelectionManager : MonoBehaviour
 
          if (constructionCenter != null)
          {
+            TeamComponent teamComponent = constructionCenter.GetComponentInParent<TeamComponent>();
+            if (teamComponent != null && teamComponent.Team != TeamType.Player)
+            {
+               SelectedFactory = null;
+               EventManager.OnConstructionClosed?.Invoke();
+               EventManager.OnOpenPanel?.Invoke(PanelType.MainMenu);
+               return;
+            }
+
             SelectedFactory = null;
             
             EventManager.OnConstructionCenterSelected?.Invoke(constructionCenter);

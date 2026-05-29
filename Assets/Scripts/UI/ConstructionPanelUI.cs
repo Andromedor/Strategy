@@ -1,0 +1,335 @@
+using System.Collections.Generic;
+using DefaultNamespace;
+using TMPro;
+using UnitController;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace UI
+{
+    public class ConstructionPanelUI : MonoBehaviour
+    {
+        private static readonly Vector2 ButtonSize = new Vector2(116f, 108f);
+        private static readonly Color ButtonFillColor = new Color(0.03f, 0.45f, 0.85f, 1f);
+        private static readonly Color DisabledFillColor = new Color(0.48f, 0.54f, 0.58f, 0.85f);
+
+        [SerializeField] private Transform _contentRoot;
+        [SerializeField] private TMP_Text _emptyText;
+        [SerializeField] private BuildingPlacementManager _placementManager;
+        [SerializeField] private List<BuildingData> _buildings = new();
+        [SerializeField] private TeamType _team = TeamType.Player;
+        [SerializeField] private TMP_FontAsset _fontAsset;
+        [SerializeField] private Sprite _buttonSprite;
+
+        private readonly List<Button> _buttons = new();
+
+        private void OnEnable()
+        {
+            EventManager.OnConstructionCentersChanged += RefreshAvailability;
+            BuildButtons();
+            RefreshAvailability();
+        }
+
+        private void OnDisable()
+        {
+            EventManager.OnConstructionCentersChanged -= RefreshAvailability;
+        }
+
+        public void BuildButtons()
+        {
+            ClearButtons();
+
+            if (_contentRoot == null)
+                return;
+
+            if (_buildings == null || _buildings.Count == 0)
+            {
+                SetEmptyText("No buildings configured");
+                return;
+            }
+
+            SetEmptyText(string.Empty);
+            ApplyGrid();
+
+            for (int i = 0; i < _buildings.Count; i++)
+            {
+                BuildingData building = _buildings[i];
+
+                if (building == null)
+                    continue;
+
+                Button button = CreateButton(building);
+                _buttons.Add(button);
+            }
+
+            RebuildGrid();
+            RefreshAvailability();
+        }
+
+        private Button CreateButton(BuildingData building)
+        {
+            GameObject buttonObject = new GameObject(
+                "Build_" + GetDisplayName(building),
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Button));
+
+            buttonObject.transform.SetParent(_contentRoot, false);
+
+            RectTransform rect = (RectTransform)buttonObject.transform;
+            rect.sizeDelta = ButtonSize;
+
+            Image background = buttonObject.GetComponent<Image>();
+            background.color = ButtonFillColor;
+            background.sprite = null;
+            background.type = Image.Type.Simple;
+
+            Outline outline = buttonObject.AddComponent<Outline>();
+            outline.effectColor = new Color(1f, 1f, 1f, 0.88f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = background;
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(0.78f, 0.86f, 1f, 1f);
+            colors.pressedColor = Color.white;
+            colors.selectedColor = new Color(0.78f, 0.86f, 1f, 1f);
+            colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.78f);
+            button.colors = colors;
+            button.onClick.AddListener(() => StartPlacement(building));
+
+            CreateText(buttonObject.transform, "Action", "Build", 13f, FontStyles.Bold,
+                TextAlignmentOptions.Center, new Vector2(0f, -6f), new Vector2(96f, 18f), true);
+
+            if (!CreateIcon(buttonObject.transform, building.Icon))
+            {
+                CreateText(buttonObject.transform, "FallbackIcon", "BUILD", 20f, FontStyles.Bold,
+                    TextAlignmentOptions.Center, new Vector2(0f, -26f), new Vector2(82f, 32f), true);
+            }
+
+            CreateText(buttonObject.transform, "Name", GetDisplayName(building), 16f, FontStyles.Bold,
+                TextAlignmentOptions.Center, new Vector2(0f, -60f), new Vector2(106f, 30f), true);
+            CreateText(buttonObject.transform, "Cost", "$" + Mathf.Max(0, building.economy), 14f, FontStyles.Normal,
+                TextAlignmentOptions.Left, new Vector2(9f, 8f), new Vector2(48f, 21f), false);
+            CreateText(buttonObject.transform, "Time", FormatSeconds(building.BuildTime), 14f, FontStyles.Normal,
+                TextAlignmentOptions.Right, new Vector2(-9f, 8f), new Vector2(50f, 20f), false);
+
+            return button;
+        }
+
+        private bool CreateIcon(Transform parent, Sprite icon)
+        {
+            GameObject iconObject = new GameObject(
+                "Icon",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            iconObject.transform.SetParent(parent, false);
+
+            RectTransform rect = (RectTransform)iconObject.transform;
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -26f);
+            rect.sizeDelta = new Vector2(54f, 34f);
+
+            Image image = iconObject.GetComponent<Image>();
+            image.sprite = icon;
+            image.enabled = icon != null;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = Color.white;
+
+            return icon != null;
+        }
+
+        private TMP_Text CreateText(
+            Transform parent,
+            string objectName,
+            string text,
+            float fontSize,
+            FontStyles style,
+            TextAlignmentOptions alignment,
+            Vector2 position,
+            Vector2 size,
+            bool top)
+        {
+            GameObject textObject = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+
+            textObject.transform.SetParent(parent, false);
+
+            RectTransform rect = (RectTransform)textObject.transform;
+            if (top)
+            {
+                rect.anchorMin = new Vector2(0.5f, 1f);
+                rect.anchorMax = new Vector2(0.5f, 1f);
+                rect.pivot = new Vector2(0.5f, 1f);
+            }
+            else if (position.x < 0f)
+            {
+                rect.anchorMin = new Vector2(1f, 0f);
+                rect.anchorMax = new Vector2(1f, 0f);
+                rect.pivot = new Vector2(1f, 0f);
+            }
+            else
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.zero;
+                rect.pivot = Vector2.zero;
+            }
+
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+
+            TMP_Text label = textObject.GetComponent<TMP_Text>();
+            if (_fontAsset != null)
+                label.font = _fontAsset;
+
+            label.text = text;
+            label.fontSize = fontSize;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 12f;
+            label.fontSizeMax = fontSize;
+            label.fontStyle = style;
+            label.alignment = alignment;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.color = Color.white;
+            label.raycastTarget = false;
+            return label;
+        }
+
+        private void StartPlacement(BuildingData building)
+        {
+            if (_placementManager == null)
+                _placementManager = FindFirstObjectByType<BuildingPlacementManager>();
+
+            if (_placementManager == null || building == null)
+                return;
+
+            if (!HasPlayerConstructionCenter())
+                return;
+
+            _placementManager.StartPlacement(building);
+        }
+
+        private void RefreshAvailability()
+        {
+            bool hasBuildArea = HasPlayerConstructionCenter();
+
+            for (int i = 0; i < _buttons.Count; i++)
+            {
+                if (_buttons[i] != null)
+                {
+                    _buttons[i].interactable = hasBuildArea;
+                    if (_buttons[i].targetGraphic is Image background)
+                        background.color = hasBuildArea ? ButtonFillColor : DisabledFillColor;
+                }
+            }
+        }
+
+        private void ClearButtons()
+        {
+            if (_contentRoot != null)
+            {
+                foreach (Transform child in _contentRoot)
+                    Destroy(child.gameObject);
+            }
+
+            _buttons.Clear();
+        }
+
+        private void ApplyGrid()
+        {
+            GridLayoutGroup grid = _contentRoot.GetComponent<GridLayoutGroup>();
+
+            if (grid == null)
+                return;
+
+            grid.cellSize = ButtonSize;
+            grid.spacing = new Vector2(8f, 8f);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 3;
+            grid.childAlignment = TextAnchor.UpperLeft;
+
+            ContentSizeFitter fitter = _contentRoot.GetComponent<ContentSizeFitter>();
+            if (fitter != null)
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        }
+
+        private void RebuildGrid()
+        {
+            if (_contentRoot is RectTransform rect)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        }
+
+        private void SetEmptyText(string message)
+        {
+            if (_emptyText == null)
+                return;
+
+            _emptyText.text = message;
+            _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
+        }
+
+        private static string GetDisplayName(BuildingData building)
+        {
+            string value = building != null && !string.IsNullOrWhiteSpace(building.BuildingName)
+                ? building.BuildingName
+                : building != null
+                    ? building.name
+                    : null;
+
+            if (string.IsNullOrWhiteSpace(value))
+                return "Building";
+
+            return value
+                .Replace("HeavyFactory", "Heavy Factory")
+                .Replace("_", " ")
+                .Trim();
+        }
+
+        private static string FormatSeconds(float seconds)
+        {
+            if (seconds <= 0f)
+                return "0s";
+
+            return Mathf.Approximately(seconds, Mathf.Round(seconds))
+                ? Mathf.RoundToInt(seconds) + "s"
+                : seconds.ToString("0.#") + "s";
+        }
+
+        private bool HasPlayerConstructionCenter()
+        {
+            foreach (ConstructionCenter center in ConstructionCenter.All)
+            {
+                if (center != null && center.isActiveAndEnabled && BelongsToTeam(center))
+                    return true;
+            }
+
+            ConstructionCenter[] centers = FindObjectsByType<ConstructionCenter>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            for (int i = 0; i < centers.Length; i++)
+            {
+                if (centers[i] != null && centers[i].isActiveAndEnabled && BelongsToTeam(centers[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool BelongsToTeam(Component component)
+        {
+            TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();
+            return teamComponent == null || teamComponent.Team == _team;
+        }
+    }
+}

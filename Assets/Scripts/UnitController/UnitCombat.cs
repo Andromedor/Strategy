@@ -35,6 +35,9 @@ public class UnitCombat : MonoBehaviour, IDamageable
 
     public TeamType Team => _teamComponent != null ? _teamComponent.Team : TeamType.Player;
     public float AttackRange => _unitData != null ? _unitData.AttackRange : 0f;
+    public UnitData UnitData => _unitData;
+    public float MaxHealth => _unitData != null ? _unitData.MaxHealth : 0f;
+    public float CurrentHealth => _health != null ? _health.CurrentHealth : MaxHealth;
 
     protected virtual void Awake()
     {

@@ -17,9 +17,15 @@ public class UIManager : MonoBehaviour
    {
        _panelDictionary = new Dictionary<PanelType, GameObject>();
 
+       if (_panels == null)
+           return;
+
        foreach (var panel in _panels)
        {
-           _panelDictionary.Add(panel.type, panel.panelObject);
+           if (panel == null || panel.panelObject == null)
+               continue;
+
+           _panelDictionary[panel.type] = panel.panelObject;
        }
    }
    
@@ -38,13 +44,16 @@ public class UIManager : MonoBehaviour
        OpenPanel(PanelType.MainMenu);
    }
 
-   private void OpenPanel(PanelType type)
+   public void OpenPanel(PanelType type)
    {
        foreach (var panel in _panelDictionary.Values)
-           panel.SetActive(false);
+       {
+           if (panel != null)
+               panel.SetActive(false);
+       }
 
-       if (_panelDictionary.ContainsKey(type))
-           _panelDictionary[type].SetActive(true);
+       if (_panelDictionary.TryGetValue(type, out GameObject panelObject) && panelObject != null)
+           panelObject.SetActive(true);
    }
 }
 

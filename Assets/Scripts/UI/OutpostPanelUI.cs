@@ -6,12 +6,13 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    public class OutpostPanelUI: MonoBehaviour
+    public class OutpostPanelUI : MonoBehaviour
     {
         [Header("UI")]
         [SerializeField] private Button _upgradeButton;
         [SerializeField] private TMP_Text _costText;
         [SerializeField] private TMP_Text _resourceText;
+        [SerializeField] private TMP_FontAsset _fontAsset;
 
         private Outpost _currentOutpost;
         private TMP_Text _upgradeButtonText;
@@ -62,18 +63,9 @@ namespace UI
 
             if (_costText != null)
             {
-                if (_currentOutpost.IsUpgraded)
-                {
-                    _costText.text =
-                        "Аванпост покращено\n" +
-                        "Будівництво доступне";
-                }
-                else
-                {
-                    _costText.text =
-                        "Покращення аванпоста\n" +
-                        $"Ціна: {_currentOutpost.UpgradeCost} грошей";
-                }
+                _costText.text = _currentOutpost.IsUpgraded
+                    ? "Outpost upgraded\nBuild area unlocked"
+                    : $"Upgrade outpost\nCost: {_currentOutpost.UpgradeCost}";
             }
 
             UpdateResourceText(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
@@ -82,7 +74,7 @@ namespace UI
         private void UpdateResourceText(int resource)
         {
             if (_resourceText != null)
-                _resourceText.text = $"Ваші гроші: {resource}";
+                _resourceText.text = $"Resources: {resource}";
 
             RefreshButton();
         }
@@ -101,16 +93,16 @@ namespace UI
 
             if (_currentOutpost == null)
             {
-                _upgradeButtonText.text = "Покращити";
+                _upgradeButtonText.text = "Upgrade";
                 return;
             }
 
             if (_currentOutpost.IsUpgraded)
-                _upgradeButtonText.text = "Вже покращено";
+                _upgradeButtonText.text = "Upgraded";
             else if (!_currentOutpost.CanUpgrade)
-                _upgradeButtonText.text = "Недостатньо грошей";
+                _upgradeButtonText.text = "Need resources";
             else
-                _upgradeButtonText.text = "Покращити аванпост";
+                _upgradeButtonText.text = "Upgrade Outpost";
         }
 
         private void Upgrade()
@@ -133,32 +125,43 @@ namespace UI
             RectTransform panelRect = transform as RectTransform;
 
             if (panelRect != null)
-                panelRect.sizeDelta = new Vector2(360f, 150f);
+            {
+                panelRect.anchorMin = Vector2.zero;
+                panelRect.anchorMax = Vector2.one;
+                panelRect.offsetMin = Vector2.zero;
+                panelRect.offsetMax = Vector2.zero;
+            }
 
             SetTextStyle(_costText, 18f, TextAlignmentOptions.Center);
-            SetTextStyle(_resourceText, 17f, TextAlignmentOptions.Center);
-            SetTextStyle(_upgradeButtonText, 18f, TextAlignmentOptions.Center);
+            SetTextStyle(_resourceText, 16f, TextAlignmentOptions.Center);
+            SetTextStyle(_upgradeButtonText, 16f, TextAlignmentOptions.Center);
+            if (_upgradeButtonText != null)
+                _upgradeButtonText.color = Color.white;
 
-            SetRect(_costText != null ? _costText.rectTransform : null, new Vector2(0f, 42f), new Vector2(330f, 58f));
-            SetRect(_resourceText != null ? _resourceText.rectTransform : null, new Vector2(0f, 0f), new Vector2(330f, 28f));
+            SetRect(_costText != null ? _costText.rectTransform : null, new Vector2(0f, -26f), new Vector2(300f, 58f), true);
+            SetRect(_resourceText != null ? _resourceText.rectTransform : null, new Vector2(0f, -90f), new Vector2(300f, 28f), true);
 
             if (_upgradeButton != null)
-                SetRect(_upgradeButton.transform as RectTransform, new Vector2(0f, -50f), new Vector2(260f, 38f));
+                SetRect(_upgradeButton.transform as RectTransform, new Vector2(0f, 38f), new Vector2(260f, 42f), false);
 
             if (_upgradeButtonText != null)
-                SetRect(_upgradeButtonText.rectTransform, Vector2.zero, Vector2.zero, true);
+                SetRect(_upgradeButtonText.rectTransform, Vector2.zero, Vector2.zero, false, true);
         }
 
-        private static void SetTextStyle(TMP_Text text, float fontSize, TextAlignmentOptions alignment)
+        private void SetTextStyle(TMP_Text text, float fontSize, TextAlignmentOptions alignment)
         {
             if (text == null)
                 return;
 
+            if (_fontAsset != null)
+                text.font = _fontAsset;
+
             text.fontSize = fontSize;
             text.enableAutoSizing = true;
-            text.fontSizeMin = 12f;
+            text.fontSizeMin = 14f;
             text.fontSizeMax = fontSize;
             text.alignment = alignment;
+            text.color = new Color(0.04f, 0.075f, 0.11f, 1f);
             text.raycastTarget = false;
         }
 
@@ -166,6 +169,7 @@ namespace UI
             RectTransform rectTransform,
             Vector2 anchoredPosition,
             Vector2 size,
+            bool top,
             bool stretch = false)
         {
             if (rectTransform == null)
@@ -180,9 +184,9 @@ namespace UI
                 return;
             }
 
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMin = top ? new Vector2(0.5f, 1f) : new Vector2(0.5f, 0f);
+            rectTransform.anchorMax = top ? new Vector2(0.5f, 1f) : new Vector2(0.5f, 0f);
+            rectTransform.pivot = top ? new Vector2(0.5f, 1f) : new Vector2(0.5f, 0f);
             rectTransform.anchoredPosition = anchoredPosition;
             rectTransform.sizeDelta = size;
         }
