@@ -6,31 +6,36 @@ namespace UnitController
     [RequireComponent(typeof(NavMeshAgent))]
     public class NavMeshVehicleMotor : MonoBehaviour
     {
-        [SerializeField] private NavMeshAgent _agent;
-        [SerializeField] private bool _applyAgentTuning = true;
-        [SerializeField] private float _cruiseSpeed = 5.2f;
-        [SerializeField] private float _acceleration = 5.2f;
-        [SerializeField] private float _stoppingDistance = 1.45f;
-        [SerializeField] private float _maxSteerAngle = 28f;
-        [SerializeField] private float _steerResponsiveness = 7f;
-        [SerializeField] private float _maxSteerSpeed = 125f;
-        [SerializeField] private float _bodyTurnSpeed = 150f;
-        [SerializeField] private float _sharpTurnSlowdownAngle = 95f;
-        [SerializeField] private float _minimumForwardSpeed = 0f;
-        [SerializeField] private float _alignmentStopAngle = 105f;
-        [SerializeField] private float _alignmentResumeAngle = 68f;
+        [SerializeField] protected NavMeshAgent _agent;
+        [SerializeField] protected bool _applyAgentTuning = true;
+        [SerializeField] protected float _cruiseSpeed = 5.2f;
+        [SerializeField] protected float _acceleration = 5.2f;
+        [SerializeField] protected float _stoppingDistance = 1.45f;
+        [SerializeField] protected float _maxSteerAngle = 28f;
+        [SerializeField] protected float _steerResponsiveness = 7f;
+        [SerializeField] protected float _maxSteerSpeed = 125f;
+        [SerializeField] protected float _bodyTurnSpeed = 150f;
+        [SerializeField] protected float _sharpTurnSlowdownAngle = 95f;
+        [SerializeField] protected float _minimumForwardSpeed = 0f;
+        [SerializeField] protected float _alignmentStopAngle = 105f;
+        [SerializeField] protected float _alignmentResumeAngle = 68f;
 
-        private Vector3 _lastPosition;
-        private Vector3 _currentVelocity;
-        private float _currentSpeed;
-        private float _currentSteerAngle;
-        private bool _waitingForAlignment;
+        protected Vector3 _lastPosition;
+        protected Vector3 _currentVelocity;
+        protected float _currentSpeed;
+        protected float _currentSteerAngle;
+        protected bool _waitingForAlignment;
 
         public float CurrentSpeed => _currentSpeed;
         public float CurrentSteerAngle => _currentSteerAngle;
         public Vector3 CurrentVelocity => _currentVelocity;
 
-        private void Awake()
+        protected NavMeshAgent Agent => _agent;
+        protected float CruiseSpeed => _cruiseSpeed;
+        protected float AlignmentResumeAngle => _alignmentResumeAngle;
+        protected bool WaitingForAlignment => _waitingForAlignment;
+
+        protected virtual void Awake()
         {
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
@@ -38,7 +43,7 @@ namespace UnitController
             ApplyAgentTuning();
         }
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
@@ -52,13 +57,13 @@ namespace UnitController
             ApplyAgentTuning();
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             if (_agent != null && _agent.enabled && _agent.isOnNavMesh)
                 _agent.isStopped = false;
         }
 
-        private void OnValidate()
+        protected virtual void OnValidate()
         {
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
@@ -66,7 +71,7 @@ namespace UnitController
             ApplyAgentTuning();
         }
 
-        private void Update()
+        protected virtual void Update()
         {
             float deltaTime = Time.deltaTime;
 
@@ -78,21 +83,28 @@ namespace UnitController
             if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
             {
                 UpdateSteering(Vector3.zero, deltaTime);
+                OnMotorUpdated(Vector3.zero, false, 0f, deltaTime);
                 return;
             }
 
             Vector3 headingDirection = GetHeadingDirection();
             bool hasHeading = headingDirection.sqrMagnitude > 0.001f;
-            float headingAngle = hasHeading
-                ? Mathf.Abs(Vector3.SignedAngle(transform.forward, headingDirection, Vector3.up))
+            float signedHeadingAngle = hasHeading
+                ? Vector3.SignedAngle(transform.forward, headingDirection, Vector3.up)
                 : 0f;
+            float headingAngle = Mathf.Abs(signedHeadingAngle);
 
             UpdateAgentSpeed(headingAngle, hasHeading);
             UpdateBodyRotation(headingDirection, deltaTime);
             UpdateSteering(hasHeading ? headingDirection : Vector3.zero, deltaTime);
+            OnMotorUpdated(
+                hasHeading ? headingDirection : Vector3.zero,
+                hasHeading,
+                signedHeadingAngle,
+                deltaTime);
         }
 
-        private void ApplyAgentTuning()
+        protected virtual void ApplyAgentTuning()
         {
             if (!_applyAgentTuning || _agent == null)
                 return;
@@ -106,7 +118,7 @@ namespace UnitController
             _agent.autoBraking = true;
         }
 
-        private void UpdateMeasuredVelocity(float deltaTime)
+        protected virtual void UpdateMeasuredVelocity(float deltaTime)
         {
             Vector3 positionDelta = transform.position - _lastPosition;
             _lastPosition = transform.position;
@@ -126,7 +138,7 @@ namespace UnitController
             _currentSpeed = Vector3.Dot(_currentVelocity, transform.forward);
         }
 
-        private Vector3 GetHeadingDirection()
+        protected virtual Vector3 GetHeadingDirection()
         {
             if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
                 return Vector3.zero;
@@ -158,7 +170,7 @@ namespace UnitController
             return Vector3.zero;
         }
 
-        private void UpdateAgentSpeed(float headingAngle, bool hasHeading)
+        protected virtual void UpdateAgentSpeed(float headingAngle, bool hasHeading)
         {
             if (!hasHeading || !_agent.hasPath || _agent.pathPending)
             {
@@ -192,7 +204,7 @@ namespace UnitController
             _agent.speed = Mathf.Lerp(_cruiseSpeed, _minimumForwardSpeed, turnT);
         }
 
-        private void UpdateBodyRotation(Vector3 headingDirection, float deltaTime)
+        protected virtual void UpdateBodyRotation(Vector3 headingDirection, float deltaTime)
         {
             if (headingDirection.sqrMagnitude <= 0.001f)
                 return;
@@ -204,7 +216,7 @@ namespace UnitController
                 Mathf.Max(1f, _bodyTurnSpeed) * deltaTime);
         }
 
-        private void UpdateSteering(Vector3 headingDirection, float deltaTime)
+        protected virtual void UpdateSteering(Vector3 headingDirection, float deltaTime)
         {
             float targetSteerAngle = 0f;
 
@@ -221,6 +233,14 @@ namespace UnitController
                 _currentSteerAngle,
                 blendedTarget,
                 Mathf.Max(1f, _maxSteerSpeed) * deltaTime);
+        }
+
+        protected virtual void OnMotorUpdated(
+            Vector3 headingDirection,
+            bool hasHeading,
+            float signedHeadingAngle,
+            float deltaTime)
+        {
         }
     }
 }

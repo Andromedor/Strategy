@@ -91,11 +91,15 @@ public static class SelfPropelledArtilleryPrefabBuilder
         agent.baseOffset = -0.08f;
         agent.speed = 2.65f;
         agent.angularSpeed = 360f;
-        agent.acceleration = 7f;
+        agent.acceleration = 3.8f;
         agent.stoppingDistance = 3.6f;
+        agent.autoBraking = true;
+        agent.updatePosition = true;
+        agent.updateRotation = false;
 
         ArtilleryWeapon combat = root.AddComponent<ArtilleryWeapon>();
         TankCannonEffects cannonEffects = root.AddComponent<TankCannonEffects>();
+        TrackedVehicleMotor vehicleMotor = root.AddComponent<TrackedVehicleMotor>();
         TankTrackAnimator trackAnimator = root.AddComponent<TankTrackAnimator>();
         UnitSelectionState selectionState = root.AddComponent<UnitSelectionState>();
         ArtilleryRangeIndicator rangeIndicator = root.AddComponent<ArtilleryRangeIndicator>();
@@ -125,7 +129,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetFloat(combat, "_splashRadius", 4.6f);
         SetFloat(combat, "_maxMissRadius", 10f);
 
+        ConfigureVehicleMotor(vehicleMotor, agent);
         SetObjectReference(trackAnimator, "_agent", agent);
+        SetObjectReference(trackAnimator, "_vehicleMotor", vehicleMotor);
         SetInt(trackAnimator, "_segmentsPerRun", 30);
         SetInt(trackAnimator, "_endSegmentsPerLoop", 14);
         SetFloat(trackAnimator, "_trackHalfWidth", 2.29f);
@@ -307,6 +313,29 @@ public static class SelfPropelledArtilleryPrefabBuilder
         EditorUtility.SetDirty(data);
     }
 
+    private static void ConfigureVehicleMotor(TrackedVehicleMotor vehicleMotor, NavMeshAgent agent)
+    {
+        SetObjectReference(vehicleMotor, "_agent", agent);
+        SetBool(vehicleMotor, "_applyAgentTuning", true);
+        SetFloat(vehicleMotor, "_cruiseSpeed", 2.65f);
+        SetFloat(vehicleMotor, "_acceleration", 3.8f);
+        SetFloat(vehicleMotor, "_stoppingDistance", 3.6f);
+        SetFloat(vehicleMotor, "_maxSteerAngle", 45f);
+        SetFloat(vehicleMotor, "_steerResponsiveness", 7f);
+        SetFloat(vehicleMotor, "_maxSteerSpeed", 120f);
+        SetFloat(vehicleMotor, "_bodyTurnSpeed", 82f);
+        SetFloat(vehicleMotor, "_sharpTurnSlowdownAngle", 78f);
+        SetFloat(vehicleMotor, "_minimumForwardSpeed", 0.25f);
+        SetFloat(vehicleMotor, "_alignmentStopAngle", 98f);
+        SetFloat(vehicleMotor, "_alignmentResumeAngle", 42f);
+        SetFloat(vehicleMotor, "_pivotTrackSpeed", 1.9f);
+        SetFloat(vehicleMotor, "_minimumPivotTrackSpeed", 0.9f);
+        SetFloat(vehicleMotor, "_curveDifferentialMultiplier", 0.62f);
+        SetFloat(vehicleMotor, "_minimumCurveDifferentialSpeed", 0.28f);
+        SetFloat(vehicleMotor, "_fullDifferentialAngle", 70f);
+        SetFloat(vehicleMotor, "_trackResponse", 9f);
+    }
+
     private static GameObject CreateSelectionVisual(Transform parent, int layer)
     {
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -411,6 +440,17 @@ public static class SelfPropelledArtilleryPrefabBuilder
             return;
 
         property.floatValue = value;
+        serializedObject.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void SetBool(Object target, string propertyName, bool value)
+    {
+        SerializedObject serializedObject = new SerializedObject(target);
+        SerializedProperty property = serializedObject.FindProperty(propertyName);
+        if (property == null)
+            return;
+
+        property.boolValue = value;
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 

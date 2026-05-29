@@ -109,6 +109,7 @@ GameObject:
   - component: {fileID: 8458640277384834160}
   - component: {fileID: 6576288370569884980}
   - component: {fileID: 2318805463429717440}
+  - component: {fileID: 8641553822425088285}
   m_Layer: 7
   m_Name: unit_SelfPropelledArtillery
   m_TagString: Player
@@ -192,7 +193,7 @@ NavMeshAgent:
   m_AgentTypeID: 0
   m_Radius: 2.35
   m_Speed: 2.65
-  m_Acceleration: 7
+  m_Acceleration: 3.8
   avoidancePriority: 50
   m_AngularSpeed: 360
   m_StoppingDistance: 3.6
@@ -273,6 +274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitController.TankTrackAnimator
   _agent: {fileID: 9065919247961578524}
+  _vehicleMotor: {fileID: 8641553822425088285}
   _segmentsPerRun: 30
   _endSegmentsPerLoop: 14
   _trackHalfWidth: 2.29
@@ -281,6 +283,7 @@ MonoBehaviour:
   _trackVerticalSpacing: 0.78
   _segmentScale: {x: 0.15, y: 0.09, z: 0.22}
   _scrollSpeedMultiplier: 1.55
+  _maxVisualTrackSpeed: 7
   _moveThreshold: 0.08
   _trackColor: {r: 0.075, g: 0.07, b: 0.06, a: 1}
 --- !u!114 &6776314563884587631
@@ -343,6 +346,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Building_and_creat_Uniit.UnitSpawnActivator
   _exitMoveSpeed: 3.4
   _exitDistance: 0.25
+  _navMeshSnapRadius: 6
+  _navMeshFallbackSnapRadius: 14
+--- !u!114 &8641553822425088285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062518315741475719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e2aa777322adb745b0a7417415a81fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitController.TrackedVehicleMotor
+  _agent: {fileID: 9065919247961578524}
+  _applyAgentTuning: 1
+  _cruiseSpeed: 2.65
+  _acceleration: 3.8
+  _stoppingDistance: 3.6
+  _maxSteerAngle: 45
+  _steerResponsiveness: 7
+  _maxSteerSpeed: 130
+  _bodyTurnSpeed: 82
+  _sharpTurnSlowdownAngle: 78
+  _minimumForwardSpeed: 0.25
+  _alignmentStopAngle: 98
+  _alignmentResumeAngle: 42
+  _pivotTrackSpeed: 1.9
+  _minimumPivotTrackSpeed: 0.9
+  _curveDifferentialMultiplier: 0.62
+  _minimumCurveDifferentialSpeed: 0.28
+  _fullDifferentialAngle: 70
+  _trackResponse: 9
 --- !u!1001 &3338183329349780627
 PrefabInstance:
   m_ObjectHideFlags: 0

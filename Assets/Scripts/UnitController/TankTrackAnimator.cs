@@ -8,6 +8,7 @@ namespace UnitController
     public class TankTrackAnimator : MonoBehaviour
     {
         [SerializeField] private NavMeshAgent _agent;
+        [SerializeField] private TrackedVehicleMotor _vehicleMotor;
         [SerializeField] private int _segmentsPerRun = 10;
         [SerializeField] private int _endSegmentsPerLoop = 6;
         [SerializeField] private float _trackHalfWidth = 1.58f;
@@ -16,6 +17,7 @@ namespace UnitController
         [SerializeField] private float _trackVerticalSpacing = 0.42f;
         [SerializeField] private Vector3 _segmentScale = new Vector3(0.24f, 0.075f, 0.34f);
         [SerializeField] private float _scrollSpeedMultiplier = 1.55f;
+        [SerializeField] private float _maxVisualTrackSpeed = 8f;
         [SerializeField] private float _moveThreshold = 0.08f;
         [SerializeField] private Color _trackColor = new Color(0.075f, 0.07f, 0.06f, 1f);
 
@@ -23,7 +25,8 @@ namespace UnitController
         private Transform _trackRoot;
         private Material _trackMaterial;
         private Vector3 _lastPosition;
-        private float _trackOffset;
+        private float _leftTrackOffset;
+        private float _rightTrackOffset;
         private bool _hasLastPosition;
         private float _loopLength;
 
@@ -37,7 +40,19 @@ namespace UnitController
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
 
+            if (_vehicleMotor == null)
+                _vehicleMotor = GetComponent<TrackedVehicleMotor>();
+
             BuildSegments();
+        }
+
+        private void OnValidate()
+        {
+            if (_agent == null)
+                _agent = GetComponent<NavMeshAgent>();
+
+            if (_vehicleMotor == null)
+                _vehicleMotor = GetComponent<TrackedVehicleMotor>();
         }
 
         /// <summary>
@@ -59,21 +74,16 @@ namespace UnitController
             if (deltaTime <= 0f)
                 return;
 
-            Vector3 velocity = GetVelocity(deltaTime);
-            Vector3 localVelocity = transform.InverseTransformDirection(velocity);
-            float speed = velocity.magnitude;
-
-            if (speed < _moveThreshold)
-                return;
-
             if (_loopLength <= 0f)
                 return;
 
-            float direction = Mathf.Abs(localVelocity.z) > 0.02f
-                ? Mathf.Sign(localVelocity.z)
-                : 1f;
+            GetTrackSpeeds(deltaTime, out float leftSpeed, out float rightSpeed);
 
-            _trackOffset = WrapOffset(_trackOffset - direction * speed * _scrollSpeedMultiplier * deltaTime);
+            if (Mathf.Abs(leftSpeed) < _moveThreshold && Mathf.Abs(rightSpeed) < _moveThreshold)
+                return;
+
+            _leftTrackOffset = WrapOffset(_leftTrackOffset - leftSpeed * _scrollSpeedMultiplier * deltaTime);
+            _rightTrackOffset = WrapOffset(_rightTrackOffset - rightSpeed * _scrollSpeedMultiplier * deltaTime);
             UpdateSegmentPositions();
         }
 
@@ -97,6 +107,9 @@ namespace UnitController
         private void BuildSegments()
         {
             if (_segmentsPerRun <= 0)
+                return;
+
+            if (_trackRoot != null)
                 return;
 
             _trackRoot = new GameObject("Track Motion Visuals").transform;
@@ -178,12 +191,35 @@ namespace UnitController
             for (int i = 0; i < _segments.Count; i++)
             {
                 TrackSegment segment = _segments[i];
-                float distance = Mathf.Repeat(segment.BaseDistance + _trackOffset, _loopLength);
+                float offset = segment.Side < 0f ? _leftTrackOffset : _rightTrackOffset;
+                float distance = Mathf.Repeat(segment.BaseDistance + offset, _loopLength);
                 TrackPose pose = EvaluateTrackPose(distance);
 
                 segment.Transform.localPosition = new Vector3(segment.Side * _trackHalfWidth, pose.Y, pose.Z);
                 segment.Transform.localRotation = Quaternion.Euler(pose.Pitch, 0f, 0f);
             }
+        }
+
+        private void GetTrackSpeeds(float deltaTime, out float leftSpeed, out float rightSpeed)
+        {
+            if (_vehicleMotor != null && _vehicleMotor.enabled)
+            {
+                leftSpeed = ClampVisualSpeed(_vehicleMotor.LeftTrackSpeed);
+                rightSpeed = ClampVisualSpeed(_vehicleMotor.RightTrackSpeed);
+                return;
+            }
+
+            Vector3 velocity = GetVelocity(deltaTime);
+            float forwardSpeed = transform.InverseTransformDirection(velocity).z;
+
+            leftSpeed = ClampVisualSpeed(forwardSpeed);
+            rightSpeed = ClampVisualSpeed(forwardSpeed);
+        }
+
+        private float ClampVisualSpeed(float speed)
+        {
+            float maxSpeed = Mathf.Max(0.1f, _maxVisualTrackSpeed);
+            return Mathf.Clamp(speed, -maxSpeed, maxSpeed);
         }
 
         /// <summary>
