@@ -10,6 +10,12 @@ using UnityEngine.AI;
 
 using Strategy.Core;
 using Strategy.UI;
+
+/// <summary>
+/// Editor-only tool that fully rebuilds the Self-Propelled Artillery (SPA) prefab from scratch.
+/// Invoked via menu Tools/RTS/Rebuild Self-Propelled Artillery. Creates the prefab, assigns
+/// all components, wires serialized references, and updates UnitData and ProductionItemData assets.
+/// </summary>
 public static class SelfPropelledArtilleryPrefabBuilder
 {
     private const string ModelPath = "Assets/Models/SelfPropelledArtillery/SelfPropelledArtillery.fbx";
@@ -20,6 +26,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     private const string SelectionMaterialPath = "Assets/Material/SelectionVisual.mat";
     private const string MaterialFolderPath = "Assets/Models/SelfPropelledArtillery/Materials";
 
+    // Per-material color/roughness/metallic values keyed by the exact material name in the FBX.
     private static readonly Dictionary<string, MaterialSettings> MaterialSettingsByName =
         new Dictionary<string, MaterialSettings>
         {
@@ -37,6 +44,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
             { "SPG_Lamp_Amber", new MaterialSettings(new Color(1f, 0.65f, 0.13f, 1f), 0.3f, 0f) },
         };
 
+    /// <summary>
+    /// Entry point for the menu item. Builds the SPA prefab from the FBX model, attaches all
+    /// required components, saves the prefab asset, and updates balance/production data.
+    /// </summary>
     [MenuItem("Tools/RTS/Rebuild Self-Propelled Artillery")]
     public static void Build()
     {
@@ -110,6 +121,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
 
         GameObject selectionVisual = CreateSelectionVisual(root.transform, root.layer);
 
+        // Wire serialized fields on ArtilleryWeapon using reflection-free SerializedObject access.
         SetObjectReference(combat, "_unitData", unitData);
         SetObjectReference(combat, "_pointPosition", muzzle);
         SetObjectReference(combat, "_shotEffects", cannonEffects);
@@ -122,6 +134,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetInt(cannonEffects, "_flashParticles", 26);
         SetInt(cannonEffects, "_smokeParticles", 36);
 
+        // Artillery-specific aiming and accuracy parameters.
         SetFloat(combat, "_minElevationAngle", 10f);
         SetFloat(combat, "_maxElevationAngle", 52f);
         SetFloat(combat, "_minElevationDistanceRatio", 0.08f);
@@ -157,6 +170,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         if (prefab == null)
             throw new System.InvalidOperationException($"Could not save prefab: {PrefabPath}");
 
+        // Re-configure UnitData now that the saved prefab asset exists.
         ConfigureUnitData(unitData, prefab);
 
         ProductionItemData productionItem = LoadOrCreate<ProductionItemData>(ProductionItemPath);
@@ -171,6 +185,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         Debug.Log($"Self-propelled artillery prefab rebuilt: {PrefabPath}");
     }
 
+    /// <summary>
+    /// Ensures the FBX model importer has axis-conversion baking disabled, then force-reimports.
+    /// Prevents incorrect orientation when the model is instantiated into the prefab.
+    /// </summary>
     private static void ConfigureModelImporter()
     {
         ModelImporter importer = AssetImporter.GetAtPath(ModelPath) as ModelImporter;
@@ -195,6 +213,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
             AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
     }
 
+    /// <summary>
+    /// Iterates every MeshRenderer on the model and replaces its materials with project assets
+    /// created from the <see cref="MaterialSettingsByName"/> table, creating new material assets as needed.
+    /// </summary>
     private static void ConfigureModelMaterials(GameObject modelInstance)
     {
         EnsureFolder(MaterialFolderPath);
@@ -216,6 +238,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         }
     }
 
+    /// <summary>
+    /// Loads a material asset by name from the materials folder, or creates one with URP/Standard
+    /// shader if it does not exist yet, then applies the preset color/smoothness/metallic values.
+    /// </summary>
     private static Material LoadOrCreateMaterial(string materialName)
     {
         if (!MaterialSettingsByName.TryGetValue(materialName, out MaterialSettings settings))
@@ -243,6 +269,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         return material;
     }
 
+    /// <summary>
+    /// Applies color, smoothness, and metallic values to a material, checking for each shader
+    /// property by name so the method works with both URP and the Built-in pipeline.
+    /// </summary>
     private static void SetMaterialProperties(Material material, MaterialSettings settings)
     {
         if (material.HasProperty("_BaseColor"))
@@ -258,6 +288,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
             material.SetFloat("_Metallic", settings.Metallic);
     }
 
+    /// <summary>
+    /// Strips the Unity " (Instance)" suffix from runtime material names so they can be matched
+    /// against the <see cref="MaterialSettingsByName"/> dictionary keys.
+    /// </summary>
     private static string NormalizeMaterialName(string materialName)
     {
         if (string.IsNullOrWhiteSpace(materialName))
@@ -271,6 +305,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         return materialName.Trim();
     }
 
+    /// <summary>
+    /// Replaces any characters that are invalid in a file name with underscores.
+    /// </summary>
     private static string SanitizeFileName(string fileName)
     {
         foreach (char invalidChar in Path.GetInvalidFileNameChars())
@@ -279,6 +316,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         return fileName;
     }
 
+    /// <summary>
+    /// Recursively ensures that all parent folders for <paramref name="folderPath"/> exist,
+    /// creating any missing intermediate folders via AssetDatabase.
+    /// </summary>
     private static void EnsureFolder(string folderPath)
     {
         if (AssetDatabase.IsValidFolder(folderPath))
@@ -293,6 +334,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         AssetDatabase.CreateFolder(parent, folderName);
     }
 
+    /// <summary>
+    /// Stamps canonical balance values onto the UnitData asset. When <paramref name="prefab"/>
+    /// is provided it also updates the Prefab reference on the asset.
+    /// </summary>
     private static void ConfigureUnitData(UnitData data, GameObject prefab = null)
     {
         data.Configure(
@@ -313,6 +358,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         EditorUtility.SetDirty(data);
     }
 
+    /// <summary>
+    /// Sets all TrackedVehicleMotor serialized fields for the SPA's movement tuning,
+    /// linking it to the provided NavMeshAgent.
+    /// </summary>
     private static void ConfigureVehicleMotor(TrackedVehicleMotor vehicleMotor, NavMeshAgent agent)
     {
         SetObjectReference(vehicleMotor, "_agent", agent);
@@ -336,6 +385,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetFloat(vehicleMotor, "_trackResponse", 9f);
     }
 
+    /// <summary>
+    /// Creates a child Plane GameObject used as the unit's selection highlight decal.
+    /// Removes its MeshCollider, assigns the selection material, and starts it inactive.
+    /// </summary>
     private static GameObject CreateSelectionVisual(Transform parent, int layer)
     {
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -359,6 +412,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         return visual;
     }
 
+    /// <summary>
+    /// Loads a ScriptableObject asset at <paramref name="path"/>, or creates and saves a new
+    /// instance if none exists.
+    /// </summary>
     private static T LoadOrCreate<T>(string path) where T : ScriptableObject
     {
         T asset = AssetDatabase.LoadAssetAtPath<T>(path);
@@ -371,6 +428,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         return asset;
     }
 
+    /// <summary>
+    /// Registers <paramref name="productionItem"/> in the master Factory Production Config asset
+    /// so it appears in the factory UI at runtime.
+    /// </summary>
     private static void AddToFactoryConfig(ProductionItemData productionItem)
     {
         ProductionConfig config = AssetDatabase.LoadAssetAtPath<ProductionConfig>(ProductionConfigPath);
@@ -381,6 +442,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         EditorUtility.SetDirty(config);
     }
 
+    /// <summary>
+    /// Depth-first search for a child Transform with the given name anywhere in the hierarchy.
+    /// </summary>
     private static Transform FindChildRecursive(Transform parent, string name)
     {
         if (parent.name == name)
@@ -396,6 +460,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         return null;
     }
 
+    /// <summary>
+    /// Recursively assigns <paramref name="layer"/> to <paramref name="target"/> and all its children.
+    /// </summary>
     private static void SetLayerRecursively(GameObject target, int layer)
     {
         target.layer = layer;
@@ -403,6 +470,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
             SetLayerRecursively(child.gameObject, layer);
     }
 
+    /// <summary>
+    /// Sets the tag on <paramref name="target"/>, falling back to "Untagged" if the tag has
+    /// not been defined in the project's tag manager.
+    /// </summary>
     private static void TrySetTag(GameObject target, string tagName)
     {
         try
@@ -415,6 +486,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         }
     }
 
+    /// <summary>
+    /// Sets an Object reference serialized property on <paramref name="target"/> by property name,
+    /// using SerializedObject so the change is tracked by the AssetDatabase without undo.
+    /// </summary>
     private static void SetObjectReference(Object target, string propertyName, Object value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -426,6 +501,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets a float serialized property on <paramref name="target"/> by property name.
+    /// </summary>
     private static void SetFloat(Object target, string propertyName, float value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -437,6 +515,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets a bool serialized property on <paramref name="target"/> by property name.
+    /// </summary>
     private static void SetBool(Object target, string propertyName, bool value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -448,6 +529,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets a Vector3 serialized property on <paramref name="target"/> by property name.
+    /// </summary>
     private static void SetVector3(Object target, string propertyName, Vector3 value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -459,6 +543,9 @@ public static class SelfPropelledArtilleryPrefabBuilder
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets an int serialized property on <paramref name="target"/> by property name.
+    /// </summary>
     private static void SetInt(Object target, string propertyName, int value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -470,6 +557,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>Value type holding the PBR surface settings for one named material slot.</summary>
     private readonly struct MaterialSettings
     {
         public MaterialSettings(Color color, float smoothness, float metallic)

@@ -7,6 +7,11 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.UI
 {
+    /// <summary>
+    /// Repositions and resizes the bottom HUD panel and its sub-regions (minimap, selection info,
+    /// command deck, top resources bar) whenever the canvas size changes. Switches between a wide
+    /// landscape layout and a narrow/portrait layout automatically.
+    /// </summary>
     public class RtsHudResponsiveLayout : MonoBehaviour
     {
         [SerializeField] private RectTransform _canvasRoot;
@@ -39,6 +44,10 @@ namespace Strategy.UI
             ApplyLayout();
         }
 
+        /// <summary>
+        /// Measures the canvas size and delegates to <see cref="ApplyWide"/> or <see cref="ApplyNarrow"/>
+        /// based on whether the viewport is landscape-wide or narrow/portrait.
+        /// </summary>
         public void ApplyLayout()
         {
             if (_canvasRoot == null)
@@ -61,6 +70,10 @@ namespace Strategy.UI
                 ApplyWide(size);
         }
 
+        /// <summary>
+        /// Lays out the HUD for a wide/landscape viewport: minimap left, command deck right,
+        /// selection info centered between them, resources at the top right.
+        /// </summary>
         private void ApplyWide(Vector2 size)
         {
             float baseBottomHeight = Mathf.Clamp(size.y * 0.22f, 210f, 252f);
@@ -86,6 +99,10 @@ namespace Strategy.UI
                 framePadding);
         }
 
+        /// <summary>
+        /// Lays out the HUD for a narrow/portrait viewport: minimap top-left, selection info
+        /// top-right, command deck filling the bottom, resources at the top right.
+        /// </summary>
         private void ApplyNarrow(Vector2 size)
         {
             float baseBottomHeight = Mathf.Clamp(size.y * 0.46f, 330f, 410f);
@@ -111,6 +128,7 @@ namespace Strategy.UI
             SetBottomStretchInside(_commandDeck, commandHeight, framePadding);
         }
 
+        /// <summary>Anchors a RectTransform to stretch the full width at the bottom of its parent with the given height.</summary>
         private static void SetStretchBottom(RectTransform rect, float height)
         {
             if (rect == null)
@@ -123,6 +141,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(0f, height);
         }
 
+        /// <summary>Anchors a RectTransform to the top-right corner of its parent at the given offset and size.</summary>
         private static void SetTopRight(RectTransform rect, Vector2 size, Vector2 position)
         {
             if (rect == null)
@@ -135,6 +154,7 @@ namespace Strategy.UI
             rect.sizeDelta = size;
         }
 
+        /// <summary>Anchors a RectTransform to the bottom-left of its parent with the specified size and padding offset.</summary>
         private static void SetLeftPanel(RectTransform rect, float width, float height, float padding)
         {
             if (rect == null)
@@ -147,6 +167,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(width, height);
         }
 
+        /// <summary>Anchors a RectTransform to the bottom-right of its parent with the specified size and padding offset.</summary>
         private static void SetRightPanel(RectTransform rect, float width, float height, float padding)
         {
             if (rect == null)
@@ -159,6 +180,10 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(width, height);
         }
 
+        /// <summary>
+        /// Stretches a RectTransform horizontally, leaving <paramref name="left"/> and <paramref name="right"/>
+        /// pixels reserved for the flanking panels, and positions it at the given padding from the bottom.
+        /// </summary>
         private static void SetCenterPanel(
             RectTransform rect,
             float left,
@@ -176,6 +201,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(-(left + right), height);
         }
 
+        /// <summary>Anchors a RectTransform to the top-left inside its parent at the given padding inset.</summary>
         private static void SetTopLeftInside(RectTransform rect, Vector2 size, float padding)
         {
             if (rect == null)
@@ -188,6 +214,10 @@ namespace Strategy.UI
             rect.sizeDelta = size;
         }
 
+        /// <summary>
+        /// Stretches a RectTransform to the top of its parent, offset by <paramref name="left"/> pixels on the
+        /// left and trimmed symmetrically on the right, with a minimum height of 86 px.
+        /// </summary>
         private static void SetTopStretchInside(RectTransform rect, float left, float padding, float height)
         {
             if (rect == null)
@@ -200,6 +230,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(-(left + padding), Mathf.Max(86f, height));
         }
 
+        /// <summary>Stretches a RectTransform to the full width at the bottom of its parent with uniform side padding.</summary>
         private static void SetBottomStretchInside(RectTransform rect, float height, float padding)
         {
             if (rect == null)

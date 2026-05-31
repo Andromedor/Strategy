@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+
 using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
@@ -9,6 +9,10 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Weather
 {
+    /// <summary>
+    /// Periodically toggles a rain particle system on and off at random intervals, and smoothly
+    /// transitions a directional light between rain-dimmed and normal intensity to simulate overcast weather.
+    /// </summary>
     public class Rain : MonoBehaviour
     {
         [SerializeField] private float _rainIntervalFrom = 5f;
@@ -30,6 +34,7 @@ namespace Strategy.Weather
 
         }
 
+        /// <summary>Infinite loop that waits a random interval, then toggles rain on/off and transitions light intensity accordingly.</summary>
         private IEnumerator RainCycle()
         {
             while (true)
@@ -54,6 +59,7 @@ namespace Strategy.Weather
             }
         }
 
+        /// <summary>Lerps the directional light's intensity from its current value to targetIntensity over _transitionDuration seconds.</summary>
         private IEnumerator ChangeLight(float targetIntensity)
         {
             float start = _light.intensity;

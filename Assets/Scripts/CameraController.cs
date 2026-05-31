@@ -4,6 +4,11 @@ using UnityEngine.InputSystem;
 
 namespace Strategy.Camera
 {
+    /// <summary>
+    /// Drives the RTS camera each frame: pans via keyboard and screen-edge scrolling, rotates with
+    /// keyboard keys or middle-mouse drag, and zooms by moving forward/backward along the camera's
+    /// look direction within a configurable height range.
+    /// </summary>
     public class CameraController : MonoBehaviour
     {
         [SerializeField] private float _moveSpeed = 10f;
@@ -33,6 +38,7 @@ namespace Strategy.Camera
             ZoomCamera();
         }
 
+        /// <summary>Translates the camera using keyboard WASD input and screen-edge scrolling, ignoring the Y component of forward/right vectors.</summary>
         private void MoveCamera()
         {
             Vector2 moveInput = _input.MoveInput;
@@ -53,6 +59,7 @@ namespace Strategy.Camera
             transform.position += movement * Time.deltaTime;
         }
 
+        /// <summary>Rotates the camera around the world Y axis using the keyboard rotate input; suppressed during building placement.</summary>
         private void RotateByKeyboard()
         {
             if (BuildingPlacementManager.IsPlacing)
@@ -62,6 +69,7 @@ namespace Strategy.Camera
             transform.Rotate(Vector3.up, rotation * _rotationSpeed * Time.deltaTime, Space.World);
         }
 
+        /// <summary>Rotates the camera around the world Y axis using horizontal mouse delta while the middle mouse button is held.</summary>
         private void RotateByMouse()
         {
             if (!Mouse.current.middleButton.isPressed)
@@ -71,6 +79,7 @@ namespace Strategy.Camera
             transform.Rotate(Vector3.up, mouseX * _mouseRotationSpeed * Time.deltaTime, Space.World);
         }
 
+        /// <summary>Moves the camera along its forward vector proportional to scroll-wheel input, clamping within min/max height bounds.</summary>
         private void ZoomCamera()
         {
             float scroll = _input.MouseScroll;
@@ -83,6 +92,7 @@ namespace Strategy.Camera
                 transform.position = newPosition;
         }
 
+        /// <summary>Returns a directional Vector3 (x and z components) indicating which screen edges the cursor is touching.</summary>
         private Vector3 GetEdgeScrollInput()
         {
             Vector3 input = Vector3.zero;

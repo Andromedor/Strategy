@@ -9,6 +9,11 @@ using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.UI
 {
+    /// <summary>
+    /// Top-bar HUD widget that shows the player's current money, number of captured outpost zones,
+    /// and resource income per minute. Refreshes on <see cref="ResourceManager.OnResourceChanged"/>
+    /// and <see cref="Outpost.OnStatsChanged"/> using rich-text color formatting.
+    /// </summary>
     public class OutpostStatusUI : MonoBehaviour
     {
         [Header("References")]
@@ -51,6 +56,10 @@ namespace Strategy.UI
             Refresh();
         }
 
+        /// <summary>
+        /// Queries <see cref="ResourceManager"/> and <see cref="Outpost"/> aggregates, then
+        /// rebuilds the rich-text status string showing zones, money, and income per minute.
+        /// </summary>
         private void Refresh()
         {
             EnsureStatusText();
@@ -69,6 +78,7 @@ namespace Strategy.UI
                 $"{Label("Income/min")} {Value("+" + resourcePerMinute, _incomeColor)}";
         }
 
+        /// <summary>Applies font, sizing, and style settings to the status TMP_Text element.</summary>
         private void EnsureStatusText()
         {
             if (_statusText == null)
@@ -89,6 +99,7 @@ namespace Strategy.UI
             _statusText.richText = true;
         }
 
+        /// <summary>Creates a narrow vertical accent bar on the left edge of the status panel for visual styling.</summary>
         private void CreateAccent(Transform parent)
         {
             GameObject accentObject = new GameObject(
@@ -111,6 +122,7 @@ namespace Strategy.UI
             accent.raycastTarget = false;
         }
 
+        /// <summary>Procedurally creates the TMP_Text child that displays the resource status line.</summary>
         private void CreateStatusText(Transform parent)
         {
             GameObject textObject = new GameObject(
@@ -142,11 +154,13 @@ namespace Strategy.UI
             _statusText.richText = true;
         }
 
+        /// <summary>Wraps text in a color tag using the configured label color for dimmed field names.</summary>
         private string Label(string text)
         {
             return $"<color=#{ColorUtility.ToHtmlStringRGB(_labelColor)}>{text}:</color>";
         }
 
+        /// <summary>Wraps text in bold and a caller-specified color tag for highlighted numeric values.</summary>
         private static string Value(string text, Color color)
         {
             return $"<b><color=#{ColorUtility.ToHtmlStringRGB(color)}>{text}</color></b>";

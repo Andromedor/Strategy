@@ -10,6 +10,11 @@ using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.UI
 {
+    /// <summary>
+    /// Displays a grid of building placement buttons driven by a list of <see cref="BuildingData"/> assets.
+    /// Buttons delegate to <see cref="BuildingPlacementManager.StartPlacement"/> and are disabled when
+    /// no player-owned <see cref="ConstructionCenter"/> is active.
+    /// </summary>
     public class ConstructionPanelUI : MonoBehaviour
     {
         private static readonly Vector2 ButtonSize = new Vector2(116f, 108f);
@@ -38,6 +43,10 @@ namespace Strategy.UI
             EventManager.OnConstructionCentersChanged -= RefreshAvailability;
         }
 
+        /// <summary>
+        /// Clears the content root and procedurally creates one styled Button per
+        /// <see cref="BuildingData"/> entry, then calls <see cref="RefreshAvailability"/>.
+        /// </summary>
         public void BuildButtons()
         {
             ClearButtons();
@@ -69,6 +78,10 @@ namespace Strategy.UI
             RefreshAvailability();
         }
 
+        /// <summary>
+        /// Procedurally constructs a fully styled button GameObject for a single building,
+        /// including icon or fallback text, name label, cost, and build-time sub-elements.
+        /// </summary>
         private Button CreateButton(BuildingData building)
         {
             GameObject buttonObject = new GameObject(
@@ -122,6 +135,10 @@ namespace Strategy.UI
             return button;
         }
 
+        /// <summary>
+        /// Creates a child Image for the building icon; the Image is disabled when <paramref name="icon"/> is null.
+        /// Returns true if the icon sprite is valid (caller uses this to skip the fallback text).
+        /// </summary>
         private bool CreateIcon(Transform parent, Sprite icon)
         {
             GameObject iconObject = new GameObject(
@@ -149,6 +166,10 @@ namespace Strategy.UI
             return icon != null;
         }
 
+        /// <summary>
+        /// Creates a styled TMP_Text child anchored to the top-center, bottom-left, or bottom-right
+        /// depending on the <paramref name="top"/> flag and the sign of <paramref name="position"/>.x.
+        /// </summary>
         private TMP_Text CreateText(
             Transform parent,
             string objectName,
@@ -208,6 +229,10 @@ namespace Strategy.UI
             return label;
         }
 
+        /// <summary>
+        /// Validates that a player <see cref="ConstructionCenter"/> exists, then delegates to
+        /// <see cref="BuildingPlacementManager.StartPlacement"/> to begin ghost-placement mode.
+        /// </summary>
         private void StartPlacement(BuildingData building)
         {
             if (_placementManager == null)
@@ -222,6 +247,10 @@ namespace Strategy.UI
             _placementManager.StartPlacement(building);
         }
 
+        /// <summary>
+        /// Enables or disables all buttons depending on whether a player construction center is present.
+        /// Called on <see cref="EventManager.OnConstructionCentersChanged"/>.
+        /// </summary>
         private void RefreshAvailability()
         {
             bool hasBuildArea = HasPlayerConstructionCenter();
@@ -237,6 +266,7 @@ namespace Strategy.UI
             }
         }
 
+        /// <summary>Destroys all child GameObjects under the content root and clears the button list.</summary>
         private void ClearButtons()
         {
             if (_contentRoot != null)
@@ -248,6 +278,7 @@ namespace Strategy.UI
             _buttons.Clear();
         }
 
+        /// <summary>Configures the GridLayoutGroup and ContentSizeFitter for a 3-column auto-height layout.</summary>
         private void ApplyGrid()
         {
             GridLayoutGroup grid = _contentRoot.GetComponent<GridLayoutGroup>();
@@ -266,12 +297,14 @@ namespace Strategy.UI
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
+        /// <summary>Forces an immediate layout recalculation on the content root RectTransform.</summary>
         private void RebuildGrid()
         {
             if (_contentRoot is RectTransform rect)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
+        /// <summary>Shows or hides the empty-state label with the given message.</summary>
         private void SetEmptyText(string message)
         {
             if (_emptyText == null)
@@ -281,6 +314,7 @@ namespace Strategy.UI
             _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
+        /// <summary>Returns a human-readable name for a building, cleaning up asset naming conventions.</summary>
         private static string GetDisplayName(BuildingData building)
         {
             string value = building != null && !string.IsNullOrWhiteSpace(building.BuildingName)
@@ -308,6 +342,7 @@ namespace Strategy.UI
                 : seconds.ToString("0.#") + "s";
         }
 
+        /// <summary>Returns true if at least one active, player-team <see cref="ConstructionCenter"/> exists in the scene.</summary>
         private bool HasPlayerConstructionCenter()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -319,6 +354,7 @@ namespace Strategy.UI
             return false;
         }
 
+        /// <summary>Returns true if <paramref name="component"/> is owned by the panel's configured team.</summary>
         private bool BelongsToTeam(Component component)
         {
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();

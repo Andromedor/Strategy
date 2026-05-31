@@ -6,6 +6,11 @@ using UnityEngine.UI;
 
 namespace Strategy.UI
 {
+    /// <summary>
+    /// General-purpose HUD navigation button that opens a target <see cref="PanelType"/> via
+    /// <see cref="EventManager.RaiseOpenPanel"/>. Can be configured to require a player
+    /// construction center and/or factory before becoming interactable.
+    /// </summary>
     [RequireComponent(typeof(Button))]
     public class HudPanelButton : MonoBehaviour
     {
@@ -40,11 +45,16 @@ namespace Strategy.UI
             BuildingProduction.FactoriesChanged -= Refresh;
         }
 
+        /// <summary>Raises the open-panel event for the configured target panel.</summary>
         private void OpenPanel()
         {
             EventManager.RaiseOpenPanel(_targetPanel);
         }
 
+        /// <summary>
+        /// Re-evaluates the button's interactable state based on whether the required
+        /// construction center and/or factory conditions are met.
+        /// </summary>
         private void Refresh()
         {
             if (_button == null)
@@ -55,6 +65,7 @@ namespace Strategy.UI
                 (!_requiresFactory || HasPlayerFactory());
         }
 
+        /// <summary>Returns true if at least one active, player-team construction center exists in the scene.</summary>
         private bool HasPlayerConstructionCenter()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -66,6 +77,7 @@ namespace Strategy.UI
             return false;
         }
 
+        /// <summary>Returns true if at least one active, player-team factory exists in the scene.</summary>
         private bool HasPlayerFactory()
         {
             foreach (BuildingProduction factory in BuildingProduction.All)
@@ -77,6 +89,7 @@ namespace Strategy.UI
             return false;
         }
 
+        /// <summary>Returns true if <paramref name="component"/> is owned by the button's configured team.</summary>
         private bool BelongsToTeam(Component component)
         {
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();

@@ -3,12 +3,16 @@ using Strategy.Buildings;
 using Strategy.Units;
 using UnityEngine;
 using UnityEngine.AI;
-
+
 using Strategy.Core;
 using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Base class for all unit combat behaviour. Handles target detection, turret/gun aiming,
+    /// movement to attack range, and firing via BulletPool. Subclassed by artillery and autocannon units.
+    /// </summary>
     public class UnitCombat : MonoBehaviour, IDamageable
     {
         [Header("Data")]
@@ -96,12 +100,18 @@ namespace Strategy.Units
             InvokeRepeating(nameof(CheckEnemies), 0f, 0.25f);
         }
 
+        /// <summary>
+        /// Assigns a manually chosen attack target and notifies other systems via EventManager.
+        /// </summary>
         public void SetManualAttackTarget(Transform target)
         {
             _manualAttackTarget = target;
             EventManager.RaiseUnitAttackTargetChanged(gameObject, target);
         }
 
+        /// <summary>
+        /// Receives incoming damage via the IDamageable interface; destroys the unit when health reaches zero.
+        /// </summary>
         public void TakeDamage(float damage)
         {
             if (_health == null)
@@ -113,12 +123,19 @@ namespace Strategy.Units
                 Die();
         }
 
+        /// <summary>
+        /// Fires the deselection event and destroys this GameObject when health is depleted.
+        /// </summary>
         private void Die()
         {
             EventManager.RaiseUnitDeselected(gameObject);
             Destroy(gameObject);
         }
 
+        /// <summary>
+        /// Handles a move command broadcast: clears attack state and records the destination
+        /// so CheckEnemies can still engage targets encountered along the way.
+        /// </summary>
         private void OnMoveCommand(GameObject unit, Vector3 destination)
         {
             if (unit != gameObject)
@@ -132,6 +149,10 @@ namespace Strategy.Units
             _playerMoveDestination = destination;
         }
 
+        /// <summary>
+        /// Runs every 0.25 s. Selects the best target (manual or auto), drives the NavMeshAgent
+        /// toward attack range if needed, and starts or stops the attack coroutine accordingly.
+        /// </summary>
         private void CheckEnemies()
         {
             if (_unitData == null)
@@ -194,6 +215,10 @@ namespace Strategy.Units
             StartAttackIfNeeded(target);
         }
 
+        /// <summary>
+        /// Begins an Attack coroutine for the given target, stopping any previous one first.
+        /// Does nothing if the same target is already being engaged.
+        /// </summary>
         private void StartAttackIfNeeded(Transform target)
         {
             EventManager.RaiseUnitAttackTargetChanged(gameObject, target);
@@ -207,6 +232,9 @@ namespace Strategy.Units
             _attackCoroutine = StartCoroutine(Attack(target));
         }
 
+        /// <summary>
+        /// Returns true once the unit is within stopping distance of the player-issued move destination.
+        /// </summary>
         private bool HasReachedPlayerMoveDestination()
         {
             if (_agent == null || !_agent.enabled)
@@ -225,6 +253,9 @@ namespace Strategy.Units
                    _agent.remainingDistance <= _agent.stoppingDistance + 0.2f;
         }
 
+        /// <summary>
+        /// Uses Physics.OverlapSphere to find the closest enemy within AttackRange on the correct layer mask.
+        /// </summary>
         private Transform FindAutoTarget()
         {
             Collider[] hits = Physics.OverlapSphere(
@@ -259,6 +290,9 @@ namespace Strategy.Units
             return closestTarget;
         }
 
+        /// <summary>
+        /// Commands the NavMeshAgent to move to a NavMesh-valid position just inside attack range of the target.
+        /// </summary>
         private void MoveToAttackRange(Transform target)
         {
             if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
@@ -278,6 +312,10 @@ namespace Strategy.Units
             _agent.SetDestination(attackPosition);
         }
 
+        /// <summary>
+        /// Snaps the requested attack position onto the NavMesh and validates that a full or partial
+        /// path exists; sets resolvedPosition to the best reachable point.
+        /// </summary>
         private bool TryResolveAttackDestination(Vector3 requestedPosition, out Vector3 resolvedPosition)
         {
             resolvedPosition = requestedPosition;
@@ -317,6 +355,9 @@ namespace Strategy.Units
             return true;
         }
 
+        /// <summary>
+        /// Coroutine that calls FireAtTarget repeatedly with AttackDelay pauses until the target is invalid.
+        /// </summary>
         private IEnumerator Attack(Transform target)
         {
             while (IsTargetValid(target))
@@ -334,6 +375,9 @@ namespace Strategy.Units
             _attackCoroutine = null;
         }
 
+        /// <summary>
+        /// Stops the running attack coroutine and clears the current target reference.
+        /// </summary>
         private void StopAttack()
         {
             if (_attackCoroutine != null)
@@ -345,6 +389,9 @@ namespace Strategy.Units
             _currentAttackTarget = null;
         }
 
+        /// <summary>
+        /// Builds the layer mask used by FindAutoTarget based on the unit's current team.
+        /// </summary>
         private void SetupTargetMask()
         {
             _targetMask = Team == TeamType.Player
@@ -352,6 +399,9 @@ namespace Strategy.Units
                 : LayerMask.GetMask("PlayerUnit");
         }
 
+        /// <summary>
+        /// Rebuilds the target mask and clears current targets whenever the unit's team changes.
+        /// </summary>
         private void OnTeamChanged(TeamType team)
         {
             SetupTargetMask();
@@ -360,6 +410,10 @@ namespace Strategy.Units
             StopAttack();
         }
 
+        /// <summary>
+        /// Retrieves a bullet from BulletPool, positions it at the muzzle, and initialises its
+        /// BulletController. Override in subclasses for different firing behaviour (e.g. autocannon).
+        /// </summary>
         protected virtual IEnumerator FireAtTarget(Transform target)
         {
             if (_unitData == null || _pointPosition == null || target == null)
@@ -383,6 +437,10 @@ namespace Strategy.Units
             _shotEffects?.PlayShotEffect();
         }
 
+        /// <summary>
+        /// Rotates turret (Y) and gun (X pitch) toward the target each frame.
+        /// Returns true only when both axes are within AimAngleTolerance.
+        /// </summary>
         protected virtual bool AimAtTarget(Transform target)
         {
             if (target == null || _turret == null || _gun == null || _unitData == null)
@@ -394,6 +452,10 @@ namespace Strategy.Units
             return turretReady && gunReady;
         }
 
+        /// <summary>
+        /// Incrementally rotates the turret transform in local Y toward the target at TurretRotationSpeed.
+        /// Returns true when the yaw error is within AimAngleTolerance.
+        /// </summary>
         protected virtual bool RotateTurretToTarget(Transform target)
         {
             Vector3 worldDirection = target.position - _turret.position;
@@ -415,6 +477,10 @@ namespace Strategy.Units
             return Mathf.Abs(Mathf.DeltaAngle(newYaw, targetYaw)) <= _unitData.AimAngleTolerance;
         }
 
+        /// <summary>
+        /// Computes the required gun pitch to aim at the target and delegates to MoveGunPitch.
+        /// Override in ArtilleryWeapon to use an elevation curve instead of direct pitch.
+        /// </summary>
         protected virtual bool RotateGunToTarget(Transform target)
         {
             Vector3 worldDirection = target.position - _gun.position;
@@ -426,6 +492,10 @@ namespace Strategy.Units
             return MoveGunPitch(targetPitch);
         }
 
+        /// <summary>
+        /// Steps the gun's local X rotation toward targetPitch at GunPitchSpeed.
+        /// Returns true when within AimAngleTolerance.
+        /// </summary>
         protected bool MoveGunPitch(float targetPitch)
         {
             float currentPitch = _gun.localEulerAngles.x;
@@ -439,6 +509,10 @@ namespace Strategy.Units
             return Mathf.Abs(Mathf.DeltaAngle(newPitch, targetPitch)) <= _unitData.AimAngleTolerance;
         }
 
+        /// <summary>
+        /// Slowly returns the turret to forward (0 yaw) and gun to level pitch after ReturnTurretDelay
+        /// seconds without a target.
+        /// </summary>
         protected virtual void HandleIdleTurret()
         {
             if (_unitData == null || _turret == null || _gun == null)
@@ -458,11 +532,18 @@ namespace Strategy.Units
             MoveGunPitch(0f);
         }
 
+        /// <summary>
+        /// Returns true when target is non-null and its GameObject is active in the hierarchy.
+        /// </summary>
         protected bool IsTargetValid(Transform target)
         {
             return target != null && target.gameObject.activeInHierarchy;
         }
 
+        /// <summary>
+        /// Returns the collider bounds center of the target (cached per target) or its transform position
+        /// as a fallback, for accurate aiming at the body of the unit.
+        /// </summary>
         protected Vector3 GetTargetPoint(Transform target)
         {
             if (target != _cachedColliderTarget)
@@ -477,6 +558,10 @@ namespace Strategy.Units
             return target.position;
         }
 
+        /// <summary>
+        /// Returns the XZ distance to targetPoint as a [0, 1] fraction of AttackRange.
+        /// Used by artillery to blend elevation angle and hit-chance by range.
+        /// </summary>
         protected float GetDistanceRatio(Vector3 targetPoint)
         {
             Vector2 from = new Vector2(transform.position.x, transform.position.z);
@@ -489,6 +574,10 @@ namespace Strategy.Units
             return Mathf.Clamp01(distance / _unitData.AttackRange);
         }
 
+        /// <summary>
+        /// Returns true when the NavMeshAgent's current speed meets or exceeds speedThreshold.
+        /// Used by artillery to apply a moving-target accuracy penalty.
+        /// </summary>
         protected bool IsMoving(float speedThreshold)
         {
             if (_agent == null || !_agent.enabled)
@@ -497,6 +586,9 @@ namespace Strategy.Units
             return _agent.velocity.magnitude >= speedThreshold;
         }
 
+        /// <summary>
+        /// Raycasts downward from 30 units above the given point to snap it to terrain/ground geometry.
+        /// </summary>
         protected Vector3 SnapToGround(Vector3 point)
         {
             Vector3 origin = point + Vector3.up * 30f;

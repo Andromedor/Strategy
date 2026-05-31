@@ -3,6 +3,10 @@ using UnityEngine.Serialization;
 
 namespace Strategy.Data
 {
+    /// <summary>
+    /// ScriptableObject describing a single producible unit entry shown in the factory UI.
+    /// Holds display info (name, icon), a reference to the unit's UnitData, resource cost, and build time.
+    /// </summary>
     [CreateAssetMenu(menuName = "RTS/Production Item")]
     public class ProductionItemData : ScriptableObject
     {
@@ -23,6 +27,10 @@ namespace Strategy.Data
         public int Cost => _cost;
         public float ProductionTime => _productionTime;
 
+        /// <summary>
+        /// Writes all production item fields at once; used by editor builder scripts to stamp
+        /// canonical cost and time values. Skips the icon field when null to preserve existing art.
+        /// </summary>
         public void Configure(string itemName, UnitData unitData, int cost, float productionTime, Sprite icon = null)
         {
             _itemName = itemName;

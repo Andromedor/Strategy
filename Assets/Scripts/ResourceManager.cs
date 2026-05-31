@@ -4,6 +4,11 @@ using UnityEngine;
 
 namespace Strategy.Core
 {
+    /// <summary>
+    /// Singleton that tracks separate resource pools for the player and enemy.
+    /// Outposts add resources via Add(); units and buildings spend them via Spend().
+    /// Fires OnResourceChanged whenever the player's pool changes.
+    /// </summary>
     public class ResourceManager : MonoBehaviour
     {
         public static ResourceManager Instance { get; private set; }
@@ -48,6 +53,7 @@ namespace Strategy.Core
                 Instance = null;
         }
 
+        /// <summary>Deducts amount from the player's resource pool if affordable; fires OnResourceChanged and returns true on success.</summary>
         public bool Spend(int amount)
         {
             if (amount <= 0)
@@ -63,11 +69,13 @@ namespace Strategy.Core
             return true;
         }
 
+        /// <summary>Convenience overload that adds resources to the player's pool.</summary>
         public void Add(int amount)
         {
             Add(TeamType.Player, amount);
         }
 
+        /// <summary>Adds resources to the specified team's pool; fires OnResourceChanged only for the player team.</summary>
         public void Add(TeamType team, int amount)
         {
             if (amount <= 0)

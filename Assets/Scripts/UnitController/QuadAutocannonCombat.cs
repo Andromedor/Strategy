@@ -8,6 +8,11 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Autocannon subclass of UnitCombat. Fires from two alternating muzzle points and delegates
+    /// visual effects to AutocannonVisualEffects. Muzzle transforms are auto-created at runtime if
+    /// not assigned in the Inspector.
+    /// </summary>
     public class QuadAutocannonCombat : UnitCombat
     {
         [Header("Autocannon")]
@@ -26,6 +31,10 @@ namespace Strategy.Units
             base.Awake();
         }
 
+        /// <summary>
+        /// Fires a pooled bullet from the next alternating muzzle, aimed directly at the target's
+        /// collider centre, and triggers the corresponding per-muzzle visual effect.
+        /// </summary>
         protected override IEnumerator FireAtTarget(Transform target)
         {
             if (_unitData == null || target == null || BulletPool.Instance == null)
@@ -60,6 +69,10 @@ namespace Strategy.Units
             _autocannonEffects?.PlayShotEffect(muzzleIndex);
         }
 
+        /// <summary>
+        /// Ensures _muzzlePoints contains two valid transforms; creates left/right child objects under
+        /// the gun transform if they are missing.
+        /// </summary>
         private void EnsureMuzzlePoints()
         {
             if (HasUsableMuzzles())
@@ -82,6 +95,9 @@ namespace Strategy.Units
                 _pointPosition = center;
         }
 
+        /// <summary>
+        /// Finds or adds AutocannonVisualEffects and configures it with the gun and muzzle transforms.
+        /// </summary>
         private void EnsureEffects()
         {
             if (_autocannonEffects == null)
@@ -93,6 +109,9 @@ namespace Strategy.Units
             _autocannonEffects.Configure(_gun, _muzzlePoints);
         }
 
+        /// <summary>
+        /// Returns true when _muzzlePoints has at least two non-null entries.
+        /// </summary>
         private bool HasUsableMuzzles()
         {
             if (_muzzlePoints == null || _muzzlePoints.Length < 2)
@@ -107,6 +126,9 @@ namespace Strategy.Units
             return true;
         }
 
+        /// <summary>
+        /// Returns the current muzzle index and advances the counter to alternate between barrels each shot.
+        /// </summary>
         private int GetNextMuzzleIndex()
         {
             if (_muzzlePoints == null || _muzzlePoints.Length == 0)
@@ -117,6 +139,9 @@ namespace Strategy.Units
             return index;
         }
 
+        /// <summary>
+        /// Returns the muzzle transform at muzzleIndex, falling back to _pointPosition if the index is invalid.
+        /// </summary>
         private Transform GetMuzzle(int muzzleIndex)
         {
             if (_muzzlePoints != null &&
@@ -130,6 +155,9 @@ namespace Strategy.Units
             return _pointPosition;
         }
 
+        /// <summary>
+        /// Creates a child transform under parent at the centre's local position offset by localX on the X axis.
+        /// </summary>
         private static Transform CreateMuzzle(Transform parent, Transform center, string objectName, float localX)
         {
             GameObject muzzleObject = new GameObject(objectName);
@@ -141,6 +169,9 @@ namespace Strategy.Units
             return muzzleObject.transform;
         }
 
+        /// <summary>
+        /// Depth-first search for a named child transform; returns null if not found.
+        /// </summary>
         private static Transform FindChildRecursive(Transform parent, string childName)
         {
             if (parent == null || string.IsNullOrEmpty(childName))

@@ -5,11 +5,16 @@ using Strategy.Units;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-
+
 using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Manages the interactive building-placement workflow: creates a ghost preview object that
+    /// follows the cursor, validates placement against construction areas and overlap checks,
+    /// handles Q/E rotation, and confirms or cancels the placement on mouse click.
+    /// </summary>
     public class BuildingPlacementManager : MonoBehaviour
     {
         [Header("Raycast")] 
@@ -66,6 +71,7 @@ namespace Strategy.Buildings
             EventManager.OnConstructionClosed -= ClearConstructionCenter;
         }
         
+        /// <summary>Stores the active ConstructionCenter when it belongs to the current team; clears it otherwise.</summary>
         private void SetConstructionCenter(ConstructionCenter constructionCenter)
         {
             _currentConstructionCenter = IsConstructionCenterForCurrentTeam(constructionCenter)
@@ -73,6 +79,7 @@ namespace Strategy.Buildings
                 : null;
         }
 
+        /// <summary>Cancels any active placement, hides the build-area visual, and clears the stored ConstructionCenter reference.</summary>
         private void ClearConstructionCenter()
         {
             if (IsPlacing)
@@ -117,6 +124,10 @@ namespace Strategy.Buildings
             }
         }
         
+        /// <summary>
+        /// Begins a placement session for the given BuildingData: instantiates the preview object,
+        /// disables its gameplay components, and shows all valid construction-area overlays.
+        /// </summary>
         public void StartPlacement(BuildingData buildingData)
         {
             if (IsPlacing)
@@ -145,6 +156,7 @@ namespace Strategy.Buildings
             UpdatePreviewColor();
         }
 
+        /// <summary>Instantiates the prefab inside a temporary inactive root so Awake is deferred, then reparents it to the preview container.</summary>
         private void CreatePreviewObject(GameObject prefab)
         {
             Transform previewContainer = RuntimeObjectContainer.Get("Building Previews");
@@ -162,6 +174,7 @@ namespace Strategy.Buildings
             Destroy(inactiveRoot);
         }
 
+        /// <summary>Records original enabled/kinematic states of all Behaviours, Colliders, and Rigidbodies on the preview, then disables them.</summary>
         private void CacheAndDisablePreviewGameplay()
         {
             _previewBehaviourStates.Clear();
@@ -188,6 +201,7 @@ namespace Strategy.Buildings
             }
         }
 
+        /// <summary>Raycasts from the mouse cursor against the ground mask and moves the preview object to the hit point.</summary>
         private void PositionObject()
         {
             if (_camera == null)
@@ -203,6 +217,7 @@ namespace Strategy.Buildings
             }
         }
 
+        /// <summary>Rotates the preview object by _rotationStep degrees around Y when Q or E is pressed.</summary>
         private void HandleRotation()
         {
             if (Keyboard.current == null)
@@ -219,6 +234,10 @@ namespace Strategy.Buildings
             }
         }
 
+        /// <summary>
+        /// Sets _isValidPlacement by verifying the preview is inside a valid construction area
+        /// and that an OverlapBox at its position finds no blocking objects.
+        /// </summary>
         private void CheckPlacement()
         {
             _isValidPlacement = true;
@@ -256,6 +275,7 @@ namespace Strategy.Buildings
             }
         }
         
+        /// <summary>Returns true if the given world position falls within the build radius of at least one active construction center for the current team.</summary>
         private bool IsInsideAnyConstructionArea(Vector3 position)
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -267,6 +287,7 @@ namespace Strategy.Buildings
             return false;
         }
         
+        /// <summary>Tints all preview renderers green (valid) or red (invalid) via a MaterialPropertyBlock.</summary>
         private void UpdatePreviewColor()
         {
             if (_renderers == null || _propertyBlock == null)
@@ -285,6 +306,7 @@ namespace Strategy.Buildings
             }
         }
         
+        /// <summary>Removes the tint property block from all preview renderers, restoring their original material appearance.</summary>
         private void ResetPreviewColor()
         {
             if (_renderers == null)
@@ -297,6 +319,10 @@ namespace Strategy.Buildings
             }
         }
         
+        /// <summary>
+        /// Spends the building cost, reparents the preview to the Buildings container,
+        /// restores all gameplay components, and finalises placement.
+        /// </summary>
         private void ConfirmPlacement()
         {
             if (!TrySpendPlacementCost())
@@ -320,6 +346,7 @@ namespace Strategy.Buildings
             HideAllBuildAreas();
         }
 
+        /// <summary>Destroys the preview object and exits placement mode, hiding all construction-area overlays.</summary>
         private void CancelPlacement()
         {
             if (_previewObject != null)
@@ -332,6 +359,7 @@ namespace Strategy.Buildings
             HideAllBuildAreas();
         }
 
+        /// <summary>Re-enables all Behaviours, Colliders, and Rigidbodies on the confirmed building using the cached original states.</summary>
         private void RestorePreviewGameplay()
         {
             foreach (RigidbodyState state in _previewRigidbodyStates)
@@ -366,6 +394,7 @@ namespace Strategy.Buildings
             _currentBuildingData = null;
         }
 
+        /// <summary>Deducts the building's economy cost from the player's resources; returns true if affordable (or free).</summary>
         private bool TrySpendPlacementCost()
         {
             if (_currentBuildingData == null || _currentTeam != TeamType.Player)
@@ -395,6 +424,7 @@ namespace Strategy.Buildings
             }
         }
 
+        /// <summary>Returns true if at least one enabled ConstructionCenter belonging to the current team exists in the scene.</summary>
         private bool HasAvailableConstructionArea()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -406,6 +436,7 @@ namespace Strategy.Buildings
             return false;
         }
 
+        /// <summary>Returns true when the center is active and either has no TeamComponent or its team matches _currentTeam.</summary>
         private bool IsConstructionCenterForCurrentTeam(ConstructionCenter center)
         {
             if (center == null || !center.isActiveAndEnabled)

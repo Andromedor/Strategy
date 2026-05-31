@@ -5,6 +5,10 @@ using UnityEngine.UI;
 
 namespace Strategy.UI
 {
+    /// <summary>
+    /// HUD button that opens the Construction panel via <see cref="EventManager.RaiseOpenPanel"/>.
+    /// Automatically disables itself when no <see cref="ConstructionCenter"/> is active in the scene.
+    /// </summary>
     [RequireComponent(typeof(Button))]
     public class ButtonOpenConstruction : MonoBehaviour
     {
@@ -33,11 +37,13 @@ namespace Strategy.UI
             EventManager.OnConstructionCentersChanged -= Refresh;
         }
 
+        /// <summary>Raises the open-panel event to switch the HUD to the Construction panel.</summary>
         private void OpenConstruction()
         {
             EventManager.RaiseOpenPanel(PanelType.Construction);
         }
 
+        /// <summary>Enables the button only when at least one active construction center exists.</summary>
         private void Refresh()
         {
             if (_button != null)

@@ -7,6 +7,12 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Extends NavMeshVehicleMotor with differential track speed computation for tanks and SPAs.
+    /// Calculates left/right track speeds from the heading angle: pivot-in-place when alignment is
+    /// needed (WaitingForAlignment), or a curve differential when turning while moving.
+    /// TankTrackAnimator reads LeftTrackSpeed / RightTrackSpeed each frame to scroll segments.
+    /// </summary>
     public class TrackedVehicleMotor : NavMeshVehicleMotor
     {
         [SerializeField] private float _pivotTrackSpeed = 2.4f;
@@ -44,6 +50,12 @@ namespace Strategy.Units
             _isPivoting = false;
         }
 
+        /// <summary>
+        /// Called by the base Update after heading/speed are resolved. Computes target left and right
+        /// track speeds: pivot rotation when WaitingForAlignment, differential curve when moving with
+        /// a turn, or equal forward speed when going straight.
+        /// Results are smoothed via an exponential blend controlled by _trackResponse.
+        /// </summary>
         protected override void OnMotorUpdated(
             Vector3 headingDirection,
             bool hasHeading,
@@ -70,6 +82,7 @@ namespace Strategy.Units
 
                     if (WaitingForAlignment)
                     {
+                        // Pivot in place: one track forward, one backward proportional to heading error.
                         float turnSign = Mathf.Sign(signedHeadingAngle);
                         if (Mathf.Approximately(turnSign, 0f))
                             turnSign = 1f;
@@ -85,6 +98,7 @@ namespace Strategy.Units
                     }
                     else
                     {
+                        // Curve differential: add/subtract a fraction of speed to steer while moving.
                         float curveMagnitude = Mathf.Max(
                             _minimumCurveDifferentialSpeed,
                             Mathf.Max(forwardSpeed, CruiseSpeed * 0.25f) * _curveDifferentialMultiplier);
@@ -108,6 +122,9 @@ namespace Strategy.Units
             _isPivoting = targetPivoting;
         }
 
+        /// <summary>
+        /// Snaps near-zero track speeds to exactly 0 to prevent micro-scrolling of track segments.
+        /// </summary>
         private static float SnapSmall(float value)
         {
             return Mathf.Abs(value) < 0.01f ? 0f : value;

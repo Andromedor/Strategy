@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-
+
 using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
@@ -8,6 +8,10 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Defines a circular build area where the player may place buildings.
+    /// Registers itself in a static list so BuildingPlacementManager can query all active centers.
+    /// </summary>
     public class ConstructionCenter: MonoBehaviour
     {
         public static readonly List<ConstructionCenter> All = new();
@@ -49,12 +53,14 @@ namespace Strategy.Buildings
             HideBuildArea();
         }
 
+        /// <summary>Returns true if the given world position is within the construction center's build radius.</summary>
         public bool IsInsideBuildArea(Vector3 position)
         {
             float distanceSqr = (position - transform.position).sqrMagnitude;
             return distanceSqr <= _buildRadius * _buildRadius;
         }
         
+        /// <summary>Scales the build-area visual disc to match _buildRadius so the rendered overlay matches the actual zone.</summary>
         private void UpdateBuildAreaVisualSize()
         {
             if (_buildAreaVisual == null)
@@ -74,6 +80,7 @@ namespace Strategy.Buildings
             SetBuildAreaVisualVisible(false);
         }
 
+        /// <summary>Toggles the build-area visual by activating/deactivating the GameObject or toggling its Renderer if it is the root.</summary>
         private void SetBuildAreaVisualVisible(bool visible)
         {
             if (_buildAreaVisual == null)

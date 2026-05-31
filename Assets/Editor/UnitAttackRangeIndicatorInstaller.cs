@@ -7,14 +7,24 @@ using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
 using Strategy.UI;
+
+/// <summary>
+/// Editor-only tool that installs a UnitAttackRangeIndicator component onto tank unit prefabs
+/// listed in <see cref="TankUnitDataPaths"/>. Invoked via Tools/RTS/Install Tank Range Indicators.
+/// </summary>
 public static class UnitAttackRangeIndicatorInstaller
 {
+    // UnitData asset paths for every tank variant that should receive a range indicator.
     private static readonly string[] TankUnitDataPaths =
     {
         "Assets/Balance/LightTank.asset",
         "Assets/Balance/MeadleTank.asset",
     };
 
+    /// <summary>
+    /// Iterates <see cref="TankUnitDataPaths"/>, resolves each UnitData's prefab path, and
+    /// calls <see cref="InstallOnPrefab"/> to add or update the range indicator component.
+    /// </summary>
     [MenuItem("Tools/RTS/Install Tank Range Indicators")]
     public static void InstallTankIndicators()
     {
@@ -38,6 +48,11 @@ public static class UnitAttackRangeIndicatorInstaller
         Debug.Log("Tank attack range indicators installed.");
     }
 
+    /// <summary>
+    /// Loads the prefab at <paramref name="prefabPath"/>, adds a UnitAttackRangeIndicator if
+    /// absent, sets its visual parameters (segments, line width, color, toggle mode), wires the
+    /// UnitCombat reference, then saves the prefab.
+    /// </summary>
     private static void InstallOnPrefab(string prefabPath)
     {
         GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
@@ -71,6 +86,7 @@ public static class UnitAttackRangeIndicatorInstaller
         }
     }
 
+    /// <summary>Sets an Object reference serialized property on <paramref name="target"/> by name.</summary>
     private static void SetObjectReference(Object target, string propertyName, Object value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -83,6 +99,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>Sets a bool serialized property on <paramref name="target"/> by name.</summary>
     private static void SetBool(Object target, string propertyName, bool value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -95,6 +112,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>Sets an int serialized property on <paramref name="target"/> by name.</summary>
     private static void SetInt(Object target, string propertyName, int value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -107,6 +125,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>Sets a float serialized property on <paramref name="target"/> by name.</summary>
     private static void SetFloat(Object target, string propertyName, float value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -119,6 +138,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>Sets a Color serialized property on <paramref name="target"/> by name.</summary>
     private static void SetColor(Object target, string propertyName, Color value)
     {
         SerializedObject serializedObject = new SerializedObject(target);

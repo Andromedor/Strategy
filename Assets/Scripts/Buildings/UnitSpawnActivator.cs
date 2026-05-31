@@ -2,13 +2,17 @@ using System.Collections;
 using Strategy.Units;
 using UnityEngine;
 using UnityEngine.AI;
-
+
 using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Controls the transition of a newly spawned unit from its disabled factory state to fully active gameplay.
+    /// Drives the unit manually to the exit point, then snaps it onto the NavMesh and enables all gameplay components.
+    /// </summary>
     public class UnitSpawnActivator : MonoBehaviour
     {
         [SerializeField] private float _exitMoveSpeed = 4f;
@@ -35,6 +39,10 @@ namespace Strategy.Buildings
             _colliders = GetComponentsInChildren<Collider>();
         }
 
+        /// <summary>
+        /// Toggles the unit between its disabled spawning state (colliders and gameplay off, agent stopped)
+        /// and the fully active state (placed on NavMesh, gameplay enabled).
+        /// </summary>
         public void SetSpawningState(bool isSpawning)
         {
             if (isSpawning)
@@ -72,6 +80,7 @@ namespace Strategy.Buildings
             }
         }
 
+        /// <summary>Slides the unit toward exitPoint at _exitMoveSpeed, facing the direction of travel, then calls SetSpawningState(false).</summary>
         public IEnumerator MoveOutOfFactory(Vector3 exitPoint)
         {
             while (Vector3.Distance(transform.position, exitPoint) > _exitDistance)
@@ -96,6 +105,10 @@ namespace Strategy.Buildings
             SetSpawningState(false);
         }
 
+        /// <summary>
+        /// Samples the NavMesh near the unit's current position (with fallback radius) and warps the NavMeshAgent there.
+        /// Returns false if no reachable NavMesh point is found.
+        /// </summary>
         private bool EnableNavigationAtCurrentPosition()
         {
             if (_agent == null)
@@ -121,6 +134,7 @@ namespace Strategy.Buildings
             return true;
         }
 
+        /// <summary>Wraps NavMesh.SamplePosition using the agent's areaMask and a clamped minimum radius.</summary>
         private bool TrySampleNavMesh(Vector3 position, float radius, out NavMeshHit hit)
         {
             return NavMesh.SamplePosition(
@@ -130,6 +144,7 @@ namespace Strategy.Buildings
                 _agent.areaMask);
         }
 
+        /// <summary>Enables or disables the UnitCombat and UnitSelectionState components together.</summary>
         private void SetGameplayEnabled(bool enabled)
         {
             if (_combat != null)
@@ -139,6 +154,7 @@ namespace Strategy.Buildings
                 _selectionState.enabled = enabled;
         }
 
+        /// <summary>Enables or disables all cached Colliders on the unit, used to prevent physics interactions while inside the factory.</summary>
         private void SetCollidersEnabled(bool enabled)
         {
             if (_colliders == null)

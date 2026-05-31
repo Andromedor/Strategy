@@ -10,6 +10,11 @@ using UnityEngine.UI;
 using Strategy.UI;
 namespace Strategy.UI
 {
+    /// <summary>
+    /// Displays the production queue buttons for the currently selected (or first available)
+    /// player <see cref="BuildingProduction"/> factory. Rebuilds button rows when the factory
+    /// changes and greys out items the player cannot afford via <see cref="ResourceManager"/>.
+    /// </summary>
     public class ProductionPanelUI : MonoBehaviour
     {
         [Header("UI")]
@@ -38,6 +43,10 @@ namespace Strategy.UI
             BuildingProduction.FactoriesChanged -= RefreshCurrentFactory;
         }
 
+        /// <summary>
+        /// Re-evaluates which factory to display after a factory is added or removed from the scene.
+        /// Falls back to <see cref="GetInitialFactory"/> if the current one becomes invalid.
+        /// </summary>
         private void RefreshCurrentFactory()
         {
             OpenFactory(_currentFactory != null && _currentFactory.isActiveAndEnabled
@@ -45,6 +54,10 @@ namespace Strategy.UI
                 : GetInitialFactory());
         }
 
+        /// <summary>
+        /// Clears existing buttons and spawns a fresh set of <see cref="ProductionButtonUI"/> rows
+        /// for every valid <see cref="ProductionItemData"/> on <paramref name="factory"/>.
+        /// </summary>
         private void OpenFactory(BuildingProduction factory)
         {
             if (factory != null && !BelongsToTeam(factory))
@@ -82,6 +95,9 @@ namespace Strategy.UI
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
         }
 
+        /// <summary>
+        /// Forwards a production button click to the factory's queue, then refreshes affordability.
+        /// </summary>
         private void OnItemClicked(ProductionItemData item)
         {
             if (_currentFactory == null)
@@ -91,6 +107,10 @@ namespace Strategy.UI
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
         }
 
+        /// <summary>
+        /// Updates the interactable/color state of every button based on current player resources.
+        /// Called on <see cref="ResourceManager.OnResourceChanged"/>.
+        /// </summary>
         private void RefreshButtons(int playerResource)
         {
             foreach (ProductionButtonUI button in _buttons)
@@ -100,6 +120,7 @@ namespace Strategy.UI
             }
         }
 
+        /// <summary>Destroys all instantiated button children and clears the button list.</summary>
         private void ClearButtons()
         {
             if (_contentRoot == null)
@@ -116,6 +137,10 @@ namespace Strategy.UI
             _buttons.Clear();
         }
 
+        /// <summary>
+        /// Configures the <see cref="GridLayoutGroup"/> and <see cref="ContentSizeFitter"/> on the
+        /// content root to a fixed 3-column layout that auto-sizes its height.
+        /// </summary>
         private void ApplyLayout(int itemCount)
         {
             GridLayoutGroup grid = _contentRoot != null
@@ -139,12 +164,14 @@ namespace Strategy.UI
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
+        /// <summary>Forces an immediate layout recalculation on the content root RectTransform.</summary>
         private void RebuildLayout()
         {
             if (_contentRoot is RectTransform rect)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
+        /// <summary>Shows or hides the empty-state label with the given message.</summary>
         private void SetEmptyText(string message)
         {
             if (_emptyText == null)
@@ -154,6 +181,7 @@ namespace Strategy.UI
             _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
+        /// <summary>Returns the number of non-null <see cref="ProductionItemData"/> entries on the factory.</summary>
         private static int CountValidItems(BuildingProduction factory)
         {
             if (factory == null)
@@ -170,6 +198,10 @@ namespace Strategy.UI
             return count;
         }
 
+        /// <summary>
+        /// Returns the best factory to display: the currently selected one first,
+        /// then the first active player-team factory found in <see cref="BuildingProduction.All"/>.
+        /// </summary>
         private BuildingProduction GetInitialFactory()
         {
             if (SelectionManager.SelectedFactory != null && BelongsToTeam(SelectionManager.SelectedFactory))
@@ -184,6 +216,7 @@ namespace Strategy.UI
             return null;
         }
 
+        /// <summary>Returns true if <paramref name="component"/> is owned by the panel's configured team.</summary>
         private bool BelongsToTeam(Component component)
         {
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();

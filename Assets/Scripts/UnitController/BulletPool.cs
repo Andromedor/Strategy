@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Singleton object pool for bullet GameObjects. Pre-instantiates _poolSize bullets on Awake
+    /// and recycles them via TryGetBullet / ReturnBullet to avoid runtime allocations during combat.
+    /// </summary>
     public class BulletPool : MonoBehaviour
     {
         public static BulletPool Instance { get; private set; }
@@ -14,6 +18,9 @@ namespace Strategy.Units
         private readonly Queue<GameObject> _bulletPool = new();
         private Transform _bulletContainer;
 
+        /// <summary>
+        /// Resets the static Instance reference between domain reloads / play mode sessions.
+        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
@@ -45,6 +52,10 @@ namespace Strategy.Units
                 Instance = null;
         }
 
+        /// <summary>
+        /// Dequeues a bullet from the pool (or creates one if the pool is empty), activates it,
+        /// and returns true. Returns false only if the prefab is null.
+        /// </summary>
         public bool TryGetBullet(out GameObject bullet)
         {
             bullet = null;
@@ -62,11 +73,18 @@ namespace Strategy.Units
             return true;
         }
 
+        /// <summary>
+        /// Convenience wrapper around TryGetBullet; returns null instead of false when no bullet
+        /// is available.
+        /// </summary>
         public GameObject GetBullet()
         {
             return TryGetBullet(out GameObject bullet) ? bullet : null;
         }
 
+        /// <summary>
+        /// Deactivates the bullet, re-parents it under the pool container, and enqueues it for reuse.
+        /// </summary>
         public void ReturnBullet(GameObject bullet)
         {
             if (bullet == null)
@@ -80,6 +98,10 @@ namespace Strategy.Units
             _bulletPool.Enqueue(bullet);
         }
 
+        /// <summary>
+        /// Instantiates a new bullet from the prefab under the pool container and immediately
+        /// deactivates it. Returns null if bulletPrefab is not assigned.
+        /// </summary>
         private GameObject CreateBullet()
         {
             if (bulletPrefab == null)

@@ -8,6 +8,11 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Manages all visual effects for a single tracked-unit cannon: muzzle flash, smoke, gun recoil,
+    /// and an optional point light flash. All particle systems and the light are created procedurally
+    /// at runtime; no prefab assets are required.
+    /// </summary>
     public class TankCannonEffects : MonoBehaviour
     {
         [SerializeField] private Transform _gun;
@@ -41,6 +46,10 @@ namespace Strategy.Units
             DestroyRuntimeObject(_smokeMaterial);
         }
 
+        /// <summary>
+        /// Assigns gun and muzzle references if not already set in the Inspector, then calls
+        /// EnsureReady to build particle systems.
+        /// </summary>
         public void Configure(Transform gun, Transform muzzle)
         {
             if (_gun == null)
@@ -52,6 +61,10 @@ namespace Strategy.Units
             EnsureReady();
         }
 
+        /// <summary>
+        /// Triggers muzzle flash and smoke particle bursts, starts the gun recoil coroutine,
+        /// and flashes the muzzle light (if enabled). Any in-progress recoil/light is restarted.
+        /// </summary>
         public void PlayShotEffect()
         {
             EnsureReady();
@@ -79,6 +92,10 @@ namespace Strategy.Units
             }
         }
 
+        /// <summary>
+        /// Lazily initialises all runtime objects: records the gun rest position, creates flash and
+        /// smoke particle systems, and optionally creates the muzzle point light.
+        /// </summary>
         private void EnsureReady()
         {
             if (_gun != null && !_hasGunRestPosition)
@@ -100,6 +117,10 @@ namespace Strategy.Units
                 _muzzleLight = CreateMuzzleLight();
         }
 
+        /// <summary>
+        /// Builds and returns a cone-shaped muzzle flash ParticleSystem as a child of _muzzle;
+        /// uses Emit-based bursts rather than continuous emission.
+        /// </summary>
         private ParticleSystem CreateMuzzleFlash()
         {
             ParticleSystem particles = CreateParticleSystem("Muzzle Flash");
@@ -132,6 +153,10 @@ namespace Strategy.Units
             return particles;
         }
 
+        /// <summary>
+        /// Builds and returns a wider cone smoke ParticleSystem as a child of _muzzle, with a
+        /// fade-out alpha gradient over lifetime.
+        /// </summary>
         private ParticleSystem CreateSmoke()
         {
             ParticleSystem particles = CreateParticleSystem("Muzzle Smoke");
@@ -181,6 +206,10 @@ namespace Strategy.Units
             return particles;
         }
 
+        /// <summary>
+        /// Creates a new GameObject with a ParticleSystem component as a child of _muzzle; stops
+        /// the system immediately to prevent auto-play.
+        /// </summary>
         private ParticleSystem CreateParticleSystem(string objectName)
         {
             GameObject particleObject = new GameObject(objectName);
@@ -195,6 +224,10 @@ namespace Strategy.Units
             return particles;
         }
 
+        /// <summary>
+        /// Creates an orange point light at the muzzle position, initially disabled, ready for
+        /// the FlashMuzzleLight coroutine.
+        /// </summary>
         private Light CreateMuzzleLight()
         {
             GameObject lightObject = new GameObject("Muzzle Light");
@@ -213,6 +246,10 @@ namespace Strategy.Units
             return light;
         }
 
+        /// <summary>
+        /// Coroutine that snaps the gun to the recoil position over _recoilBackDuration then returns
+        /// it to its rest position over _recoilReturnDuration, using smooth-step interpolation.
+        /// </summary>
         private IEnumerator PlayRecoil()
         {
             if (!_hasGunRestPosition)
@@ -231,6 +268,10 @@ namespace Strategy.Units
             _recoilCoroutine = null;
         }
 
+        /// <summary>
+        /// Coroutine that smoothly moves the gun's local position from 'from' to 'to' over duration
+        /// seconds using Mathf.SmoothStep for ease-in/ease-out motion.
+        /// </summary>
         private IEnumerator MoveGun(Vector3 from, Vector3 to, float duration)
         {
             if (duration <= 0f)
@@ -253,6 +294,9 @@ namespace Strategy.Units
             _gun.localPosition = to;
         }
 
+        /// <summary>
+        /// Coroutine that enables the muzzle light at full intensity for 45 ms then disables it.
+        /// </summary>
         private IEnumerator FlashMuzzleLight()
         {
             _muzzleLight.enabled = true;
@@ -263,6 +307,10 @@ namespace Strategy.Units
             _lightCoroutine = null;
         }
 
+        /// <summary>
+        /// Creates a new unlit particle material using the best available URP/Standard/fallback shader
+        /// and sets its colour properties.
+        /// </summary>
         private static Material CreateParticleMaterial(Color color)
         {
             Shader shader =
@@ -276,6 +324,10 @@ namespace Strategy.Units
             return material;
         }
 
+        /// <summary>
+        /// Sets _BaseColor and _Color properties on a material if they exist, supporting both URP
+        /// and legacy Standard shader property names.
+        /// </summary>
         private static void SetMaterialColor(Material material, Color color)
         {
             if (material == null)
@@ -288,6 +340,9 @@ namespace Strategy.Units
                 material.SetColor("_Color", color);
         }
 
+        /// <summary>
+        /// Destroys a runtime UnityEngine.Object correctly in both play mode and edit mode.
+        /// </summary>
         private static void DestroyRuntimeObject(Object runtimeObject)
         {
             if (runtimeObject == null)

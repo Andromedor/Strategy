@@ -9,12 +9,19 @@ using UnityEngine.AI;
 using Strategy.Core;
 using Strategy.Data;
 using Strategy.UI;
+
+/// <summary>
+/// Editor-only tool that configures NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator,
+/// and UnitSpawnActivator for all tracked vehicle prefabs (Tank and Self-Propelled Artillery).
+/// Invoked via Tools/RTS/Configure Tracked Vehicles, and also exposes a CI-callable Validate method.
+/// </summary>
 public static class TrackedVehiclePrefabConfigurator
 {
     private const string TankPrefabPath =
         "Assets/Canopus-III_Low-Poly_Sci-Fi_Desert_Units_Set_2/prefabs_yup/unit_Tank_Combat_B_yup.prefab";
     private const string ArtilleryPrefabPath = "Assets/Prefabs/unit_SelfPropelledArtillery.prefab";
 
+    // Pre-built configuration bundles for each tracked vehicle type.
     private static readonly VehicleConfig TankConfig = new VehicleConfig(
         TankPrefabPath,
         "Tank",
@@ -71,6 +78,9 @@ public static class TrackedVehiclePrefabConfigurator
         7f,
         3.4f);
 
+    /// <summary>
+    /// Configures both tracked vehicle prefabs and saves them to disk.
+    /// </summary>
     [MenuItem("Tools/RTS/Configure Tracked Vehicles")]
     public static void Configure()
     {
@@ -81,6 +91,10 @@ public static class TrackedVehiclePrefabConfigurator
         Debug.Log("Tracked vehicle prefabs configured.");
     }
 
+    /// <summary>
+    /// Headless validation entry point for CI. Checks both prefabs for correct component setup
+    /// and calls EditorApplication.Exit(1) if any errors are found.
+    /// </summary>
     public static void Validate()
     {
         List<string> errors = new List<string>();
@@ -99,6 +113,10 @@ public static class TrackedVehiclePrefabConfigurator
         Debug.Log("Tracked vehicle prefab validation passed.");
     }
 
+    /// <summary>
+    /// Loads a prefab, applies NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator, and
+    /// UnitSpawnActivator settings from <paramref name="config"/>, then saves the prefab.
+    /// </summary>
     private static void ConfigurePrefab(VehicleConfig config)
     {
         GameObject root = PrefabUtility.LoadPrefabContents(config.PrefabPath);
@@ -128,6 +146,10 @@ public static class TrackedVehiclePrefabConfigurator
         }
     }
 
+    /// <summary>
+    /// Applies NavMeshAgent movement parameters from <paramref name="config"/>. Rotation is
+    /// disabled because TrackedVehicleMotor drives orientation directly.
+    /// </summary>
     private static void ConfigureAgent(NavMeshAgent agent, VehicleConfig config)
     {
         agent.radius = config.AgentRadius;
@@ -142,6 +164,10 @@ public static class TrackedVehiclePrefabConfigurator
         agent.updateRotation = false;
     }
 
+    /// <summary>
+    /// Ensures exactly one TrackedVehicleMotor exists on the root, removing duplicates and
+    /// any stale NavMeshVehicleMotor components that belong to wheeled vehicles.
+    /// </summary>
     private static TrackedVehicleMotor EnsureTrackedMotor(GameObject root)
     {
         TrackedVehicleMotor[] trackedMotors = root.GetComponents<TrackedVehicleMotor>();
@@ -161,6 +187,10 @@ public static class TrackedVehiclePrefabConfigurator
         return trackedMotor;
     }
 
+    /// <summary>
+    /// Destroys all WheeledVehicleAnimator components on the root; tracked vehicles use
+    /// TankTrackAnimator instead.
+    /// </summary>
     private static void RemoveWheelAnimator(GameObject root)
     {
         WheeledVehicleAnimator[] wheelAnimators = root.GetComponents<WheeledVehicleAnimator>();
@@ -169,6 +199,10 @@ public static class TrackedVehiclePrefabConfigurator
             Object.DestroyImmediate(wheelAnimators[i], true);
     }
 
+    /// <summary>
+    /// Writes all TrackedVehicleMotor serialized fields from <paramref name="config"/> via
+    /// SerializedObject so values persist in the prefab asset.
+    /// </summary>
     private static void ConfigureMotor(
         TrackedVehicleMotor motor,
         NavMeshAgent agent,
@@ -197,6 +231,10 @@ public static class TrackedVehiclePrefabConfigurator
         serializedMotor.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Configures TankTrackAnimator with per-vehicle geometry values (segment count, track
+    /// dimensions, scroll speed) from <paramref name="config"/>.
+    /// </summary>
     private static void ConfigureTrackAnimator(
         TankTrackAnimator animator,
         NavMeshAgent agent,
@@ -219,6 +257,10 @@ public static class TrackedVehiclePrefabConfigurator
         serializedAnimator.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Configures UnitSpawnActivator with the exit speed and NavMesh snap radii for safe factory
+    /// spawning behaviour.
+    /// </summary>
     private static void ConfigureSpawnActivator(UnitSpawnActivator spawnActivator, VehicleConfig config)
     {
         SerializedObject serializedSpawn = new SerializedObject(spawnActivator);
@@ -229,6 +271,10 @@ public static class TrackedVehiclePrefabConfigurator
         serializedSpawn.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Loads a prefab and validates that its NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator,
+    /// and UnitSpawnActivator are correctly set up, appending errors to <paramref name="errors"/>.
+    /// </summary>
     private static void ValidatePrefab(VehicleConfig config, List<string> errors)
     {
         GameObject root = PrefabUtility.LoadPrefabContents(config.PrefabPath);
@@ -287,6 +333,10 @@ public static class TrackedVehiclePrefabConfigurator
         }
     }
 
+    /// <summary>
+    /// Checks that the UnitSpawnActivator's NavMesh snap radii meet the minimum values required
+    /// for reliable post-spawn pathing.
+    /// </summary>
     private static void ValidateSpawnActivator(
         UnitSpawnActivator spawnActivator,
         string displayName,
@@ -297,6 +347,10 @@ public static class TrackedVehiclePrefabConfigurator
         ValidateFloatAtLeast(serializedSpawn, "_navMeshFallbackSnapRadius", 14f, displayName, errors);
     }
 
+    /// <summary>
+    /// Checks that a serialized Object reference property on <paramref name="target"/> is assigned,
+    /// prefixing the error with <paramref name="displayName"/> for context.
+    /// </summary>
     private static void ValidateObject(
         Object target,
         string propertyName,
@@ -309,6 +363,10 @@ public static class TrackedVehiclePrefabConfigurator
             errors.Add(displayName + " " + propertyName + " is not assigned.");
     }
 
+    /// <summary>
+    /// Checks that a float serialized property meets a minimum value, prefixing the error
+    /// with <paramref name="displayName"/> for context.
+    /// </summary>
     private static void ValidateFloatAtLeast(
         SerializedObject serializedObject,
         string propertyName,
@@ -328,6 +386,7 @@ public static class TrackedVehiclePrefabConfigurator
             errors.Add(displayName + " " + propertyName + " should be at least " + minimum.ToString("0.##") + ".");
     }
 
+    /// <summary>Sets an Object reference property on an already-open SerializedObject.</summary>
     private static void SetObject(SerializedObject serializedObject, string propertyName, Object value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -336,6 +395,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.objectReferenceValue = value;
     }
 
+    /// <summary>Sets a Vector3 property on an already-open SerializedObject.</summary>
     private static void SetVector3(SerializedObject serializedObject, string propertyName, Vector3 value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -344,6 +404,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.vector3Value = value;
     }
 
+    /// <summary>Sets a float property on an already-open SerializedObject.</summary>
     private static void SetFloat(SerializedObject serializedObject, string propertyName, float value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -352,6 +413,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.floatValue = value;
     }
 
+    /// <summary>Sets an int property on an already-open SerializedObject.</summary>
     private static void SetInt(SerializedObject serializedObject, string propertyName, int value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -360,6 +422,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.intValue = value;
     }
 
+    /// <summary>Sets a bool property on an already-open SerializedObject.</summary>
     private static void SetBool(SerializedObject serializedObject, string propertyName, bool value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -368,6 +431,10 @@ public static class TrackedVehiclePrefabConfigurator
             property.boolValue = value;
     }
 
+    /// <summary>
+    /// Immutable value type that bundles all per-vehicle tuning parameters passed to the
+    /// configure/validate methods, avoiding long parameter lists.
+    /// </summary>
     private readonly struct VehicleConfig
     {
         public VehicleConfig(

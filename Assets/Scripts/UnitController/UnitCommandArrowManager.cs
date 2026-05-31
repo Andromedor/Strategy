@@ -1,29 +1,34 @@
 using System.Collections.Generic;
 using Strategy.Units;
 using UnityEngine;
-
+
 using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Draws a two-point LineRenderer from each selected unit to its current command destination:
+    /// green for a move target, red for an attack target. Lines persist as long as the unit is
+    /// selected; the last command is remembered so the line reappears when the unit is reselected.
+    /// </summary>
     public class UnitCommandArrowManager : MonoBehaviour
     {
       [Header("Line Settings")]
-      [SerializeField] private Material _moveLineMaterial;  // Зелена стрілка для руху по місцевості
-      [SerializeField] private Material _attackLineMaterial; // Червона стрілка для атаки ворога
-      
+      [SerializeField] private Material _moveLineMaterial;  // Green arrow for move-to-ground commands.
+      [SerializeField] private Material _attackLineMaterial; // Red arrow for attack-enemy commands.
+
       [Header("Visual Settings")]
-      [SerializeField] private float _lineWidth  = 0.15f;   // Товщина лінії.
-      [SerializeField] private float _heightOffset = 0.2f;   // Підняття лінії над землею.
-      
-      private readonly Dictionary<GameObject, LineRenderer> _activeLines = new(); // Активні лінії для вибраних юнітів.
-      private readonly Dictionary<GameObject, Vector3> _moveTargets = new(); // Останні точки руху юнітів. НЕ видаляємо при deselect, щоб при повторному виборі лінія повернулась
-      private readonly Dictionary<GameObject, Transform> _attackTargets = new(); //Останні цілі атаки юнітів
-      private readonly List<GameObject> _unitsToRemove = new();  // Тимчасовий список для безпечного видалення мертвих/null юнітів.
+      [SerializeField] private float _lineWidth  = 0.15f;   // Line thickness in world units.
+      [SerializeField] private float _heightOffset = 0.2f;   // Height above ground for both endpoints.
+
+      private readonly Dictionary<GameObject, LineRenderer> _activeLines = new(); // Active line renderers keyed by unit.
+      private readonly Dictionary<GameObject, Vector3> _moveTargets = new(); // Last move destination per unit (kept after deselect for re-show on reselect).
+      private readonly Dictionary<GameObject, Transform> _attackTargets = new(); // Last attack target transform per unit.
+      private readonly List<GameObject> _unitsToRemove = new();  // Temporary list for safe removal of destroyed units inside the update loop.
       private readonly List<GameObject> _activeLineUnits = new();
-      
+
 
       private void OnEnable()
       {
@@ -46,6 +51,10 @@ namespace Strategy.Units
         UpdateLines();
       }
 
+      /// <summary>
+      /// Records the move destination, clears any attack target, and draws a green line to the
+      /// destination if the unit is currently selected.
+      /// </summary>
       private void ShowMoveLine(GameObject unit, Vector3 targetPosition)
       {
         if (unit == null)
@@ -53,7 +62,7 @@ namespace Strategy.Units
 
         _moveTargets[unit] = targetPosition;
         _attackTargets.Remove(unit);
-        
+
         if (!IsUnitSelected(unit))
           return;
 
@@ -63,28 +72,35 @@ namespace Strategy.Units
         UpdateLine(unit, line, targetPosition);
       }
 
-      
+      /// <summary>
+      /// Records the attack target, clears any move target, and draws a red line to the target
+      /// if the unit is currently selected.
+      /// </summary>
       private void ShowAttackLine(GameObject unit, Transform target)
       {
         if (unit == null || target == null)
           return;
-        
+
         _attackTargets[unit] = target;
         _moveTargets.Remove(unit);
-        
+
         if (!IsUnitSelected(unit))
           return;
-        
+
         LineRenderer line = GetOrCreateLine(unit);
         line.material = _attackLineMaterial;
 
         UpdateLine(unit, line, target.position);
       }
-      
+
+      /// <summary>
+      /// Called every frame. Updates active line endpoints for living selected units, removes stale
+      /// entries for destroyed units or null line renderers, and hides lines for deselected units.
+      /// </summary>
       private void UpdateLines()
       {
         _unitsToRemove.Clear();
-        
+
         _activeLineUnits.Clear();
 
         foreach (GameObject activeUnit in _activeLines.Keys)
@@ -93,32 +109,32 @@ namespace Strategy.Units
         foreach (GameObject unit in _activeLineUnits)
         {
           _activeLines.TryGetValue(unit, out LineRenderer line);
-          
-    // Якщо юніт знищений — треба видалити його лінію і дані
+
+          // If the unit has been destroyed, clean up its line and data.
           if (unit == null)
           {
             if (line != null)
             {
               Destroy(line.gameObject);
             }
-            
+
             _unitsToRemove.Add(unit);
             continue;
           }
-          // Якщо лінія знищена — чистимо запис.
+          // If the line renderer was destroyed externally, remove the stale entry.
           if (line == null)
           {
             _unitsToRemove.Add(unit);
             continue;
           }
-    // Якщо юніт не вибраний — лінії бути не повинно.
+          // Lines should only exist while the unit is selected.
           if (!IsUnitSelected(unit))
           {
             HideLineOnly(unit);
             continue;
           }
 
-          if (_attackTargets.TryGetValue(unit, out Transform attackTarget)) // Червона лінія до ворога.
+          if (_attackTargets.TryGetValue(unit, out Transform attackTarget)) // Update red attack line.
           {
             if (attackTarget == null)
             {
@@ -128,24 +144,27 @@ namespace Strategy.Units
             }
             UpdateLine(unit, line, attackTarget.position);
           }
-          else if (_moveTargets.TryGetValue(unit, out Vector3 moveTarget))  // Зелена лінія до точки руху
+          else if (_moveTargets.TryGetValue(unit, out Vector3 moveTarget))  // Update green move line.
           {
             UpdateLine(unit, line, moveTarget);
           }
         }
-        
+
         foreach (GameObject unit in _unitsToRemove)
         {
           ClearUnit(unit);
         }
       }
-      
+
+      /// <summary>
+      /// Restores the correct line when a unit is reselected: red if it has an attack target,
+      /// green if it has a pending move destination.
+      /// </summary>
       private void ShowLastCommandForUnit(GameObject unit)
       {
         if (unit == null)
           return;
 
-        // Якщо юніт атакує — показуємо червону лінію.
         if (_attackTargets.TryGetValue(unit, out Transform attackTarget))
         {
           if (attackTarget == null)
@@ -160,7 +179,6 @@ namespace Strategy.Units
           return;
         }
 
-        // Якщо юніт рухається — показуємо зелену лінію.
         if (_moveTargets.TryGetValue(unit, out Vector3 moveTarget))
         {
           LineRenderer line = GetOrCreateLine(unit);
@@ -168,7 +186,11 @@ namespace Strategy.Units
           UpdateLine(unit, line, moveTarget);
         }
       }
-      
+
+      /// <summary>
+      /// Destroys the line renderer for the unit but intentionally preserves the move/attack target
+      /// dictionaries so the line can be recreated if the unit is reselected.
+      /// </summary>
       private void HideLineOnly(GameObject unit)
       {
         if (unit == null)
@@ -181,12 +203,12 @@ namespace Strategy.Units
 
           _activeLines.Remove(unit);
         }
-
-        // ВАЖЛИВО:
-        // Тут НЕ видаляємо _moveTargets і _attackTargets.
-        // Інакше при повторному виборі зелена/червона лінія не повернеться.
       }
 
+      /// <summary>
+      /// Returns the existing LineRenderer for the unit or creates a new one under the
+      /// "Command Lines" runtime container with the configured width settings.
+      /// </summary>
       private LineRenderer GetOrCreateLine(GameObject unit)
       {
         if (_activeLines.TryGetValue(unit, out LineRenderer existingLine))
@@ -210,7 +232,11 @@ namespace Strategy.Units
 
         return line;
       }
-      
+
+      /// <summary>
+      /// Sets the two LineRenderer positions from the unit's current world position to targetPosition,
+      /// both raised by _heightOffset.
+      /// </summary>
       private void UpdateLine(GameObject unit, LineRenderer line, Vector3 targetPosition)
       {
         Vector3 start = unit.transform.position + Vector3.up * _heightOffset;
@@ -219,7 +245,11 @@ namespace Strategy.Units
         line.SetPosition(0, start);
         line.SetPosition(1, end);
       }
-      
+
+      /// <summary>
+      /// Removes all state (line renderer, move target, attack target) for the given unit,
+      /// typically called when the unit is confirmed destroyed.
+      /// </summary>
       private void ClearUnit(GameObject unit)
       {
         if (unit != null && _activeLines.TryGetValue(unit, out LineRenderer line))
@@ -233,6 +263,9 @@ namespace Strategy.Units
         _attackTargets.Remove(unit);
       }
 
+      /// <summary>
+      /// Returns true when the given unit's UnitSelectionState component reports IsSelected = true.
+      /// </summary>
       private bool IsUnitSelected(GameObject unit)
       {
         if (unit == null)

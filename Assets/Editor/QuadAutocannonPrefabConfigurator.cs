@@ -11,6 +11,12 @@ using UnityEngine.SceneManagement;
 
 using Strategy.Core;
 using Strategy.UI;
+
+/// <summary>
+/// Editor-only tool for configuring the Quad Autocannon prefab and validating it from CI.
+/// Invoked via Tools/RTS/Configure Quad Autocannon. Sets up combat, visual effects, wheel
+/// animation, movement, balance stats, production data, and scene NavMesh settings.
+/// </summary>
 public static class QuadAutocannonPrefabConfigurator
 {
     private const string PrefabPath =
@@ -21,6 +27,10 @@ public static class QuadAutocannonPrefabConfigurator
     private const string UnitDataPath = "Assets/Balance/LightTank.asset";
     private const string ProductionDataPath = "Assets/Balance/LightTankProduction.asset";
 
+    /// <summary>
+    /// Main configuration pass: loads the prefab, wires all components, and saves it back to disk.
+    /// Also calls ConfigureSceneNavigation to update the main scene NavMeshSurface layer mask.
+    /// </summary>
     [MenuItem("Tools/RTS/Configure Quad Autocannon")]
     public static void Configure()
     {
@@ -57,6 +67,11 @@ public static class QuadAutocannonPrefabConfigurator
         Debug.Log("Configured quad autocannon prefab, visual effects, wheel animation, movement, and balance.");
     }
 
+    /// <summary>
+    /// Headless validation entry point callable from CI (EditorApplication.Exit(1) on failure).
+    /// Checks component presence, serialized-field assignments, agent tuning, balance constraints,
+    /// factory prefab setup, and main-scene NavMesh configuration.
+    /// </summary>
     public static void Validate()
     {
         List<string> errors = new List<string>();
@@ -159,6 +174,10 @@ public static class QuadAutocannonPrefabConfigurator
         Debug.Log("Quad autocannon validation passed.");
     }
 
+    /// <summary>
+    /// Ensures exactly one QuadAutocannonCombat component exists on the prefab root,
+    /// removes any other UnitCombat subclasses, and wires turret, gun, muzzle, and effects references.
+    /// </summary>
     private static void ConfigureCombat(
         GameObject root,
         UnitData unitData,
@@ -199,6 +218,7 @@ public static class QuadAutocannonPrefabConfigurator
         SetFloat(serializedCombat, "_barrelSpacing", 0.18f);
         serializedCombat.ApplyModifiedPropertiesWithoutUndo();
 
+        // If a range indicator is present, update its combat reference to the new component.
         UnitAttackRangeIndicator indicator = root.GetComponent<UnitAttackRangeIndicator>();
 
         if (indicator != null)
@@ -209,6 +229,10 @@ public static class QuadAutocannonPrefabConfigurator
         }
     }
 
+    /// <summary>
+    /// Configures AutocannonVisualEffects with gun transform, dual muzzle transforms, and
+    /// recoil/particle-count parameters for the Quad Autocannon's rapid-fire visual feel.
+    /// </summary>
     private static void ConfigureEffects(
         GameObject root,
         Transform gun,
@@ -229,6 +253,10 @@ public static class QuadAutocannonPrefabConfigurator
         serializedEffects.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets up NavMeshAgent, NavMeshVehicleMotor, WheeledVehicleAnimator, and UnitSpawnActivator
+    /// for wheeled vehicle movement. Agent rotation is handled by NavMeshVehicleMotor, not Unity.
+    /// </summary>
     private static void ConfigureMovement(GameObject root, Transform frontWheel, Transform rearWheel)
     {
         NavMeshAgent agent = root.GetComponent<NavMeshAgent>();
@@ -289,6 +317,10 @@ public static class QuadAutocannonPrefabConfigurator
         serializedWheels.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Writes canonical combat stats to the LightTank UnitData asset for the Quad Autocannon
+    /// (rapid fire, short range, low per-shot damage).
+    /// </summary>
     private static void ConfigureBalance(UnitData unitData)
     {
         if (unitData == null)
@@ -312,6 +344,9 @@ public static class QuadAutocannonPrefabConfigurator
         EditorUtility.SetDirty(unitData);
     }
 
+    /// <summary>
+    /// Stamps canonical cost and build time onto the LightTankProduction ProductionItemData asset.
+    /// </summary>
     private static void ConfigureProduction()
     {
         ProductionItemData productionData =
@@ -328,6 +363,10 @@ public static class QuadAutocannonPrefabConfigurator
         EditorUtility.SetDirty(productionData);
     }
 
+    /// <summary>
+    /// Opens the main scene, finds the NavMeshSurface, and ensures the required physics layers
+    /// and agent/obstacle ignore flags are set, then saves the scene.
+    /// </summary>
     private static void ConfigureSceneNavigation()
     {
         Scene scene = EditorSceneManager.OpenScene(MainScenePath, OpenSceneMode.Single);
@@ -354,6 +393,10 @@ public static class QuadAutocannonPrefabConfigurator
         EditorSceneManager.SaveScene(scene);
     }
 
+    /// <summary>
+    /// Validates the factory prefab for required components and checks that the UnitExitPoint
+    /// is sufficiently far outside the NavMeshObstacle carving box to allow spawned units to path.
+    /// </summary>
     private static void ValidateFactoryPrefab(List<string> errors, float quadAgentRadius)
     {
         GameObject factoryRoot = PrefabUtility.LoadPrefabContents(FactoryPrefabPath);
@@ -395,6 +438,10 @@ public static class QuadAutocannonPrefabConfigurator
         }
     }
 
+    /// <summary>
+    /// Checks that the factory's UnitExitPoint is at least two agent-radii outside the obstacle
+    /// extents in the horizontal plane, ensuring units can path away after spawning.
+    /// </summary>
     private static void ValidateFactoryExitClearance(
         Transform factoryTransform,
         NavMeshObstacle obstacle,
@@ -429,6 +476,10 @@ public static class QuadAutocannonPrefabConfigurator
         }
     }
 
+    /// <summary>
+    /// Validates that mainScene has a NavMeshSurface with the required layer mask, ignore flags,
+    /// and baked NavMesh data present.
+    /// </summary>
     private static void ValidateMainSceneNavigation(List<string> errors)
     {
         EditorSceneManager.OpenScene(MainScenePath, OpenSceneMode.Single);
@@ -472,11 +523,17 @@ public static class QuadAutocannonPrefabConfigurator
         ValidateObject(surface, "m_NavMeshData", errors);
     }
 
+    /// <summary>Returns the combined layer mask covering all layers the NavMeshSurface must include.</summary>
     private static int GetRequiredNavSurfaceMask()
     {
         return LayerMask.GetMask("Ground", "PlayerUnit", "EnemyUnit", "Obstacle");
     }
 
+    /// <summary>
+    /// Returns the named child under <paramref name="gun"/>, or creates a new GameObject parented
+    /// to <paramref name="gun"/> at the given local X offset from <paramref name="center"/>.
+    /// Used to set up left/right muzzle points for dual-barrel fire.
+    /// </summary>
     private static Transform GetOrCreateMuzzle(
         Transform gun,
         Transform center,
@@ -498,6 +555,9 @@ public static class QuadAutocannonPrefabConfigurator
         return muzzleObject.transform;
     }
 
+    /// <summary>
+    /// Depth-first recursive search for a child Transform with the given name.
+    /// </summary>
     private static Transform FindChildRecursive(Transform parent, string childName)
     {
         if (parent == null || string.IsNullOrEmpty(childName))
@@ -519,6 +579,7 @@ public static class QuadAutocannonPrefabConfigurator
         return null;
     }
 
+    /// <summary>Sets an Object reference property on an already-open SerializedObject.</summary>
     private static void SetObject(SerializedObject serializedObject, string propertyName, Object value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -527,6 +588,9 @@ public static class QuadAutocannonPrefabConfigurator
             property.objectReferenceValue = value;
     }
 
+    /// <summary>
+    /// Sets an Object array property to exactly the provided values, resizing as needed.
+    /// </summary>
     private static void SetObjectArray(SerializedObject serializedObject, string propertyName, params Object[] values)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -540,6 +604,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
     }
 
+    /// <summary>Sets a float property on an already-open SerializedObject.</summary>
     private static void SetFloat(SerializedObject serializedObject, string propertyName, float value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -548,6 +613,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.floatValue = value;
     }
 
+    /// <summary>Sets an int property on an already-open SerializedObject.</summary>
     private static void SetInt(SerializedObject serializedObject, string propertyName, int value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -556,6 +622,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.intValue = value;
     }
 
+    /// <summary>Sets a bool property on an already-open SerializedObject.</summary>
     private static void SetBool(SerializedObject serializedObject, string propertyName, bool value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -564,6 +631,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.boolValue = value;
     }
 
+    /// <summary>Sets an int (layer mask) property on an already-open SerializedObject.</summary>
     private static void SetLayerMask(SerializedObject serializedObject, string propertyName, int value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -572,6 +640,10 @@ public static class QuadAutocannonPrefabConfigurator
             property.intValue = value;
     }
 
+    /// <summary>
+    /// Validates that a float serialized property on <paramref name="target"/> is at least
+    /// <paramref name="minimum"/>, appending a descriptive error message if not.
+    /// </summary>
     private static void ValidateFloatAtLeast(Object target, string propertyName, float minimum, List<string> errors)
     {
         if (target == null)
@@ -592,6 +664,9 @@ public static class QuadAutocannonPrefabConfigurator
             errors.Add(propertyName + " should be at least " + minimum.ToString("0.##") + ".");
     }
 
+    /// <summary>
+    /// Validates that a bool property on an already-open SerializedObject matches the expected value.
+    /// </summary>
     private static void ValidateBool(
         SerializedObject serializedObject,
         string propertyName,
@@ -610,6 +685,9 @@ public static class QuadAutocannonPrefabConfigurator
             errors.Add(propertyName + " should be " + expected + ".");
     }
 
+    /// <summary>
+    /// Validates that a serialized Object reference property on <paramref name="target"/> is assigned.
+    /// </summary>
     private static void ValidateObject(Object target, string propertyName, List<string> errors)
     {
         if (target == null)
@@ -624,6 +702,10 @@ public static class QuadAutocannonPrefabConfigurator
             errors.Add(propertyName + " is not assigned.");
     }
 
+    /// <summary>
+    /// Validates that a serialized Object array on <paramref name="target"/> has exactly
+    /// <paramref name="expectedSize"/> non-null entries.
+    /// </summary>
     private static void ValidateObjectArray(
         Object target,
         string propertyName,

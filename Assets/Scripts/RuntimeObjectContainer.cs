@@ -1,5 +1,5 @@
 using UnityEngine;
-
+
 using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
@@ -7,6 +7,10 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Core
 {
+    /// <summary>
+    /// Static helper that lazily creates and caches named child GameObjects under a single "Runtime Objects"
+    /// root in the scene hierarchy. Used to keep spawned units, buildings, and UI helpers organised at runtime.
+    /// </summary>
     public static class RuntimeObjectContainer
     {
         private const string RootName = "Runtime Objects";
@@ -19,6 +23,7 @@ namespace Strategy.Core
             _root = null;
         }
 
+        /// <summary>Returns the Transform of a named container under the root, creating it if it does not yet exist.</summary>
         public static Transform Get(string containerName)
         {
             Transform root = GetRoot();
@@ -32,6 +37,7 @@ namespace Strategy.Core
             return containerObject.transform;
         }
 
+        /// <summary>Returns the cached root Transform, finding or creating the "Runtime Objects" GameObject in the scene if needed.</summary>
         private static Transform GetRoot()
         {
             if (_root != null)

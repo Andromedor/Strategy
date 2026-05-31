@@ -1,5 +1,5 @@
 using UnityEngine;
-
+
 using Strategy.Core;
 using Strategy.Buildings;
 using Strategy.Data;
@@ -7,23 +7,26 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
-    public class UnitHealth 
+    /// <summary>
+    /// Plain C# class (not a MonoBehaviour) that tracks hit points for a unit.
+    /// Created by UnitCombat.Awake with the unit's MaxHealth value from UnitData.
+    /// </summary>
+    public class UnitHealth
     {
         private float _currentHealth;
-        // Поточна кількість HP.
 
         public float CurrentHealth => _currentHealth;
-        // Публічне читання HP.
 
         public bool IsDead => _currentHealth <= 0f;
-        // Чи мертвий юніт.
 
-        
         public UnitHealth(float maxHealth)
         {
             _currentHealth = maxHealth;
         }
 
+        /// <summary>
+        /// Subtracts damage from current health, clamping the result to a minimum of zero.
+        /// </summary>
         public void TakeDamage(float damage)
         {
             _currentHealth -= damage;

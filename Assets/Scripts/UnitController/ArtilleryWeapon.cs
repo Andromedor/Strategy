@@ -8,6 +8,11 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Artillery-specific subclass of UnitCombat. Overrides gun elevation to use a distance-based
+    /// curve, and overrides firing to create an ArtilleryProjectile with parabolic flight, accuracy
+    /// roll, and splash damage instead of a pooled bullet.
+    /// </summary>
     public class ArtilleryWeapon : UnitCombat
     {
         [Header("Artillery Aiming")]
@@ -48,6 +53,10 @@ namespace Strategy.Units
             base.Awake();
         }
 
+        /// <summary>
+        /// Overrides the base direct-pitch logic. Maps distance ratio through a power curve to derive
+        /// an elevation angle, then calls MoveGunPitch to step toward it.
+        /// </summary>
         protected override bool RotateGunToTarget(Transform target)
         {
             Vector3 targetPoint = GetTargetPoint(target);
@@ -60,6 +69,10 @@ namespace Strategy.Units
             return MoveGunPitch(targetPitch);
         }
 
+        /// <summary>
+        /// Rolls for hit vs. miss, optionally offsets the impact point, snaps it to ground,
+        /// then creates an ArtilleryProjectile with all required damage and flight parameters.
+        /// </summary>
         protected override IEnumerator FireAtTarget(Transform target)
         {
             if (_unitData == null || _pointPosition == null || target == null)
@@ -100,6 +113,9 @@ namespace Strategy.Units
                 _splashDamageMaxMultiplier);
         }
 
+        /// <summary>
+        /// Lerps between stationary and moving hit-chance extremes based on distance ratio and motion state.
+        /// </summary>
         private float GetHitChance(float distanceRatio, bool isMoving)
         {
             if (isMoving)
@@ -108,6 +124,9 @@ namespace Strategy.Units
             return Mathf.Lerp(_closeStationaryHitChance, _maxRangeStationaryHitChance, distanceRatio);
         }
 
+        /// <summary>
+        /// Generates a random offset point around the target within a miss radius scaled by distance and motion.
+        /// </summary>
         private Vector3 GetMissPoint(Vector3 targetPoint, float distanceRatio, bool isMoving)
         {
             float missRadius = Mathf.Lerp(_splashRadius * 0.65f, _maxMissRadius, distanceRatio);

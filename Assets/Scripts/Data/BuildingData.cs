@@ -4,6 +4,10 @@ using UnityEngine.Serialization;
 
 namespace Strategy.Data
 {
+    /// <summary>
+    /// ScriptableObject that defines a placeable building type — its prefab, economy cost,
+    /// build time, health, placement collision box, and which UI panel to open when selected.
+    /// </summary>
     [CreateAssetMenu(fileName = "BuildingData", menuName = "RTS/BuildingData")]
     public class BuildingData : ScriptableObject
     {
@@ -22,6 +26,8 @@ namespace Strategy.Data
         [SerializeField, FormerlySerializedAs("MaxHealth")] private float _maxHealth;
 
         [Header("Placement")]
+        // CheckBoxSize and CheckBoxOffset define the overlap-box used by BuildingPlacementManager
+        // to test whether a placement location is clear before allowing construction.
         [SerializeField, FormerlySerializedAs("CheckBoxSize")] private Vector3 _checkBoxSize;
         [SerializeField, FormerlySerializedAs("CheckBoxOffset")] private Vector3 _checkBoxOffset;
 

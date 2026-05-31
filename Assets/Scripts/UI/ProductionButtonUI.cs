@@ -11,6 +11,11 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.UI
 {
+    /// <summary>
+    /// Self-contained production queue button that displays a unit's icon, name, cost, and build time.
+    /// Handles affordability highlighting, pointer-driven tooltip display, and delegates clicks to
+    /// a caller-supplied callback. A single shared tooltip overlay is created lazily on first use.
+    /// </summary>
     public class ProductionButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler
     {
         private const float TooltipPadding = 12f;
@@ -36,12 +41,17 @@ namespace Strategy.UI
         private static TMP_Text _tooltipText;
         private static Canvas _tooltipCanvas;
 
+        /// <summary>Stores the shared font and sprite assets used by <see cref="ApplyLayout"/> and tooltip creation.</summary>
         public void SetStyle(TMP_FontAsset fontAsset, Sprite buttonSprite)
         {
             _fontAsset = fontAsset;
             _buttonSprite = buttonSprite;
         }
 
+        /// <summary>
+        /// Binds a <see cref="ProductionItemData"/> to this button, wires the click callback,
+        /// and performs a full layout and data bind via <see cref="Bind"/>.
+        /// </summary>
         public void Initialize(ProductionItemData item, Action<ProductionItemData> onClick)
         {
             _item = item;
@@ -65,6 +75,10 @@ namespace Strategy.UI
             }
         }
 
+        /// <summary>
+        /// Updates only the interactable state and background color to reflect whether the player
+        /// can currently afford this item. Called each time resources change.
+        /// </summary>
         public void RefreshAvailability(int playerResource)
         {
             if (_button == null || _item == null)
@@ -93,11 +107,16 @@ namespace Strategy.UI
             HideTooltip();
         }
 
+        /// <summary>Invokes the caller-supplied callback with this button's production item.</summary>
         private void Click()
         {
             _onClick?.Invoke(_item);
         }
 
+        /// <summary>
+        /// Populates all visual sub-elements (icon, name, cost, time) from the view-model,
+        /// then delegates affordability coloring to <see cref="BindAvailability"/>.
+        /// </summary>
         private void Bind(ProductionItemViewModel model)
         {
             _model = model;
@@ -126,6 +145,7 @@ namespace Strategy.UI
             BindAvailability(model);
         }
 
+        /// <summary>Sets button interactability and background color based on <see cref="ProductionItemViewModel.IsAffordable"/>.</summary>
         private void BindAvailability(ProductionItemViewModel model)
         {
             _model = model;
@@ -137,6 +157,10 @@ namespace Strategy.UI
                 _background.color = model.IsAffordable ? ButtonFillColor : DisabledFillColor;
         }
 
+        /// <summary>
+        /// Resolves child UI component references by name search, creating missing sub-objects
+        /// (<see cref="Image"/>, <see cref="TMP_Text"/>) at runtime if none are found.
+        /// </summary>
         private void CacheReferences()
         {
             if (_button == null)
@@ -162,6 +186,10 @@ namespace Strategy.UI
                 _fallbackText = FindChild<TMP_Text>("FallbackIcon") ?? CreateText("FallbackIcon");
         }
 
+        /// <summary>
+        /// Sizes the button root, sets background colors, adds an Outline, configures
+        /// Button color states, and positions each sub-element at its fixed anchor slot.
+        /// </summary>
         private void ApplyLayout()
         {
             RectTransform rootRect = transform as RectTransform;
@@ -214,12 +242,14 @@ namespace Strategy.UI
             SetBottomRightRect(_timeText != null ? _timeText.rectTransform : null, new Vector2(-9f, 8f), new Vector2(50f, 21f));
         }
 
+        /// <summary>Searches for a direct child by name and returns the requested component, or null.</summary>
         private T FindChild<T>(string objectName) where T : Component
         {
             Transform child = transform.Find(objectName);
             return child != null ? child.GetComponent<T>() : null;
         }
 
+        /// <summary>Creates a child GameObject with a non-raycasting <see cref="Image"/> component and returns it.</summary>
         private Image CreateImage(string objectName)
         {
             GameObject imageObject = new GameObject(
@@ -234,6 +264,7 @@ namespace Strategy.UI
             return image;
         }
 
+        /// <summary>Creates a child GameObject with a non-raycasting <see cref="TextMeshProUGUI"/> component and returns it.</summary>
         private TMP_Text CreateText(string objectName)
         {
             GameObject textObject = new GameObject(
@@ -249,6 +280,7 @@ namespace Strategy.UI
             return text;
         }
 
+        /// <summary>Applies font, size range, style, alignment, and color settings to a TMP label.</summary>
         private static void SetTextStyle(
             TMP_Text text,
             float maxFontSize,
@@ -273,6 +305,7 @@ namespace Strategy.UI
             text.overflowMode = TextOverflowModes.Ellipsis;
         }
 
+        /// <summary>Anchors a RectTransform to the top-center of its parent at the given offset and size.</summary>
         private static void SetTopRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
         {
             if (rectTransform == null)
@@ -285,6 +318,7 @@ namespace Strategy.UI
             rectTransform.sizeDelta = size;
         }
 
+        /// <summary>Anchors a RectTransform to the bottom-left corner of its parent at the given offset and size.</summary>
         private static void SetBottomLeftRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
         {
             if (rectTransform == null)
@@ -297,6 +331,7 @@ namespace Strategy.UI
             rectTransform.sizeDelta = size;
         }
 
+        /// <summary>Anchors a RectTransform to the bottom-right corner of its parent at the given offset and size.</summary>
         private static void SetBottomRightRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
         {
             if (rectTransform == null)
@@ -309,6 +344,10 @@ namespace Strategy.UI
             rectTransform.sizeDelta = size;
         }
 
+        /// <summary>
+        /// Populates and positions the shared tooltip overlay with this item's stats,
+        /// lazily creating the tooltip GameObject via <see cref="EnsureTooltip"/> if needed.
+        /// </summary>
         private void ShowTooltip(Vector2 screenPosition)
         {
             if (_item == null)
@@ -331,6 +370,10 @@ namespace Strategy.UI
             MoveTooltip(screenPosition);
         }
 
+        /// <summary>
+        /// Repositions the tooltip so it appears above the button, clamped within the canvas bounds
+        /// and flipped below if it would overflow the top edge.
+        /// </summary>
         private void MoveTooltip(Vector2 screenPosition)
         {
             if (_tooltipRoot == null || !_tooltipRoot.gameObject.activeSelf)
@@ -370,12 +413,17 @@ namespace Strategy.UI
             _tooltipRoot.position = new Vector3(x, y, 0f);
         }
 
+        /// <summary>Hides the shared tooltip overlay if it exists.</summary>
         private static void HideTooltip()
         {
             if (_tooltipRoot != null)
                 _tooltipRoot.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Creates the shared tooltip panel (background Image + TMP_Text) as a canvas-level overlay
+        /// the first time it is needed. Subsequent calls return immediately if already created.
+        /// </summary>
         private void EnsureTooltip()
         {
             if (_tooltipRoot != null)
@@ -436,6 +484,10 @@ namespace Strategy.UI
             tooltipObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Builds the multi-line tooltip string for an item, appending full unit stats
+        /// from <see cref="UnitData"/> when available.
+        /// </summary>
         private static string BuildTooltipText(ProductionItemData item)
         {
             UnitData unit = item.UnitData;
@@ -461,6 +513,7 @@ namespace Strategy.UI
                 $"Formation: {FormatNumber(unit.FormationSpacing)}";
         }
 
+        /// <summary>Cleans up internal asset naming conventions (e.g., "LightTank" → "Light Tank") for display.</summary>
         private static string FormatDisplayName(string itemName)
         {
             if (string.IsNullOrWhiteSpace(itemName))
@@ -482,6 +535,7 @@ namespace Strategy.UI
             return $"{FormatNumber(seconds)}s";
         }
 
+        /// <summary>Formats a float as an integer when it has no fractional part, otherwise to two decimal places.</summary>
         private static string FormatNumber(float value)
         {
             return Mathf.Approximately(value, Mathf.Round(value))

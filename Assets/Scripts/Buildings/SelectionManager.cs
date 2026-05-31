@@ -7,6 +7,10 @@ using UnityEngine.InputSystem;
 
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Handles left-click selection of buildings (factories, construction centers, outposts).
+    /// Raises the appropriate EventManager events and opens the matching HUD panel.
+    /// </summary>
     public class SelectionManager : MonoBehaviour
     {
         [SerializeField] private UnityEngine.Camera _camera;
@@ -40,6 +44,7 @@ namespace Strategy.Buildings
             SelectBuilding();
         }
 
+        /// <summary>Raycasts from the mouse cursor and dispatches to the appropriate selection handler based on the hit component.</summary>
         private void SelectBuilding()
         {
             if (_camera == null)
@@ -81,6 +86,7 @@ namespace Strategy.Buildings
             ClearBuildingSelection();
         }
 
+        /// <summary>Opens the construction panel for a player-owned ConstructionCenter; clears selection if it belongs to the enemy.</summary>
         private static void SelectConstructionCenter(ConstructionCenter constructionCenter)
         {
             TeamComponent teamComponent = constructionCenter.GetComponentInParent<TeamComponent>();
@@ -95,6 +101,7 @@ namespace Strategy.Buildings
             EventManager.RaiseOpenPanel(PanelType.Construction);
         }
 
+        /// <summary>Opens the outpost panel if the outpost is player-owned; clears selection otherwise.</summary>
         private static void SelectOutpost(Outpost outpost)
         {
             SelectedFactory = null;
@@ -109,6 +116,7 @@ namespace Strategy.Buildings
             EventManager.RaiseOutpostSelected(outpost);
         }
 
+        /// <summary>Deselects any active factory, fires ConstructionClosed, and returns the HUD to the main menu panel.</summary>
         private static void ClearBuildingSelection()
         {
             SelectedFactory = null;

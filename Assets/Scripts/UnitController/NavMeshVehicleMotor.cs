@@ -8,6 +8,12 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Bicycle-model wheeled vehicle driver that takes over NavMeshAgent steering.
+    /// Disables agent rotation, reads its desired velocity for heading, then directly rotates and
+    /// moves the GameObject. Manages forward speed, alignment pauses, and smooth steer angle.
+    /// Subclassed by TrackedVehicleMotor for differential track speeds.
+    /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     public class NavMeshVehicleMotor : MonoBehaviour
     {
@@ -109,6 +115,10 @@ namespace Strategy.Units
                 deltaTime);
         }
 
+        /// <summary>
+        /// Writes motor parameters (speed, acceleration, rotation) to the NavMeshAgent so it
+        /// matches the vehicle settings. Skips if _applyAgentTuning is disabled.
+        /// </summary>
         protected virtual void ApplyAgentTuning()
         {
             if (!_applyAgentTuning || _agent == null)
@@ -123,6 +133,10 @@ namespace Strategy.Units
             _agent.autoBraking = true;
         }
 
+        /// <summary>
+        /// Computes the actual velocity from frame-to-frame position delta; falls back to
+        /// agent.velocity when the displacement is negligible (e.g. first frame or standing still).
+        /// </summary>
         protected virtual void UpdateMeasuredVelocity(float deltaTime)
         {
             Vector3 positionDelta = transform.position - _lastPosition;
@@ -143,6 +157,10 @@ namespace Strategy.Units
             _currentSpeed = Vector3.Dot(_currentVelocity, transform.forward);
         }
 
+        /// <summary>
+        /// Derives a normalised heading direction from the agent's desiredVelocity, then steeringTarget,
+        /// then destination as successive fallbacks.
+        /// </summary>
         protected virtual Vector3 GetHeadingDirection()
         {
             if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
@@ -175,6 +193,10 @@ namespace Strategy.Units
             return Vector3.zero;
         }
 
+        /// <summary>
+        /// Adjusts agent.speed based on heading angle; halts movement (_waitingForAlignment = true)
+        /// when the required turn exceeds _alignmentStopAngle and resumes below _alignmentResumeAngle.
+        /// </summary>
         protected virtual void UpdateAgentSpeed(float headingAngle, bool hasHeading)
         {
             if (!hasHeading || !_agent.hasPath || _agent.pathPending)
@@ -209,6 +231,9 @@ namespace Strategy.Units
             _agent.speed = Mathf.Lerp(_cruiseSpeed, _minimumForwardSpeed, turnT);
         }
 
+        /// <summary>
+        /// Rotates the vehicle body toward headingDirection at _bodyTurnSpeed degrees per second.
+        /// </summary>
         protected virtual void UpdateBodyRotation(Vector3 headingDirection, float deltaTime)
         {
             if (headingDirection.sqrMagnitude <= 0.001f)
@@ -221,6 +246,10 @@ namespace Strategy.Units
                 Mathf.Max(1f, _bodyTurnSpeed) * deltaTime);
         }
 
+        /// <summary>
+        /// Smoothly moves _currentSteerAngle toward the signed heading angle, clamped to _maxSteerAngle,
+        /// using an exponential blend combined with a max-speed cap.
+        /// </summary>
         protected virtual void UpdateSteering(Vector3 headingDirection, float deltaTime)
         {
             float targetSteerAngle = 0f;
@@ -240,6 +269,11 @@ namespace Strategy.Units
                 Mathf.Max(1f, _maxSteerSpeed) * deltaTime);
         }
 
+        /// <summary>
+        /// Extension point called every Update after all motor state is updated.
+        /// Override in subclasses (e.g. TrackedVehicleMotor) to compute per-track speeds or other
+        /// derivative data without duplicating the base Update logic.
+        /// </summary>
         protected virtual void OnMotorUpdated(
             Vector3 headingDirection,
             bool hasHeading,

@@ -4,11 +4,16 @@ using System;
 using System.Collections.Generic;
 using Strategy.Units;
 using UnityEngine;
-
+
 using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Capturable map objective that generates resources for its owner over time.
+    /// Tracks ownership, capture progress, and an optional one-time upgrade that
+    /// doubles income and activates an extra ConstructionCenter build area.
+    /// </summary>
     public class Outpost : MonoBehaviour
     {
         private const string BaseColorProperty = "_BaseColor";
@@ -72,6 +77,7 @@ namespace Strategy.Buildings
             }
         }
 
+    /// <summary>Returns the zone color assigned to the given team (player = green, enemy = red).</summary>
     public Color GetColorForTeam(TeamType team)
     {
         return team == TeamType.Player ? _playerColor : _enemyColor;
@@ -84,6 +90,7 @@ namespace Strategy.Buildings
         OnStatsChanged = null;
     }
 
+        /// <summary>Returns the number of outposts currently owned by the specified team.</summary>
         public static int GetOwnedCount(TeamType team)
         {
             int count = 0;
@@ -97,6 +104,7 @@ namespace Strategy.Buildings
             return count;
         }
 
+        /// <summary>Sums the current resource-per-minute income across all outposts owned by the given team.</summary>
         public static float GetResourcePerMinute(TeamType team)
         {
             float resourcePerMinute = 0f;
@@ -110,6 +118,7 @@ namespace Strategy.Buildings
             return resourcePerMinute;
         }
 
+        /// <summary>Sums the resource-tick frequency (ticks per minute) across all outposts owned by the given team.</summary>
         public static float GetResourceTicksPerMinute(TeamType team)
         {
             float ticksPerMinute = 0f;
@@ -150,6 +159,10 @@ namespace Strategy.Buildings
             GenerateResource();
         }
 
+        /// <summary>
+        /// Called every frame by OutpostCaptureZone with current occupancy counts.
+        /// Advances or resets capture progress and triggers ownership transfer when complete.
+        /// </summary>
         public void TickCapture(int playerUnits, int enemyUnits, bool hasBlockingBuildings, float deltaTime)
         {
             if (!CanCapture(playerUnits, enemyUnits, hasBlockingBuildings, out TeamType team))
@@ -170,6 +183,10 @@ namespace Strategy.Buildings
                 Capture(team);
         }
 
+        /// <summary>
+        /// Determines whether a capture attempt is valid given current unit counts and blocking buildings.
+        /// Returns false and sets capturingTeam to default when capture is not permitted.
+        /// </summary>
         private bool CanCapture(
             int playerUnits,
             int enemyUnits,
@@ -201,6 +218,7 @@ namespace Strategy.Buildings
             return true;
         }
 
+        /// <summary>Finalises ownership transfer to the capturing team, resets timers, and refreshes visuals and stats.</summary>
         private void Capture(TeamType team)
         {
             bool ownerChanged = _owner != null && _owner != team;
@@ -217,6 +235,7 @@ namespace Strategy.Buildings
             NotifyStatsChanged();
         }
 
+        /// <summary>Reverts the upgrade state and disables the extra build area when the outpost changes hands.</summary>
         private void ResetUpgrade()
         {
             _isUpgraded = false;
@@ -229,6 +248,10 @@ namespace Strategy.Buildings
             _captureProgress = 0f;
         }
 
+        /// <summary>
+        /// Attempts to purchase the outpost upgrade by spending resources.
+        /// Doubles resource income and activates the extra ConstructionCenter on success.
+        /// </summary>
         public bool TryUpgrade()
         {
             if (!CanUpgrade)
@@ -244,6 +267,10 @@ namespace Strategy.Buildings
             return true;
         }
 
+        /// <summary>
+        /// Called each frame; accumulates elapsed time and calls ResourceManager.Add when a tick interval elapses.
+        /// Does nothing when the outpost has no owner.
+        /// </summary>
         private void GenerateResource()
         {
             if (_owner == null)
@@ -262,6 +289,7 @@ namespace Strategy.Buildings
                 ResourceManager.Instance.Add(_owner.Value, CurrentResourcePerTick);
         }
 
+        /// <summary>Applies the owner-dependent zone color to the zone renderer via a MaterialPropertyBlock.</summary>
         private void UpdateVisual()
         {
             if (_zoneRenderer == null)
@@ -276,6 +304,7 @@ namespace Strategy.Buildings
             _zoneRenderer.SetPropertyBlock(_propertyBlock);
         }
 
+        /// <summary>Enables or disables the optional extra ConstructionCenter and controls its visual indicator.</summary>
         private void SetBuildAreaActive(bool active, bool showVisual)
         {
             if (_extraBuildArea == null)

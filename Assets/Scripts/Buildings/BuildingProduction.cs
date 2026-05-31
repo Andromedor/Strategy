@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Factory building that queues and produces units one at a time, charging player resources per item.
+    /// Spawned units drive themselves out through the factory gate via UnitSpawnActivator before becoming active.
+    /// </summary>
     public class BuildingProduction : MonoBehaviour
     {
         [Header("Spawn Points")]
@@ -59,6 +63,10 @@ namespace Strategy.Buildings
             FactoriesChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Validates the item, spends player resources if applicable, enqueues the unit for production,
+        /// and starts the ProcessQueue coroutine if it is not already running.
+        /// </summary>
         public bool AddToQueue(ProductionItemData item)
         {
             if (item == null || item.UnitData == null || item.UnitData.Prefab == null)
@@ -83,6 +91,7 @@ namespace Strategy.Buildings
             return true;
         }
 
+        /// <summary>Dequeues items one at a time, waiting for each unit's production time then calling SpawnAndReleaseUnit.</summary>
         private IEnumerator ProcessQueue()
         {
             _isProducing = true;
@@ -99,6 +108,10 @@ namespace Strategy.Buildings
             _isProducing = false;
         }
 
+        /// <summary>
+        /// Instantiates the unit prefab at the spawn point in a disabled state, opens the gate,
+        /// drives the unit to the exit point via UnitSpawnActivator, then closes the gate.
+        /// </summary>
         private IEnumerator SpawnAndReleaseUnit(ProductionItemData item)
         {
             UnitData unitData = item.UnitData;
@@ -127,6 +140,7 @@ namespace Strategy.Buildings
                 yield return StartCoroutine(_gate.Close());
         }
 
+        /// <summary>Copies the factory's team onto the newly spawned unit's TeamComponent and assigns the correct layer mask.</summary>
         private void SetupUnitTeam(GameObject spawnedUnit)
         {
             if (spawnedUnit == null || _teamComponent == null)
@@ -146,6 +160,7 @@ namespace Strategy.Buildings
                 spawnedUnit.layer = layer;
         }
 
+        /// <summary>Puts the unit into the spawning (disabled) state via UnitSpawnActivator before it exits the factory.</summary>
         private static void DisableUnitBeforeExit(GameObject spawnedUnit)
         {
             if (spawnedUnit == null)

@@ -6,6 +6,11 @@ using UnityEngine.Serialization;
 
 namespace Strategy.UI
 {
+    /// <summary>
+    /// Central HUD panel manager. Maintains a registry of panel GameObjects keyed by
+    /// <see cref="PanelType"/> and ensures only one panel is visible at a time.
+    /// Responds to <see cref="EventManager.OnOpenPanel"/> to switch panels from anywhere in the codebase.
+    /// </summary>
     public class UIManager : MonoBehaviour
     {
         [Serializable]
@@ -24,6 +29,7 @@ namespace Strategy.UI
 
         private void Awake()
         {
+            // Build the type-to-GameObject lookup from the serialized panel list.
             _panelDictionary.Clear();
 
             if (_panels == null)
@@ -53,6 +59,10 @@ namespace Strategy.UI
             OpenPanel(PanelType.MainMenu);
         }
 
+        /// <summary>
+        /// Hides all registered panels then activates the panel that matches <paramref name="type"/>.
+        /// Called directly and via <see cref="EventManager.OnOpenPanel"/>.
+        /// </summary>
         public void OpenPanel(PanelType type)
         {
             foreach (GameObject panel in _panelDictionary.Values)
@@ -66,6 +76,7 @@ namespace Strategy.UI
         }
     }
 
+    /// <summary>Identifies each distinct HUD panel that <see cref="UIManager"/> can show.</summary>
     public enum PanelType
     {
         MainMenu,

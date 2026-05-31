@@ -14,6 +14,13 @@ using UnityEngine.UI;
 
 using Strategy.Data;
 using Strategy.Units;
+
+/// <summary>
+/// Editor-only tool that rebuilds the full RTS HUD inside mainScene from scratch.
+/// Invoked via Tools/RTS/Build RTS HUD. Creates the Canvas hierarchy (top resource bar,
+/// bottom HUD with minimap, selection info panel, and command deck), wires all UI
+/// components, and exposes a CI-callable Validate method.
+/// </summary>
 public static class RtsHudBuilder
 {
     private const string MainScenePath = "Assets/Scenes/mainScene.unity";
@@ -35,6 +42,10 @@ public static class RtsHudBuilder
 
     private static TMP_FontAsset _uiFontAsset;
 
+    /// <summary>
+    /// Main build entry point. Opens mainScene, clears the canvas, recreates the full HUD
+    /// hierarchy, wires all component references, and saves the scene.
+    /// </summary>
     [MenuItem("Tools/RTS/Build RTS HUD")]
     public static void Build()
     {
@@ -105,6 +116,10 @@ public static class RtsHudBuilder
         Debug.Log("RTS HUD rebuilt in mainScene.");
     }
 
+    /// <summary>
+    /// Headless validation entry point for CI. Checks canvas scaling, all required HUD objects,
+    /// component presence, UIManager panel list, and the ProductionButton prefab structure.
+    /// </summary>
     public static void Validate()
     {
         List<string> errors = new List<string>();
@@ -173,6 +188,10 @@ public static class RtsHudBuilder
         Debug.Log("RTS HUD validation passed.");
     }
 
+    /// <summary>
+    /// Finds or creates the scene Canvas and configures it with a CanvasScaler set to
+    /// Scale With Screen Size at 1920x1080 and a GraphicRaycaster.
+    /// </summary>
     private static Canvas EnsureCanvas()
     {
         Canvas canvas = Object.FindFirstObjectByType<Canvas>();
@@ -206,6 +225,9 @@ public static class RtsHudBuilder
         return canvas;
     }
 
+    /// <summary>
+    /// Creates an EventSystem with InputSystemUIInputModule if one does not already exist in the scene.
+    /// </summary>
     private static void EnsureEventSystem()
     {
         if (Object.FindFirstObjectByType<EventSystem>() != null)
@@ -217,6 +239,9 @@ public static class RtsHudBuilder
             typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
     }
 
+    /// <summary>
+    /// Destroys all direct children of the canvas so the HUD can be rebuilt from scratch.
+    /// </summary>
     private static void ClearCanvas(Canvas canvas)
     {
         List<GameObject> children = new List<GameObject>();
@@ -228,6 +253,10 @@ public static class RtsHudBuilder
             Object.DestroyImmediate(children[i]);
     }
 
+    /// <summary>
+    /// Removes any OutpostStatusUI components that are NOT on the canonical "TopResources"
+    /// object, cleaning up stale components left from earlier HUD layouts.
+    /// </summary>
     private static void RemoveLegacyResourceStatus()
     {
         OutpostStatusUI[] statuses = Object.FindObjectsByType<OutpostStatusUI>(
@@ -244,6 +273,11 @@ public static class RtsHudBuilder
         }
     }
 
+    /// <summary>
+    /// Loads the ProductionButtonPrefab and re-applies sizing, Image, Button, Outline, child
+    /// text/icon layout, and ProductionButtonUI field assignments so the prefab matches the
+    /// current HUD style even if it has drifted.
+    /// </summary>
     private static void RepairProductionButtonPrefab(Sprite buttonSprite)
     {
         GameObject root = PrefabUtility.LoadPrefabContents(ProductionButtonPrefabPath);
@@ -329,12 +363,18 @@ public static class RtsHudBuilder
         }
     }
 
+    /// <summary>
+    /// Returns an existing component of type T on <paramref name="target"/>, or adds one if absent.
+    /// </summary>
     private static T EnsureComponent<T>(GameObject target) where T : Component
     {
         T component = target.GetComponent<T>();
         return component != null ? component : target.AddComponent<T>();
     }
 
+    /// <summary>
+    /// Finds or creates a child GameObject with an Image component under <paramref name="parent"/>.
+    /// </summary>
     private static Image EnsureChildImage(Transform parent, string objectName)
     {
         Transform child = parent.Find(objectName);
@@ -353,6 +393,10 @@ public static class RtsHudBuilder
         return image != null ? image : child.gameObject.AddComponent<Image>();
     }
 
+    /// <summary>
+    /// Finds or creates a child GameObject with a TMP_Text component under <paramref name="parent"/>.
+    /// Renames a legacy-named child if found; creates a new one if neither name is present.
+    /// </summary>
     private static TMP_Text EnsureChildText(Transform parent, string objectName, string legacyName)
     {
         Transform child = parent.Find(objectName);
@@ -378,6 +422,9 @@ public static class RtsHudBuilder
         return text != null ? text : child.gameObject.AddComponent<TextMeshProUGUI>();
     }
 
+    /// <summary>
+    /// Applies anchor, pivot, position, and size to a RectTransform in a single call.
+    /// </summary>
     private static void ConfigureChildRect(
         RectTransform rect,
         Vector2 anchorMin,
@@ -396,6 +443,10 @@ public static class RtsHudBuilder
         rect.sizeDelta = sizeDelta;
     }
 
+    /// <summary>
+    /// Configures a TMP_Text element inside a prefab with font, size, auto-sizing, style,
+    /// alignment, and color; skips font assignment if <see cref="_uiFontAsset"/> is null.
+    /// </summary>
     private static void ConfigurePrefabText(
         TMP_Text text,
         string value,
@@ -422,6 +473,10 @@ public static class RtsHudBuilder
         text.overflowMode = TextOverflowModes.Ellipsis;
     }
 
+    /// <summary>
+    /// Populates the SelectionInfoPanel with title, subtitle, stats text, and a compact unit
+    /// list, then attaches SelectionInfoPanelUI and wires all serialized references.
+    /// </summary>
     private static void BuildSelectionInfo(RectTransform parent)
     {
         TMP_Text title = CreateText("SelectionTitle", parent, "No selection", 28f, FontStyles.Bold, TextAlignmentOptions.TopLeft);
@@ -461,6 +516,11 @@ public static class RtsHudBuilder
         SetObject(selectionInfo, "_compactListTextPrefab", rowPrefab);
     }
 
+    /// <summary>
+    /// Creates the CommandDeck area: a tab strip (Build/Units/Outpost) and content sub-panels
+    /// for ConstructionPanelUI, ProductionPanelUI, and OutpostPanelUI. Returns the panel refs
+    /// via a CommandPanels struct for use by ConfigureUIManager.
+    /// </summary>
     private static CommandPanels BuildCommandDeck(RectTransform parent, Sprite buttonSprite)
     {
         RectTransform tabs = CreateRect("CommandTabs", parent, new Vector2(0f, 1f), Vector2.one);
@@ -516,6 +576,10 @@ public static class RtsHudBuilder
         return new CommandPanels(idlePanel.gameObject, factoryPanel.gameObject, constructionPanel.gameObject, outpostPanel.gameObject);
     }
 
+    /// <summary>
+    /// Creates a scrollable grid content area and an "empty" placeholder text inside
+    /// <paramref name="parent"/>; outputs the empty label via the out parameter.
+    /// </summary>
     private static RectTransform CreateScrollContent(RectTransform parent, string objectName, out TMP_Text emptyText)
     {
         RectTransform content = CreateRect(objectName + "Content", parent, Vector2.zero, Vector2.one);
@@ -530,6 +594,10 @@ public static class RtsHudBuilder
         return content;
     }
 
+    /// <summary>
+    /// Builds the Outpost sub-panel with info/resource text fields and an Upgrade button,
+    /// then wires the references onto <paramref name="outpostPanel"/>.
+    /// </summary>
     private static void BuildOutpostPanel(RectTransform parent, OutpostPanelUI outpostPanel, Sprite buttonSprite)
     {
         TMP_Text cost = CreateText("OutpostInfo", parent, "Select a captured outpost", 18f, FontStyles.Bold,
@@ -553,6 +621,9 @@ public static class RtsHudBuilder
         SetObject(outpostPanel, "_resourceText", resource);
     }
 
+    /// <summary>
+    /// Creates a transparent full-stretch panel RectTransform for a command sub-panel slot.
+    /// </summary>
     private static RectTransform CreateCommandPanel(string objectName, Transform parent)
     {
         RectTransform panel = CreatePanel(objectName, parent, null, new Color(0f, 0f, 0f, 0f));
@@ -560,6 +631,10 @@ public static class RtsHudBuilder
         return panel;
     }
 
+    /// <summary>
+    /// Creates a tab Button with a HudPanelButton component wired to the given PanelType,
+    /// and adds a LayoutElement with fixed minimum height.
+    /// </summary>
     private static Button CreateTabButton(
         Transform parent,
         string label,
@@ -582,6 +657,10 @@ public static class RtsHudBuilder
         return button;
     }
 
+    /// <summary>
+    /// Creates a UI Button GameObject with a label text child, styled with ButtonColor and
+    /// an optional sliced sprite background.
+    /// </summary>
     private static Button CreateButton(string objectName, Transform parent, string label, Sprite sprite)
     {
         GameObject buttonObject = new GameObject(
@@ -607,6 +686,9 @@ public static class RtsHudBuilder
         return button;
     }
 
+    /// <summary>
+    /// Creates a panel RectTransform with an Image component using the given sprite and color.
+    /// </summary>
     private static RectTransform CreatePanel(string objectName, Transform parent, Sprite sprite, Color color)
     {
         GameObject panelObject = new GameObject(
@@ -627,6 +709,9 @@ public static class RtsHudBuilder
         return rect;
     }
 
+    /// <summary>
+    /// Creates a plain RectTransform GameObject (no Image) with the given anchor extents.
+    /// </summary>
     private static RectTransform CreateRect(string objectName, Transform parent, Vector2 anchorMin, Vector2 anchorMax)
     {
         GameObject rectObject = new GameObject(objectName, typeof(RectTransform));
@@ -641,6 +726,10 @@ public static class RtsHudBuilder
         return rect;
     }
 
+    /// <summary>
+    /// Creates a TextMeshProUGUI GameObject with the project font, auto-sizing, and text color
+    /// applied; returns the TMP_Text reference.
+    /// </summary>
     private static TMP_Text CreateText(
         string objectName,
         Transform parent,
@@ -674,6 +763,10 @@ public static class RtsHudBuilder
         return label;
     }
 
+    /// <summary>
+    /// Populates the UIManager's _panels list with the four command-deck panel entries
+    /// (MainMenu/idle, Factory, Construction, Outpost) via SerializedObject.
+    /// </summary>
     private static void ConfigureUIManager(UIManager manager, CommandPanels panels)
     {
         SerializedObject serialized = new SerializedObject(manager);
@@ -691,6 +784,10 @@ public static class RtsHudBuilder
         EditorUtility.SetDirty(manager);
     }
 
+    /// <summary>
+    /// Sets the PanelType enum and panel GameObject reference on a single UIManager panel entry.
+    /// Supports both "_type"/"_panelObject" and "type"/"panelObject" property naming conventions.
+    /// </summary>
     private static void SetPanelEntry(SerializedProperty element, PanelType type, GameObject panel)
     {
         SerializedProperty typeProperty = element.FindPropertyRelative("_type") ??
@@ -705,6 +802,10 @@ public static class RtsHudBuilder
             objectProperty.objectReferenceValue = panel;
     }
 
+    /// <summary>
+    /// Writes the _buildings array on a ConstructionPanelUI with a single BuildingData entry
+    /// (or clears it when building is null).
+    /// </summary>
     private static void SetBuildingList(ConstructionPanelUI target, BuildingData building)
     {
         SerializedObject serialized = new SerializedObject(target);
@@ -722,6 +823,10 @@ public static class RtsHudBuilder
         EditorUtility.SetDirty(target);
     }
 
+    /// <summary>
+    /// Validates that UIManager has at least four panel entries covering all required PanelTypes
+    /// and that every panel object reference is assigned.
+    /// </summary>
     private static void ValidatePanelList(UIManager manager, List<string> errors)
     {
         SerializedObject serialized = new SerializedObject(manager);
@@ -758,6 +863,10 @@ public static class RtsHudBuilder
         }
     }
 
+    /// <summary>
+    /// Validates the TopResources panel: checks TMP text size, panel RectTransform dimensions,
+    /// and that exactly one OutpostStatusUI exists on that object.
+    /// </summary>
     private static void ValidateResourceHud(List<string> errors)
     {
         GameObject topResources = GameObject.Find("TopResources");
@@ -794,6 +903,11 @@ public static class RtsHudBuilder
             errors.Add("There should be exactly one OutpostStatusUI on TopResources.");
     }
 
+    /// <summary>
+    /// Validates that the BottomHud frame is full-width, anchored at the screen bottom, tall
+    /// enough to contain its children, and that MinimapSlot/SelectionInfoPanel/CommandDeck
+    /// are visually inside the frame bounds.
+    /// </summary>
     private static void ValidateBottomHudFrame(List<string> errors)
     {
         GameObject bottomObject = GameObject.Find("BottomHud");
@@ -815,6 +929,10 @@ public static class RtsHudBuilder
         ValidateChildInsideBottom(bottom, "CommandDeck", errors);
     }
 
+    /// <summary>
+    /// Uses world-space corners to check that <paramref name="childName"/> is fully contained
+    /// within <paramref name="bottom"/> with at least an 8-unit margin.
+    /// </summary>
     private static void ValidateChildInsideBottom(RectTransform bottom, string childName, List<string> errors)
     {
         GameObject childObject = GameObject.Find(childName);
@@ -838,6 +956,10 @@ public static class RtsHudBuilder
             errors.Add(childName + " should be fully inside BottomHud background.");
     }
 
+    /// <summary>
+    /// Validates the ProductionButton prefab for required components, non-transparent background,
+    /// visible outline, and all serialized UI field references being assigned.
+    /// </summary>
     private static void ValidateProductionButtonPrefab(List<string> errors)
     {
         ProductionButtonUI prefab = AssetDatabase.LoadAssetAtPath<ProductionButtonUI>(ProductionButtonPrefabPath);
@@ -874,6 +996,9 @@ public static class RtsHudBuilder
             errors.Add("ProductionButtonPrefab _icon must not reference the root background image.");
     }
 
+    /// <summary>
+    /// Checks that a named serialized Object reference is assigned; appends <paramref name="message"/> on failure.
+    /// </summary>
     private static void ValidateObjectReference(
         SerializedObject serialized,
         string propertyName,
@@ -885,12 +1010,19 @@ public static class RtsHudBuilder
             errors.Add(message);
     }
 
+    /// <summary>
+    /// Checks that a named GameObject exists in the scene; appends a missing-object error if not.
+    /// </summary>
     private static void ValidateObject(string objectName, List<string> errors)
     {
         if (GameObject.Find(objectName) == null)
             errors.Add(objectName + " is missing.");
     }
 
+    /// <summary>
+    /// Adds four border line Image children (top, bottom, left, right) to <paramref name="target"/>
+    /// with the given color and thickness.
+    /// </summary>
     private static void AddBorder(RectTransform target, Color color, float thickness)
     {
         if (target == null)
@@ -906,6 +1038,9 @@ public static class RtsHudBuilder
             new Vector2(1f, 0.5f), Vector2.zero, new Vector2(thickness, 0f));
     }
 
+    /// <summary>
+    /// Creates a single thin Image child used as one edge of a border decoration.
+    /// </summary>
     private static void CreateBorderLine(
         RectTransform parent,
         string objectName,
@@ -936,6 +1071,9 @@ public static class RtsHudBuilder
         image.raycastTarget = false;
     }
 
+    /// <summary>
+    /// Stretches a RectTransform to fill its parent completely, with optional inset offsets.
+    /// </summary>
     private static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
     {
         if (rect == null)
@@ -948,6 +1086,9 @@ public static class RtsHudBuilder
         rect.offsetMax = offsetMax;
     }
 
+    /// <summary>
+    /// Sets all anchor, pivot, position, and size properties on a RectTransform in one call.
+    /// </summary>
     private static void SetAnchor(
         RectTransform rect,
         Vector2 anchorMin,
@@ -966,6 +1107,10 @@ public static class RtsHudBuilder
         rect.sizeDelta = sizeDelta;
     }
 
+    /// <summary>
+    /// Loads a Sprite from <paramref name="path"/>; falls back to scanning all sub-assets when
+    /// the primary load returns null (e.g. for PSD files with multiple slices).
+    /// </summary>
     private static Sprite LoadSprite(string path)
     {
         Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
@@ -983,6 +1128,10 @@ public static class RtsHudBuilder
         return null;
     }
 
+    /// <summary>
+    /// Loads the Jupiter TMP_FontAsset if it already has a valid atlas texture; otherwise
+    /// deletes the stale asset and regenerates it from the source TTF using dynamic atlas mode.
+    /// </summary>
     private static TMP_FontAsset LoadOrCreateFontAsset()
     {
         TMP_FontAsset existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(JupiterTmpFontPath);
@@ -1030,6 +1179,9 @@ public static class RtsHudBuilder
         return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(JupiterTmpFontPath);
     }
 
+    /// <summary>
+    /// Sets an Object reference serialized property on <paramref name="target"/> and applies immediately.
+    /// </summary>
     private static void SetObject(Object target, string propertyName, Object value)
     {
         SerializedObject serialized = new SerializedObject(target);
@@ -1041,6 +1193,9 @@ public static class RtsHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets an enum (int) serialized property on <paramref name="target"/> and applies immediately.
+    /// </summary>
     private static void SetInt(Object target, string propertyName, int value)
     {
         SerializedObject serialized = new SerializedObject(target);
@@ -1052,6 +1207,9 @@ public static class RtsHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>
+    /// Sets a bool serialized property on <paramref name="target"/> and applies immediately.
+    /// </summary>
     private static void SetBool(Object target, string propertyName, bool value)
     {
         SerializedObject serialized = new SerializedObject(target);
@@ -1063,6 +1221,7 @@ public static class RtsHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    /// <summary>Value type grouping the four command-deck sub-panel GameObjects returned by BuildCommandDeck.</summary>
     private readonly struct CommandPanels
     {
         public CommandPanels(GameObject idlePanel, GameObject factoryPanel, GameObject constructionPanel, GameObject outpostPanel)

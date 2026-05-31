@@ -7,6 +7,11 @@ using UnityEngine.InputSystem;
 
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Handles all player input for unit selection and ordering.
+    /// Left-click drag performs a box-cast multi-select; right-click on an enemy issues an attack command;
+    /// right-click on the ground issues a move command with chess-pattern formation offsets.
+    /// </summary>
     public class UnitCommandController : MonoBehaviour
     {
         [SerializeField] private GameObject _cubePrefab;
@@ -48,6 +53,7 @@ namespace Strategy.Units
                 EndSelection();
         }
 
+        /// <summary>Raycasts the right-click position against enemy and ground layers, dispatching an attack or move command accordingly.</summary>
         private void ControlUnits()
         {
             if (_selections == null || _selections.Count == 0 || !TryCreateMouseRay(out Ray ray))
@@ -63,6 +69,7 @@ namespace Strategy.Units
                 CommandMove(groundHit.point);
         }
 
+        /// <summary>Sets the manual attack target on each selected unit's UnitCombat and fires OnUnitAttackTargetChanged.</summary>
         private void CommandAttack(Transform enemy)
         {
             foreach (GameObject selection in _selections)
@@ -80,6 +87,10 @@ namespace Strategy.Units
             }
         }
 
+        /// <summary>
+        /// Orders all selected units to move to chess-pattern formation positions around targetPoint,
+        /// resolving each destination to a reachable NavMesh point before calling SetDestination.
+        /// </summary>
         private void CommandMove(Vector3 targetPoint)
         {
             GameObject firstUnit = GetFirstValidSelection();
@@ -120,6 +131,10 @@ namespace Strategy.Units
             }
         }
 
+        /// <summary>
+        /// Samples the NavMesh near requestedDestination (with fallback radius) and validates path reachability.
+        /// Falls back to the last reachable corner when only a partial path exists.
+        /// </summary>
         private bool TryResolveNavMeshDestination(
             NavMeshAgent agent,
             Vector3 requestedDestination,
@@ -158,6 +173,7 @@ namespace Strategy.Units
             return true;
         }
 
+        /// <summary>Wraps NavMesh.SamplePosition restricted to the agent's areaMask with a clamped minimum radius.</summary>
         private static bool TrySampleDestination(
             NavMeshAgent agent,
             Vector3 destination,
@@ -171,6 +187,7 @@ namespace Strategy.Units
                 agent.areaMask);
         }
 
+        /// <summary>Warps the agent to the nearest NavMesh point if it has somehow moved off the mesh; returns false if recovery fails.</summary>
         private bool TryEnsureAgentOnNavMesh(NavMeshAgent agent)
         {
             if (agent.isOnNavMesh)
@@ -189,6 +206,7 @@ namespace Strategy.Units
             return agent.isOnNavMesh;
         }
 
+        /// <summary>Computes an alternating left/right, receding-row formation offset for unit at index relative to the move center point.</summary>
         private static Vector3 GetChessFormationPosition(
             Vector3 center,
             int index,
@@ -219,6 +237,7 @@ namespace Strategy.Units
             return null;
         }
 
+        /// <summary>Deselects all units and records the ground-hit start point for a potential drag-selection rectangle.</summary>
         private void StartSelectionPress()
         {
             if (IsPointerOverUi() || !RaycastToGround(out Vector3 hitPoint))
@@ -229,6 +248,7 @@ namespace Strategy.Units
             _isSelectionPressActive = true;
         }
 
+        /// <summary>Initiates the drag-selection cube once movement exceeds the threshold, then resizes it to follow the cursor.</summary>
         private void UpdateSelectionPress()
         {
             if (!RaycastToGround(out Vector3 currentPoint))
@@ -248,6 +268,7 @@ namespace Strategy.Units
             UpdateSelectionVisual(currentPoint);
         }
 
+        /// <summary>Spawns the visual selection-rectangle cube prefab at the drag start position.</summary>
         private void BeginSelectionDrag()
         {
             if (_cubePrefab == null)
@@ -260,6 +281,7 @@ namespace Strategy.Units
                 RuntimeObjectContainer.Get("Selection"));
         }
 
+        /// <summary>Repositions and rescales the selection cube to span from the drag start point to the current cursor position.</summary>
         private void UpdateSelectionVisual(Vector3 currentPoint)
         {
             if (_currentSelection == null)
@@ -276,6 +298,7 @@ namespace Strategy.Units
             _currentSelection.transform.localScale = size;
         }
 
+        /// <summary>Uses OverlapBox with the selection cube's bounds to find player units inside and adds them to _selections via RaiseUnitSelected.</summary>
         private void EndSelection()
         {
             _isSelectionPressActive = false;
@@ -309,6 +332,7 @@ namespace Strategy.Units
             _currentSelection = null;
         }
 
+        /// <summary>Fires RaiseUnitDeselected for every currently selected unit and clears the selection list.</summary>
         private void DeselectAll()
         {
             foreach (GameObject selection in _selections)
@@ -320,6 +344,7 @@ namespace Strategy.Units
             _selections.Clear();
         }
 
+        /// <summary>Casts a ray from the camera through the mouse cursor against the ground/cube layer mask; returns the hit point.</summary>
         private bool RaycastToGround(out Vector3 point)
         {
             point = Vector3.zero;
@@ -334,6 +359,7 @@ namespace Strategy.Units
             return true;
         }
 
+        /// <summary>Creates a world-space ray from the camera through the current mouse position; returns false if the camera is unavailable.</summary>
         private bool TryCreateMouseRay(out Ray ray)
         {
             if (_camera == null)

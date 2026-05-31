@@ -8,6 +8,10 @@ using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Trigger-collider wrapper around an Outpost that tracks which team's units (and blocking buildings)
+    /// are inside the capture zone. Feeds occupancy counts into Outpost.TickCapture every frame.
+    /// </summary>
     public class OutpostCaptureZone : MonoBehaviour
     {
         private const float DefaultPlaneSize = 10f;
@@ -100,6 +104,7 @@ namespace Strategy.Buildings
                 RemoveTouch(_blockingBuildingsInside, blockingBuilding);
         }
 
+        /// <summary>Extracts the TeamComponent from a collider if it belongs to a unit layer (PlayerUnit or EnemyUnit).</summary>
         private bool TryGetUnit(Collider other, out TeamComponent unit)
         {
             unit = other.GetComponentInParent<TeamComponent>();
@@ -110,6 +115,10 @@ namespace Strategy.Buildings
             return IsUnitLayer(unit.gameObject.layer) || IsUnitLayer(other.gameObject.layer);
         }
 
+        /// <summary>
+        /// Returns the root GameObject of a building that blocks capture (BuildingProduction,
+        /// ConstructionCenter, or any object on the Building layer), or null if the collider is not a blocker.
+        /// </summary>
         private GameObject GetBlockingBuilding(Collider other)
         {
             if (_outpost != null && other.GetComponentInParent<Outpost>() == _outpost)
@@ -133,6 +142,7 @@ namespace Strategy.Buildings
             return layer == _playerUnitLayer || layer == _enemyUnitLayer;
         }
 
+        /// <summary>Walks up the transform hierarchy and returns the first GameObject whose layer matches, or null.</summary>
         private static GameObject GetParentOnLayer(Transform start, int layer)
         {
             if (layer < 0)
@@ -151,6 +161,7 @@ namespace Strategy.Buildings
             return null;
         }
 
+        /// <summary>Increments the touch/overlap reference count for an item, adding a new entry if needed.</summary>
         private static void AddTouch<T>(Dictionary<T, int> touches, T item)
         {
             if (touches.TryGetValue(item, out int count))
@@ -159,6 +170,7 @@ namespace Strategy.Buildings
                 touches.Add(item, 1);
         }
 
+        /// <summary>Decrements the touch reference count for an item and removes it from the dictionary when it reaches zero.</summary>
         private static void RemoveTouch<T>(Dictionary<T, int> touches, T item)
         {
             if (!touches.TryGetValue(item, out int count))
@@ -172,6 +184,7 @@ namespace Strategy.Buildings
                 touches[item] = count;
         }
 
+        /// <summary>Removes dictionary entries for units or buildings that have been destroyed since the last frame.</summary>
         private void CleanupDestroyedEntries()
         {
             _staleUnits.Clear();
@@ -196,6 +209,7 @@ namespace Strategy.Buildings
                 _blockingBuildingsInside.Remove(building);
         }
 
+        /// <summary>Syncs the BoxCollider size/center and optional visual plane scale with the serialized zone fields.</summary>
         private void ApplyZoneSettings()
         {
             ResolveZoneReferences();
@@ -222,6 +236,7 @@ namespace Strategy.Buildings
             _captureZoneVisual.localScale = visualScale;
         }
 
+        /// <summary>Auto-populates the Outpost, BoxCollider, and visual transform references if they are not assigned in the Inspector.</summary>
         private void ResolveZoneReferences()
         {
             if (_outpost == null)

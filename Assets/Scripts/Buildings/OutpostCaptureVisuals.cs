@@ -8,6 +8,11 @@ using Strategy.Data;
 using Strategy.UI;
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// Renders a procedural progress-circle and a blinking capture-zone color overlay while an
+    /// Outpost is being captured. Both visuals are hidden and the zone color is restored when
+    /// no capture is in progress.
+    /// </summary>
     public class OutpostCaptureVisuals : MonoBehaviour
     {
         private const string BaseColorProperty = "_BaseColor";
@@ -83,6 +88,7 @@ namespace Strategy.Buildings
             _blinkMaxAlpha = Mathf.Max(_blinkMinAlpha, _blinkMaxAlpha);
         }
 
+        /// <summary>Auto-fills the Outpost reference and capture-zone renderer if not assigned, and initialises the property block.</summary>
         private void ResolveReferences()
         {
             if (_outpost == null)
@@ -100,6 +106,7 @@ namespace Strategy.Buildings
                 _zonePropertyBlock = new MaterialPropertyBlock();
         }
 
+        /// <summary>Builds the runtime GameObjects, materials, and meshes for the background disc and fill-arc of the progress circle.</summary>
         private void CreateCircle()
         {
             if (_circleRoot != null)
@@ -134,6 +141,7 @@ namespace Strategy.Buildings
             BuildDiscMesh(_backgroundMesh, 1f);
         }
 
+        /// <summary>Creates a child GameObject with a MeshFilter/MeshRenderer for one layer of the progress circle (background or fill).</summary>
         private void CreateCirclePart(
             string name,
             float lift,
@@ -160,6 +168,7 @@ namespace Strategy.Buildings
             SetMaterialColor(material, color);
         }
 
+        /// <summary>Creates a transparent, shadow-free runtime material using the best available unlit shader.</summary>
         private Material CreateTransparentMaterial(string materialName)
         {
             Shader shader =
@@ -183,6 +192,7 @@ namespace Strategy.Buildings
             return material;
         }
 
+        /// <summary>Updates the fill-arc color to match the capturing team and rebuilds the fill mesh when progress or team changes.</summary>
         private void UpdateProgressCircle(float progress, TeamType capturingTeam)
         {
             Color fillColor = _outpost.GetColorForTeam(capturingTeam);
@@ -198,6 +208,7 @@ namespace Strategy.Buildings
             }
         }
 
+        /// <summary>Generates a fan-shaped (pie-slice) disc mesh covering [0, progress] of the circle's circumference.</summary>
         private void BuildDiscMesh(Mesh mesh, float progress)
         {
             mesh.Clear();
@@ -238,6 +249,7 @@ namespace Strategy.Buildings
             mesh.RecalculateBounds();
         }
 
+        /// <summary>Animates the capture-zone renderer color between min/max alpha using a sine wave at the configured blink speed.</summary>
         private void BlinkCaptureZone(TeamType capturingTeam)
         {
             if (_captureZoneRenderer == null)
@@ -250,6 +262,7 @@ namespace Strategy.Buildings
             SetRendererColor(_captureZoneRenderer, color);
         }
 
+        /// <summary>Resets the capture-zone renderer to the outpost's steady-state owner color and clears cached progress state.</summary>
         private void RestoreCaptureZoneColor()
         {
             if (_outpost == null || _captureZoneRenderer == null)
@@ -272,6 +285,7 @@ namespace Strategy.Buildings
                 _circleRoot.SetActive(false);
         }
 
+        /// <summary>Applies a color to both _BaseColor and _Color shader properties on a renderer via a shared MaterialPropertyBlock.</summary>
         private void SetRendererColor(Renderer targetRenderer, Color color)
         {
             if (_zonePropertyBlock == null)
@@ -283,6 +297,7 @@ namespace Strategy.Buildings
             targetRenderer.SetPropertyBlock(_zonePropertyBlock);
         }
 
+        /// <summary>Sets _BaseColor, _Color, and the legacy material.color on a material, guarding against missing properties.</summary>
         private static void SetMaterialColor(Material material, Color color)
         {
             if (material == null)

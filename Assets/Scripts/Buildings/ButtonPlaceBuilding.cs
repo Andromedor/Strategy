@@ -4,6 +4,10 @@ using UnityEngine.UI;
 
 namespace Strategy.Buildings
 {
+    /// <summary>
+    /// UI button component that triggers building placement mode for a specific BuildingData asset
+    /// by calling BuildingPlacementManager.StartPlacement when clicked.
+    /// </summary>
     [RequireComponent(typeof(Button))]
     public class ButtonPlaceBuilding : MonoBehaviour
     {
@@ -32,6 +36,7 @@ namespace Strategy.Buildings
                 _button.onClick.RemoveListener(PlaceBuilding);
         }
 
+        /// <summary>Invokes BuildingPlacementManager.StartPlacement with the assigned BuildingData when the button is clicked.</summary>
         private void PlaceBuilding()
         {
             if (_placementManager == null || _buildingData == null)

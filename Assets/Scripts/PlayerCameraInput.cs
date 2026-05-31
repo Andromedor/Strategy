@@ -2,6 +2,10 @@ using UnityEngine;
 
 namespace Strategy.Camera
 {
+    /// <summary>
+    /// Reads raw input from the generated CameraAction Input Action asset each frame and
+    /// exposes processed values (MoveInput, MouseDelta, MouseScroll, RotateInput) for CameraController to consume.
+    /// </summary>
     public class PlayerCameraInput : MonoBehaviour
     {
         private CameraAction _cameraActions;

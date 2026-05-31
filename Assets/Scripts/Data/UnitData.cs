@@ -3,6 +3,10 @@ using UnityEngine.Serialization;
 
 namespace Strategy.Data
 {
+    /// <summary>
+    /// ScriptableObject that holds all combat, movement, and aiming stats for a single unit type.
+    /// Referenced by UnitCombat, factory production, and editor prefab builders.
+    /// </summary>
     [CreateAssetMenu(fileName = "UnitData", menuName = "RTS/UnitData")]
     public class UnitData : ScriptableObject
     {
@@ -43,6 +47,10 @@ namespace Strategy.Data
         public float ReturnTurretDelay => _returnTurretDelay;
         public float IdleTurretRotationSpeed => _idleTurretRotationSpeed;
 
+        /// <summary>
+        /// Writes all unit stats at once; used by editor prefab builder scripts to set
+        /// canonical balance values without requiring manual Inspector edits.
+        /// </summary>
         public void Configure(
             GameObject prefab,
             float maxHealth,

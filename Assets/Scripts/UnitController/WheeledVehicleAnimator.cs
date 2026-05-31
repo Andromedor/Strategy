@@ -9,6 +9,11 @@ using Strategy.Units;
 using Strategy.UI;
 namespace Strategy.Units
 {
+    /// <summary>
+    /// Animates the wheels of a wheeled vehicle: steerable front wheels yaw to match the current
+    /// steer angle from NavMeshVehicleMotor (or the agent), and all drive wheels spin proportionally
+    /// to forward speed. Pivot GameObjects are created at runtime around each wheel transform.
+    /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     public class WheeledVehicleAnimator : MonoBehaviour
     {
@@ -60,6 +65,10 @@ namespace Strategy.Units
             UpdateSpin(velocity, deltaTime);
         }
 
+        /// <summary>
+        /// Creates a WheelVisual for every unique wheel transform in _driveWheels and _steeringWheels,
+        /// inserting a pivot GameObject between each wheel and its original parent for steer rotation.
+        /// </summary>
         private void BuildWheelVisuals()
         {
             _wheels.Clear();
@@ -80,6 +89,10 @@ namespace Strategy.Units
             AddWheelSet(_steeringWheels, steeringSet, added);
         }
 
+        /// <summary>
+        /// Iterates wheelSet and registers each unique, non-null wheel as a WheelVisual, marking
+        /// it as steerable if it is present in steeringSet.
+        /// </summary>
         private void AddWheelSet(
             Transform[] wheelSet,
             HashSet<Transform> steeringSet,
@@ -100,6 +113,10 @@ namespace Strategy.Units
             }
         }
 
+        /// <summary>
+        /// Inserts a "_MotionPivot" parent between the wheel and its original parent, preserving
+        /// world position and scale, so the pivot can be yawed for steering without affecting spin.
+        /// </summary>
         private WheelVisual CreateWheelVisual(Transform wheel, bool canSteer)
         {
             Transform originalParent = wheel.parent;
@@ -122,6 +139,10 @@ namespace Strategy.Units
             return new WheelVisual(pivotObject.transform, wheel, localRotation, canSteer);
         }
 
+        /// <summary>
+        /// Measures per-frame velocity from position delta; falls back to agent.velocity when
+        /// displacement is below _moveThreshold (avoids jitter when nearly stationary).
+        /// </summary>
         private Vector3 GetVelocity(float deltaTime)
         {
             if (!_hasLastPosition)
@@ -148,6 +169,10 @@ namespace Strategy.Units
             return velocity;
         }
 
+        /// <summary>
+        /// Returns the desired steer angle, preferring NavMeshVehicleMotor.CurrentSteerAngle when
+        /// available, otherwise computing it from the agent's steeringTarget or fallback velocity.
+        /// </summary>
         private float GetTargetSteerAngle(Vector3 fallbackVelocity)
         {
             if (_vehicleMotor != null)
@@ -170,6 +195,10 @@ namespace Strategy.Units
             return GetSteerAngleFromDirection(fallbackVelocity);
         }
 
+        /// <summary>
+        /// Converts a world-space steering direction to a local steer angle in degrees, clamped
+        /// to _maxSteerAngle and scaled by _steerDirection.
+        /// </summary>
         private float GetSteerAngleFromDirection(Vector3 steeringVelocity)
         {
             if (steeringVelocity.sqrMagnitude > _moveThreshold * _moveThreshold)
@@ -184,6 +213,10 @@ namespace Strategy.Units
             return 0f;
         }
 
+        /// <summary>
+        /// Smoothly moves _currentSteerAngle toward targetSteerAngle and applies the result as a
+        /// Y rotation on the pivot of each steerable wheel.
+        /// </summary>
         private void UpdateSteering(float targetSteerAngle, float deltaTime)
         {
             float steerBlend = 1f - Mathf.Exp(-_steerResponsiveness * deltaTime);
@@ -204,6 +237,10 @@ namespace Strategy.Units
             }
         }
 
+        /// <summary>
+        /// Accumulates a spin angle from forward speed divided by wheel circumference, then applies
+        /// it as an X rotation on every wheel mesh transform.
+        /// </summary>
         private void UpdateSpin(Vector3 velocity, float deltaTime)
         {
             float localForwardSpeed = transform.InverseTransformDirection(velocity).z;
@@ -221,6 +258,10 @@ namespace Strategy.Units
             }
         }
 
+        /// <summary>
+        /// Holds references to the pivot (steer parent) and wheel (spin child) transforms for one
+        /// wheel, along with its base rotation and steerability flag.
+        /// </summary>
         private sealed class WheelVisual
         {
             public WheelVisual(Transform pivot, Transform wheel, Quaternion baseRotation, bool canSteer)
