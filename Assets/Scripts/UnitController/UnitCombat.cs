@@ -10,8 +10,8 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Base class for all unit combat behaviour. Handles target detection, turret/gun aiming,
-    /// movement to attack range, and firing via BulletPool. Subclassed by artillery and autocannon units.
+    /// Базовий клас для всієї бойової поведінки юнітів. Обробляє виявлення цілей, наведення вежі/гармати,
+    /// рух до дистанції атаки та стрільбу через BulletPool. Успадковується артилерією та автогарматними юнітами.
     /// </summary>
     public class UnitCombat : MonoBehaviour, IDamageable
     {
@@ -101,7 +101,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Assigns a manually chosen attack target and notifies other systems via EventManager.
+        /// Призначає вручну обрану ціль атаки та сповіщає інші системи через EventManager.
         /// </summary>
         public void SetManualAttackTarget(Transform target)
         {
@@ -110,7 +110,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Receives incoming damage via the IDamageable interface; destroys the unit when health reaches zero.
+        /// Отримує вхідну шкоду через інтерфейс IDamageable; знищує юніт, коли здоров'я досягає нуля.
         /// </summary>
         public void TakeDamage(float damage)
         {
@@ -124,7 +124,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Fires the deselection event and destroys this GameObject when health is depleted.
+        /// Викидає подію скасування вибору та знищує цей GameObject, коли здоров'я вичерпано.
         /// </summary>
         private void Die()
         {
@@ -133,8 +133,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Handles a move command broadcast: clears attack state and records the destination
-        /// so CheckEnemies can still engage targets encountered along the way.
+        /// Обробляє трансляцію команди переміщення: очищає стан атаки та записує пункт призначення,
+        /// щоб CheckEnemies міг все одно атакувати цілі, що трапляються на шляху.
         /// </summary>
         private void OnMoveCommand(GameObject unit, Vector3 destination)
         {
@@ -150,8 +150,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Runs every 0.25 s. Selects the best target (manual or auto), drives the NavMeshAgent
-        /// toward attack range if needed, and starts or stops the attack coroutine accordingly.
+        /// Виконується кожні 0.25 с. Обирає найкращу ціль (ручну або автоматичну), веде NavMeshAgent
+        /// до дистанції атаки за потреби, та запускає або зупиняє корутину атаки відповідно.
         /// </summary>
         private void CheckEnemies()
         {
@@ -216,8 +216,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Begins an Attack coroutine for the given target, stopping any previous one first.
-        /// Does nothing if the same target is already being engaged.
+        /// Розпочинає корутину Attack для заданої цілі, спочатку зупиняючи попередню.
+        /// Нічого не робить, якщо та сама ціль вже атакується.
         /// </summary>
         private void StartAttackIfNeeded(Transform target)
         {
@@ -233,7 +233,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns true once the unit is within stopping distance of the player-issued move destination.
+        /// Повертає true, коли юніт знаходиться в межах дистанції зупинки від заданого гравцем пункту призначення.
         /// </summary>
         private bool HasReachedPlayerMoveDestination()
         {
@@ -254,7 +254,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Uses Physics.OverlapSphere to find the closest enemy within AttackRange on the correct layer mask.
+        /// Використовує Physics.OverlapSphere для пошуку найближчого ворога в межах AttackRange за правильною маскою шару.
         /// </summary>
         private Transform FindAutoTarget()
         {
@@ -291,7 +291,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Commands the NavMeshAgent to move to a NavMesh-valid position just inside attack range of the target.
+        /// Дає команду NavMeshAgent переміститися до дійсної позиції на NavMesh трохи в межах дистанції атаки від цілі.
         /// </summary>
         private void MoveToAttackRange(Transform target)
         {
@@ -313,8 +313,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Snaps the requested attack position onto the NavMesh and validates that a full or partial
-        /// path exists; sets resolvedPosition to the best reachable point.
+        /// Прив'язує запитувану позицію атаки до NavMesh і перевіряє наявність повного або часткового
+        /// шляху; встановлює resolvedPosition на найближчу досяжну точку.
         /// </summary>
         private bool TryResolveAttackDestination(Vector3 requestedPosition, out Vector3 resolvedPosition)
         {
@@ -356,7 +356,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that calls FireAtTarget repeatedly with AttackDelay pauses until the target is invalid.
+        /// Корутина, що повторно викликає FireAtTarget з паузами AttackDelay до тих пір, поки ціль дійсна.
         /// </summary>
         private IEnumerator Attack(Transform target)
         {
@@ -376,7 +376,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Stops the running attack coroutine and clears the current target reference.
+        /// Зупиняє запущену корутину атаки та очищає посилання на поточну ціль.
         /// </summary>
         private void StopAttack()
         {
@@ -390,7 +390,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Builds the layer mask used by FindAutoTarget based on the unit's current team.
+        /// Будує маску шару, що використовується FindAutoTarget, на основі поточної команди юніта.
         /// </summary>
         private void SetupTargetMask()
         {
@@ -400,7 +400,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Rebuilds the target mask and clears current targets whenever the unit's team changes.
+        /// Перебудовує маску цілей та очищає поточні цілі щоразу, коли змінюється команда юніта.
         /// </summary>
         private void OnTeamChanged(TeamType team)
         {
@@ -411,8 +411,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Retrieves a bullet from BulletPool, positions it at the muzzle, and initialises its
-        /// BulletController. Override in subclasses for different firing behaviour (e.g. autocannon).
+        /// Отримує кулю з BulletPool, розміщує її на дульному зрізі та ініціалізує її
+        /// BulletController. Перевизначається в підкласах для іншої поведінки стрільби (наприклад, автогармата).
         /// </summary>
         protected virtual IEnumerator FireAtTarget(Transform target)
         {
@@ -438,8 +438,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Rotates turret (Y) and gun (X pitch) toward the target each frame.
-        /// Returns true only when both axes are within AimAngleTolerance.
+        /// Повертає вежу (по осі Y) та гармату (кут підйому по X) до цілі щокадру.
+        /// Повертає true лише тоді, коли обидві осі знаходяться в межах AimAngleTolerance.
         /// </summary>
         protected virtual bool AimAtTarget(Transform target)
         {
@@ -453,8 +453,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Incrementally rotates the turret transform in local Y toward the target at TurretRotationSpeed.
-        /// Returns true when the yaw error is within AimAngleTolerance.
+        /// Поступово обертає трансформ вежі локально по осі Y до цілі зі швидкістю TurretRotationSpeed.
+        /// Повертає true, коли відхилення по горизонту знаходиться в межах AimAngleTolerance.
         /// </summary>
         protected virtual bool RotateTurretToTarget(Transform target)
         {
@@ -478,8 +478,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Computes the required gun pitch to aim at the target and delegates to MoveGunPitch.
-        /// Override in ArtilleryWeapon to use an elevation curve instead of direct pitch.
+        /// Обчислює необхідний кут підйому гармати для наведення на ціль і делегує виконання до MoveGunPitch.
+        /// Перевизначається в ArtilleryWeapon для використання кривої підйому замість прямого кута.
         /// </summary>
         protected virtual bool RotateGunToTarget(Transform target)
         {
@@ -493,8 +493,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Steps the gun's local X rotation toward targetPitch at GunPitchSpeed.
-        /// Returns true when within AimAngleTolerance.
+        /// Покроково обертає локальний кут X гармати до targetPitch зі швидкістю GunPitchSpeed.
+        /// Повертає true, коли відхилення знаходиться в межах AimAngleTolerance.
         /// </summary>
         protected bool MoveGunPitch(float targetPitch)
         {
@@ -510,8 +510,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Slowly returns the turret to forward (0 yaw) and gun to level pitch after ReturnTurretDelay
-        /// seconds without a target.
+        /// Поступово повертає вежу вперед (0 по горизонту) та гармату в горизонтальне положення через ReturnTurretDelay
+        /// секунд після втрати цілі.
         /// </summary>
         protected virtual void HandleIdleTurret()
         {
@@ -533,7 +533,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns true when target is non-null and its GameObject is active in the hierarchy.
+        /// Повертає true, коли ціль не є null і її GameObject активний в ієрархії.
         /// </summary>
         protected bool IsTargetValid(Transform target)
         {
@@ -541,8 +541,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the collider bounds center of the target (cached per target) or its transform position
-        /// as a fallback, for accurate aiming at the body of the unit.
+        /// Повертає центр меж колайдера цілі (кешований для кожної цілі) або позицію її трансформу
+        /// як запасний варіант, для точного наведення на тіло юніта.
         /// </summary>
         protected Vector3 GetTargetPoint(Transform target)
         {
@@ -559,8 +559,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the XZ distance to targetPoint as a [0, 1] fraction of AttackRange.
-        /// Used by artillery to blend elevation angle and hit-chance by range.
+        /// Повертає відстань XZ до targetPoint як частку [0, 1] від AttackRange.
+        /// Використовується артилерією для змішування кута підйому та ймовірності влучання залежно від дистанції.
         /// </summary>
         protected float GetDistanceRatio(Vector3 targetPoint)
         {
@@ -575,8 +575,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns true when the NavMeshAgent's current speed meets or exceeds speedThreshold.
-        /// Used by artillery to apply a moving-target accuracy penalty.
+        /// Повертає true, коли поточна швидкість NavMeshAgent досягає або перевищує speedThreshold.
+        /// Використовується артилерією для застосування штрафу точності при стрільбі по рухомій цілі.
         /// </summary>
         protected bool IsMoving(float speedThreshold)
         {
@@ -587,7 +587,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Raycasts downward from 30 units above the given point to snap it to terrain/ground geometry.
+        /// Пускає промінь вниз з 30 одиниць над заданою точкою для прив'язки до геометрії терену/землі.
         /// </summary>
         protected Vector3 SnapToGround(Vector3 point)
         {

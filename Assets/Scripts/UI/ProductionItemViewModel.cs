@@ -4,9 +4,10 @@ using UnityEngine;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Immutable view-model for a single production queue item. Holds pre-formatted display strings
-    /// and an affordability flag so UI components never access raw <see cref="ProductionItemData"/> directly.
-    /// Create via the <see cref="From"/> factory method.
+    /// Незмінна модель представлення для одного елемента черги виробництва. Зберігає попередньо
+    /// відформатовані рядки відображення та прапорець доступності за ресурсами, щоб компоненти UI
+    /// ніколи не зверталися до сирого <see cref="ProductionItemData"/> напряму.
+    /// Створюється через фабричний метод <see cref="From"/>.
     /// </summary>
     public readonly struct ProductionItemViewModel
     {
@@ -37,8 +38,8 @@ namespace Strategy.UI
         public bool IsAffordable { get; }
 
         /// <summary>
-        /// Constructs a fully populated view-model from a <see cref="ProductionItemData"/> asset,
-        /// evaluating affordability against <paramref name="playerResource"/>.
+        /// Будує повністю заповнену модель представлення з ресурсу <see cref="ProductionItemData"/>,
+        /// оцінюючи доступність відносно <paramref name="playerResource"/>.
         /// </summary>
         public static ProductionItemViewModel From(ProductionItemData item, int playerResource)
         {
@@ -69,8 +70,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Composes the tooltip string, appending <see cref="UnitData"/> combat stats
-        /// (health, damage, range, etc.) when the item has an associated unit.
+        /// Складає рядок підказки, додаючи бойові характеристики <see cref="UnitData"/>
+        /// (здоров'я, шкода, дальність тощо), коли позиція має пов'язаний юніт.
         /// </summary>
         private static string BuildTooltipText(
             ProductionItemData item,
@@ -101,7 +102,7 @@ namespace Strategy.UI
                 $"Formation: {FormatNumber(unit.FormationSpacing)}";
         }
 
-        /// <summary>Converts internal asset name conventions to a readable display string.</summary>
+        /// <summary>Перетворює внутрішні угоди про іменування ресурсів на читабельний рядок відображення.</summary>
         private static string FormatDisplayName(string itemName)
         {
             if (string.IsNullOrWhiteSpace(itemName))
@@ -123,7 +124,7 @@ namespace Strategy.UI
             return $"{FormatNumber(seconds)}s";
         }
 
-        /// <summary>Formats a float as an integer when whole, otherwise to two decimal places.</summary>
+        /// <summary>Форматує число з плаваючою точкою як ціле, якщо воно ціле, інакше до двох знаків після коми.</summary>
         private static string FormatNumber(float value)
         {
             return Mathf.Approximately(value, Mathf.Round(value))

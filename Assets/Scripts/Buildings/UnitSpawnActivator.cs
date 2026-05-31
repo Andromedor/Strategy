@@ -10,8 +10,8 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Controls the transition of a newly spawned unit from its disabled factory state to fully active gameplay.
-    /// Drives the unit manually to the exit point, then snaps it onto the NavMesh and enables all gameplay components.
+    /// Керує переходом щойно створеного юніта зі стану вимкненого заводу до повноцінного ігрового режиму.
+    /// Вручну переміщує юніта до точки виходу, після чого прив'язує його до NavMesh та вмикає всі ігрові компоненти.
     /// </summary>
     public class UnitSpawnActivator : MonoBehaviour
     {
@@ -40,8 +40,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Toggles the unit between its disabled spawning state (colliders and gameplay off, agent stopped)
-        /// and the fully active state (placed on NavMesh, gameplay enabled).
+        /// Перемикає юніта між вимкненим станом спавну (колайдери та ігровий процес вимкнені, агент зупинений)
+        /// та повністю активним станом (розміщено на NavMesh, ігровий процес увімкнено).
         /// </summary>
         public void SetSpawningState(bool isSpawning)
         {
@@ -80,7 +80,7 @@ namespace Strategy.Buildings
             }
         }
 
-        /// <summary>Slides the unit toward exitPoint at _exitMoveSpeed, facing the direction of travel, then calls SetSpawningState(false).</summary>
+        /// <summary>Плавно переміщує юніта до exitPoint зі швидкістю _exitMoveSpeed, повертаючи його в напрямку руху, після чого викликає SetSpawningState(false).</summary>
         public IEnumerator MoveOutOfFactory(Vector3 exitPoint)
         {
             while (Vector3.Distance(transform.position, exitPoint) > _exitDistance)
@@ -106,8 +106,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Samples the NavMesh near the unit's current position (with fallback radius) and warps the NavMeshAgent there.
-        /// Returns false if no reachable NavMesh point is found.
+        /// Вибирає точку на NavMesh поблизу поточної позиції юніта (із запасним радіусом) та переносить туди NavMeshAgent.
+        /// Повертає false, якщо доступна точка NavMesh не знайдена.
         /// </summary>
         private bool EnableNavigationAtCurrentPosition()
         {
@@ -134,7 +134,7 @@ namespace Strategy.Buildings
             return true;
         }
 
-        /// <summary>Wraps NavMesh.SamplePosition using the agent's areaMask and a clamped minimum radius.</summary>
+        /// <summary>Обгортає NavMesh.SamplePosition, використовуючи areaMask агента та мінімально затиснутий радіус.</summary>
         private bool TrySampleNavMesh(Vector3 position, float radius, out NavMeshHit hit)
         {
             return NavMesh.SamplePosition(
@@ -144,7 +144,7 @@ namespace Strategy.Buildings
                 _agent.areaMask);
         }
 
-        /// <summary>Enables or disables the UnitCombat and UnitSelectionState components together.</summary>
+        /// <summary>Вмикає або вимикає компоненти UnitCombat та UnitSelectionState разом.</summary>
         private void SetGameplayEnabled(bool enabled)
         {
             if (_combat != null)
@@ -154,7 +154,7 @@ namespace Strategy.Buildings
                 _selectionState.enabled = enabled;
         }
 
-        /// <summary>Enables or disables all cached Colliders on the unit, used to prevent physics interactions while inside the factory.</summary>
+        /// <summary>Вмикає або вимикає всі кешовані Collider на юніті, щоб запобігти фізичній взаємодії всередині заводу.</summary>
         private void SetCollidersEnabled(bool enabled)
         {
             if (_colliders == null)

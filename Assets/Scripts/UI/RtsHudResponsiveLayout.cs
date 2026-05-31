@@ -8,9 +8,9 @@ using Strategy.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Repositions and resizes the bottom HUD panel and its sub-regions (minimap, selection info,
-    /// command deck, top resources bar) whenever the canvas size changes. Switches between a wide
-    /// landscape layout and a narrow/portrait layout automatically.
+    /// Перепозиціонує та змінює розмір нижньої HUD-панелі та її підобластей (мінімапа, інформація
+    /// про вибір, командна панель, верхня панель ресурсів) при кожній зміні розміру канвасу.
+    /// Автоматично перемикається між широким альбомним та вузьким/портретним макетом.
     /// </summary>
     public class RtsHudResponsiveLayout : MonoBehaviour
     {
@@ -45,8 +45,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Measures the canvas size and delegates to <see cref="ApplyWide"/> or <see cref="ApplyNarrow"/>
-        /// based on whether the viewport is landscape-wide or narrow/portrait.
+        /// Вимірює розмір канвасу та делегує до <see cref="ApplyWide"/> або <see cref="ApplyNarrow"/>
+        /// залежно від того, чи є вікно перегляду широким альбомним або вузьким/портретним.
         /// </summary>
         public void ApplyLayout()
         {
@@ -71,8 +71,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Lays out the HUD for a wide/landscape viewport: minimap left, command deck right,
-        /// selection info centered between them, resources at the top right.
+        /// Розміщує HUD для широкого/альбомного вікна перегляду: мінімапа ліворуч, командна панель праворуч,
+        /// інформація про вибір по центру між ними, ресурси у верхньому правому куті.
         /// </summary>
         private void ApplyWide(Vector2 size)
         {
@@ -100,8 +100,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Lays out the HUD for a narrow/portrait viewport: minimap top-left, selection info
-        /// top-right, command deck filling the bottom, resources at the top right.
+        /// Розміщує HUD для вузького/портретного вікна перегляду: мінімапа у верхньому лівому куті,
+        /// інформація про вибір у верхньому правому куті, командна панель заповнює низ, ресурси у верхньому правому куті.
         /// </summary>
         private void ApplyNarrow(Vector2 size)
         {
@@ -128,7 +128,7 @@ namespace Strategy.UI
             SetBottomStretchInside(_commandDeck, commandHeight, framePadding);
         }
 
-        /// <summary>Anchors a RectTransform to stretch the full width at the bottom of its parent with the given height.</summary>
+        /// <summary>Прив'язує RectTransform для розтягування на повну ширину знизу батьківського об'єкта із заданою висотою.</summary>
         private static void SetStretchBottom(RectTransform rect, float height)
         {
             if (rect == null)
@@ -141,7 +141,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(0f, height);
         }
 
-        /// <summary>Anchors a RectTransform to the top-right corner of its parent at the given offset and size.</summary>
+        /// <summary>Прив'язує RectTransform до верхнього правого кута батьківського об'єкта із заданим зміщенням та розміром.</summary>
         private static void SetTopRight(RectTransform rect, Vector2 size, Vector2 position)
         {
             if (rect == null)
@@ -154,7 +154,7 @@ namespace Strategy.UI
             rect.sizeDelta = size;
         }
 
-        /// <summary>Anchors a RectTransform to the bottom-left of its parent with the specified size and padding offset.</summary>
+        /// <summary>Прив'язує RectTransform до нижнього лівого кута батьківського об'єкта із заданим розміром та відступом.</summary>
         private static void SetLeftPanel(RectTransform rect, float width, float height, float padding)
         {
             if (rect == null)
@@ -167,7 +167,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(width, height);
         }
 
-        /// <summary>Anchors a RectTransform to the bottom-right of its parent with the specified size and padding offset.</summary>
+        /// <summary>Прив'язує RectTransform до нижнього правого кута батьківського об'єкта із заданим розміром та відступом.</summary>
         private static void SetRightPanel(RectTransform rect, float width, float height, float padding)
         {
             if (rect == null)
@@ -181,8 +181,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Stretches a RectTransform horizontally, leaving <paramref name="left"/> and <paramref name="right"/>
-        /// pixels reserved for the flanking panels, and positions it at the given padding from the bottom.
+        /// Розтягує RectTransform горизонтально, залишаючи <paramref name="left"/> та <paramref name="right"/>
+        /// пікселів для бокових панелей, та позиціонує його із заданим відступом від низу.
         /// </summary>
         private static void SetCenterPanel(
             RectTransform rect,
@@ -201,7 +201,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(-(left + right), height);
         }
 
-        /// <summary>Anchors a RectTransform to the top-left inside its parent at the given padding inset.</summary>
+        /// <summary>Прив'язує RectTransform до верхнього лівого кута всередині батьківського об'єкта із заданим внутрішнім відступом.</summary>
         private static void SetTopLeftInside(RectTransform rect, Vector2 size, float padding)
         {
             if (rect == null)
@@ -215,8 +215,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Stretches a RectTransform to the top of its parent, offset by <paramref name="left"/> pixels on the
-        /// left and trimmed symmetrically on the right, with a minimum height of 86 px.
+        /// Розтягує RectTransform до верху батьківського об'єкта зі зміщенням <paramref name="left"/> пікселів
+        /// ліворуч та симетричним обрізанням праворуч, із мінімальною висотою 86 пікс.
         /// </summary>
         private static void SetTopStretchInside(RectTransform rect, float left, float padding, float height)
         {
@@ -230,7 +230,7 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(-(left + padding), Mathf.Max(86f, height));
         }
 
-        /// <summary>Stretches a RectTransform to the full width at the bottom of its parent with uniform side padding.</summary>
+        /// <summary>Розтягує RectTransform на повну ширину знизу батьківського об'єкта з рівномірними бічними відступами.</summary>
         private static void SetBottomStretchInside(RectTransform rect, float height, float padding)
         {
             if (rect == null)

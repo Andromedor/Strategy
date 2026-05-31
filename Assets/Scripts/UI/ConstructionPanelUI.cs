@@ -11,9 +11,9 @@ using Strategy.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Displays a grid of building placement buttons driven by a list of <see cref="BuildingData"/> assets.
-    /// Buttons delegate to <see cref="BuildingPlacementManager.StartPlacement"/> and are disabled when
-    /// no player-owned <see cref="ConstructionCenter"/> is active.
+    /// Відображає сітку кнопок розміщення будівель, що керується списком ресурсів <see cref="BuildingData"/>.
+    /// Кнопки делегують до <see cref="BuildingPlacementManager.StartPlacement"/> і вимкнені, коли
+    /// жоден <see cref="ConstructionCenter"/> гравця не є активним.
     /// </summary>
     public class ConstructionPanelUI : MonoBehaviour
     {
@@ -44,8 +44,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Clears the content root and procedurally creates one styled Button per
-        /// <see cref="BuildingData"/> entry, then calls <see cref="RefreshAvailability"/>.
+        /// Очищає кореневий контейнер та процедурно створює одну стилізовану кнопку для кожного
+        /// запису <see cref="BuildingData"/>, потім викликає <see cref="RefreshAvailability"/>.
         /// </summary>
         public void BuildButtons()
         {
@@ -79,8 +79,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Procedurally constructs a fully styled button GameObject for a single building,
-        /// including icon or fallback text, name label, cost, and build-time sub-elements.
+        /// Процедурно будує повністю стилізований GameObject кнопки для однієї будівлі,
+        /// включаючи іконку або резервний текст, мітку назви, вартість та піделементи часу будівництва.
         /// </summary>
         private Button CreateButton(BuildingData building)
         {
@@ -136,8 +136,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Creates a child Image for the building icon; the Image is disabled when <paramref name="icon"/> is null.
-        /// Returns true if the icon sprite is valid (caller uses this to skip the fallback text).
+        /// Створює дочірній Image для іконки будівлі; Image вимкнено, якщо <paramref name="icon"/> є null.
+        /// Повертає true, якщо спрайт іконки є дійсним (виклик використовує це для пропуску резервного тексту).
         /// </summary>
         private bool CreateIcon(Transform parent, Sprite icon)
         {
@@ -167,8 +167,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Creates a styled TMP_Text child anchored to the top-center, bottom-left, or bottom-right
-        /// depending on the <paramref name="top"/> flag and the sign of <paramref name="position"/>.x.
+        /// Створює стилізований дочірній TMP_Text, прив'язаний до верхнього центру, нижнього лівого або нижнього правого
+        /// залежно від прапорця <paramref name="top"/> та знаку <paramref name="position"/>.x.
         /// </summary>
         private TMP_Text CreateText(
             Transform parent,
@@ -230,8 +230,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Validates that a player <see cref="ConstructionCenter"/> exists, then delegates to
-        /// <see cref="BuildingPlacementManager.StartPlacement"/> to begin ghost-placement mode.
+        /// Перевіряє наявність <see cref="ConstructionCenter"/> гравця, потім делегує до
+        /// <see cref="BuildingPlacementManager.StartPlacement"/> для запуску режиму привидного розміщення.
         /// </summary>
         private void StartPlacement(BuildingData building)
         {
@@ -248,8 +248,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Enables or disables all buttons depending on whether a player construction center is present.
-        /// Called on <see cref="EventManager.OnConstructionCentersChanged"/>.
+        /// Вмикає або вимикає всі кнопки залежно від наявності будівельного центру гравця.
+        /// Викликається на <see cref="EventManager.OnConstructionCentersChanged"/>.
         /// </summary>
         private void RefreshAvailability()
         {
@@ -266,7 +266,7 @@ namespace Strategy.UI
             }
         }
 
-        /// <summary>Destroys all child GameObjects under the content root and clears the button list.</summary>
+        /// <summary>Знищує всі дочірні GameObject під кореневим контейнером та очищає список кнопок.</summary>
         private void ClearButtons()
         {
             if (_contentRoot != null)
@@ -278,7 +278,7 @@ namespace Strategy.UI
             _buttons.Clear();
         }
 
-        /// <summary>Configures the GridLayoutGroup and ContentSizeFitter for a 3-column auto-height layout.</summary>
+        /// <summary>Налаштовує GridLayoutGroup та ContentSizeFitter для 3-колонкового макету з автоматичною висотою.</summary>
         private void ApplyGrid()
         {
             GridLayoutGroup grid = _contentRoot.GetComponent<GridLayoutGroup>();
@@ -297,14 +297,14 @@ namespace Strategy.UI
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
-        /// <summary>Forces an immediate layout recalculation on the content root RectTransform.</summary>
+        /// <summary>Примусово виконує негайний перерахунок макету для RectTransform кореневого контейнера.</summary>
         private void RebuildGrid()
         {
             if (_contentRoot is RectTransform rect)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
-        /// <summary>Shows or hides the empty-state label with the given message.</summary>
+        /// <summary>Показує або приховує мітку порожнього стану із заданим повідомленням.</summary>
         private void SetEmptyText(string message)
         {
             if (_emptyText == null)
@@ -314,7 +314,7 @@ namespace Strategy.UI
             _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
-        /// <summary>Returns a human-readable name for a building, cleaning up asset naming conventions.</summary>
+        /// <summary>Повертає зрозумілу для людини назву будівлі, очищуючи угоди про іменування ресурсів.</summary>
         private static string GetDisplayName(BuildingData building)
         {
             string value = building != null && !string.IsNullOrWhiteSpace(building.BuildingName)
@@ -342,7 +342,7 @@ namespace Strategy.UI
                 : seconds.ToString("0.#") + "s";
         }
 
-        /// <summary>Returns true if at least one active, player-team <see cref="ConstructionCenter"/> exists in the scene.</summary>
+        /// <summary>Повертає true, якщо в сцені існує хоча б один активний <see cref="ConstructionCenter"/> команди гравця.</summary>
         private bool HasPlayerConstructionCenter()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -354,7 +354,7 @@ namespace Strategy.UI
             return false;
         }
 
-        /// <summary>Returns true if <paramref name="component"/> is owned by the panel's configured team.</summary>
+        /// <summary>Повертає true, якщо <paramref name="component"/> належить налаштованій команді панелі.</summary>
         private bool BelongsToTeam(Component component)
         {
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();

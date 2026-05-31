@@ -9,8 +9,8 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Defines a circular build area where the player may place buildings.
-    /// Registers itself in a static list so BuildingPlacementManager can query all active centers.
+    /// Визначає кругову зону будівництва, де гравець може розміщувати будівлі.
+    /// Реєструє себе у статичному списку, щоб BuildingPlacementManager міг опитувати всі активні центри.
     /// </summary>
     public class ConstructionCenter: MonoBehaviour
     {
@@ -31,7 +31,7 @@ namespace Strategy.Buildings
         {
             All.Clear();
         }
-        
+
         private void OnEnable()
         {
             if (!All.Contains(this))
@@ -46,21 +46,21 @@ namespace Strategy.Buildings
             All.Remove(this);
             EventManager.RaiseConstructionCentersChanged();
         }
-        
+
         private void Awake()
         {
             UpdateBuildAreaVisualSize();
             HideBuildArea();
         }
 
-        /// <summary>Returns true if the given world position is within the construction center's build radius.</summary>
+        /// <summary>Повертає true, якщо вказана світова позиція знаходиться в межах радіуса будівництва центру.</summary>
         public bool IsInsideBuildArea(Vector3 position)
         {
             float distanceSqr = (position - transform.position).sqrMagnitude;
             return distanceSqr <= _buildRadius * _buildRadius;
         }
-        
-        /// <summary>Scales the build-area visual disc to match _buildRadius so the rendered overlay matches the actual zone.</summary>
+
+        /// <summary>Масштабує візуальний диск зони будівництва відповідно до _buildRadius, щоб відображений оверлей збігався з реальною зоною.</summary>
         private void UpdateBuildAreaVisualSize()
         {
             if (_buildAreaVisual == null)
@@ -80,7 +80,7 @@ namespace Strategy.Buildings
             SetBuildAreaVisualVisible(false);
         }
 
-        /// <summary>Toggles the build-area visual by activating/deactivating the GameObject or toggling its Renderer if it is the root.</summary>
+        /// <summary>Перемикає видимість візуалу зони будівництва, активуючи/деактивуючи GameObject або перемикаючи його Renderer, якщо він є коренем.</summary>
         private void SetBuildAreaVisualVisible(bool visible)
         {
             if (_buildAreaVisual == null)

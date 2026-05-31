@@ -8,8 +8,8 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Tracks whether this unit is currently selected by the player and toggles a selection
-    /// visual (e.g. circle decal) accordingly. Subscribes to EventManager selection events.
+    /// Відстежує, чи обраний зараз цей юніт гравцем, та відповідно перемикає
+    /// візуальний індикатор вибору (наприклад, кругову деталь). Підписується на події вибору EventManager.
     /// </summary>
     public class UnitSelectionState: MonoBehaviour
     {
@@ -31,7 +31,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Marks this unit as selected and activates the selection visual when the event targets this GameObject.
+        /// Позначає цей юніт як обраний та активує візуальний індикатор вибору, коли подія стосується цього GameObject.
         /// </summary>
         private void Select(GameObject unit)
         {
@@ -43,7 +43,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Marks this unit as deselected and hides the selection visual when the event targets this GameObject.
+        /// Позначає цей юніт як скасовано вибраний та приховує візуальний індикатор вибору, коли подія стосується цього GameObject.
         /// </summary>
         private void Deselect(GameObject unit)
         {
@@ -55,7 +55,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Activates the selection visual GameObject if one is assigned.
+        /// Активує GameObject візуального індикатора вибору, якщо він призначений.
         /// </summary>
         private void ShowSelection()
         {
@@ -64,7 +64,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Deactivates the selection visual GameObject if one is assigned.
+        /// Деактивує GameObject візуального індикатора вибору, якщо він призначений.
         /// </summary>
         private void HideSelection()
         {

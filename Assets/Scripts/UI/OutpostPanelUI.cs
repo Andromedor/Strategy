@@ -10,9 +10,9 @@ using Strategy.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Panel shown when the player selects a player-owned <see cref="Outpost"/>.
-    /// Displays upgrade cost and current resources, and exposes an upgrade button that
-    /// calls <see cref="Outpost.TryUpgrade"/>. Hides itself for neutral or enemy outposts.
+    /// Панель, що відображається, коли гравець вибирає <see cref="Outpost"/> гравця.
+    /// Показує вартість покращення та поточні ресурси, і надає кнопку покращення, яка
+    /// викликає <see cref="Outpost.TryUpgrade"/>. Приховується для нейтральних або ворожих аванпостів.
     /// </summary>
     public class OutpostPanelUI : MonoBehaviour
     {
@@ -46,8 +46,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Shows the panel for the given player-owned outpost, or hides it if null or enemy-owned.
-        /// Called on <see cref="EventManager.OnOutpostSelected"/>.
+        /// Показує панель для вказаного аванпосту гравця або приховує її, якщо null або ворожий.
+        /// Викликається на <see cref="EventManager.OnOutpostSelected"/>.
         /// </summary>
         private void Open(Outpost outpost)
         {
@@ -65,7 +65,7 @@ namespace Strategy.UI
             Refresh();
         }
 
-        /// <summary>Updates the cost/status label and refreshes the upgrade button state.</summary>
+        /// <summary>Оновлює мітку вартості/стану та оновлює стан кнопки покращення.</summary>
         private void Refresh()
         {
             if (_currentOutpost == null || _currentOutpost.Owner != TeamType.Player)
@@ -85,8 +85,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Updates the resource counter label and re-evaluates button availability.
-        /// Called on <see cref="ResourceManager.OnResourceChanged"/>.
+        /// Оновлює мітку лічильника ресурсів та повторно оцінює доступність кнопки.
+        /// Викликається на <see cref="ResourceManager.OnResourceChanged"/>.
         /// </summary>
         private void UpdateResourceText(int resource)
         {
@@ -97,8 +97,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Sets button interactability from <see cref="Outpost.CanUpgrade"/> and updates its
-        /// label text to reflect the current upgrade state ("Upgrade", "Upgraded", "Need resources").
+        /// Встановлює інтерактивність кнопки з <see cref="Outpost.CanUpgrade"/> та оновлює її
+        /// текст мітки для відображення поточного стану покращення ("Upgrade", "Upgraded", "Need resources").
         /// </summary>
         private void RefreshButton()
         {
@@ -126,7 +126,7 @@ namespace Strategy.UI
                 _upgradeButtonText.text = "Upgrade Outpost";
         }
 
-        /// <summary>Attempts to upgrade the current outpost and refreshes the panel on success.</summary>
+        /// <summary>Намагається покращити поточний аванпост та оновлює панель у разі успіху.</summary>
         private void Upgrade()
         {
             if (_currentOutpost == null)
@@ -136,14 +136,14 @@ namespace Strategy.UI
                 Refresh();
         }
 
-        /// <summary>Resolves the upgrade button's child TMP_Text label for later use.</summary>
+        /// <summary>Знаходить дочірню мітку TMP_Text кнопки покращення для подальшого використання.</summary>
         private void CacheReferences()
         {
             if (_upgradeButton != null && _upgradeButtonText == null)
                 _upgradeButtonText = _upgradeButton.GetComponentInChildren<TMP_Text>(true);
         }
 
-        /// <summary>Stretches the panel to fill its parent and positions all sub-element RectTransforms.</summary>
+        /// <summary>Розтягує панель для заповнення батьківського об'єкта та позиціонує всі RectTransform піделементів.</summary>
         private void ApplyLayout()
         {
             RectTransform panelRect = transform as RectTransform;
@@ -172,7 +172,7 @@ namespace Strategy.UI
                 SetRect(_upgradeButtonText.rectTransform, Vector2.zero, Vector2.zero, false, true);
         }
 
-        /// <summary>Applies font, auto-sizing, alignment, and color settings to a TMP label.</summary>
+        /// <summary>Застосовує налаштування шрифту, автопідбору розміру, вирівнювання та кольору до мітки TMP.</summary>
         private void SetTextStyle(TMP_Text text, float fontSize, TextAlignmentOptions alignment)
         {
             if (text == null)
@@ -191,8 +191,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Positions a RectTransform anchored to the top-center or bottom-center of its parent,
-        /// or stretches it to fill when <paramref name="stretch"/> is true.
+        /// Позиціонує RectTransform, прив'язаний до верхнього або нижнього центру батьківського об'єкта,
+        /// або розтягує його для заповнення, якщо <paramref name="stretch"/> є true.
         /// </summary>
         private static void SetRect(
             RectTransform rectTransform,

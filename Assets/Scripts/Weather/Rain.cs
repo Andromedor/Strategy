@@ -10,8 +10,8 @@ using Strategy.UI;
 namespace Strategy.Weather
 {
     /// <summary>
-    /// Periodically toggles a rain particle system on and off at random intervals, and smoothly
-    /// transitions a directional light between rain-dimmed and normal intensity to simulate overcast weather.
+    /// Periodically вмикає та вимикає систему часточок дощу через випадкові інтервали та плавно
+    /// змінює інтенсивність спрямованого джерела світла між приглушеним (дощ) та нормальним значенням для імітації хмарної погоди.
     /// </summary>
     public class Rain : MonoBehaviour
     {
@@ -34,13 +34,13 @@ namespace Strategy.Weather
 
         }
 
-        /// <summary>Infinite loop that waits a random interval, then toggles rain on/off and transitions light intensity accordingly.</summary>
+        /// <summary>Нескінченний цикл, що очікує випадковий інтервал, після чого вмикає/вимикає дощ та відповідно змінює інтенсивність освітлення.</summary>
         private IEnumerator RainCycle()
         {
             while (true)
             {
                 yield return new WaitForSeconds(Random.Range(_rainIntervalFrom, _rainIntervalTo));
-             
+
 
                 if (_isRaining)
                 {
@@ -55,17 +55,17 @@ namespace Strategy.Weather
                     yield return StartCoroutine(ChangeLight(_normalIntensity));
                 }
 
-               //_isRaining = !_isRaining; 
+               //_isRaining = !_isRaining;
             }
         }
 
-        /// <summary>Lerps the directional light's intensity from its current value to targetIntensity over _transitionDuration seconds.</summary>
+        /// <summary>Плавно змінює інтенсивність спрямованого джерела світла від поточного значення до targetIntensity протягом _transitionDuration секунд.</summary>
         private IEnumerator ChangeLight(float targetIntensity)
         {
             float start = _light.intensity;
             float time = 0f;
-            
-            while (time < _transitionDuration)  
+
+            while (time < _transitionDuration)
             {
                 time += Time.deltaTime;
 

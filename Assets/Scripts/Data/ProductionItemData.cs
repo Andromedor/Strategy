@@ -4,8 +4,8 @@ using UnityEngine.Serialization;
 namespace Strategy.Data
 {
     /// <summary>
-    /// ScriptableObject describing a single producible unit entry shown in the factory UI.
-    /// Holds display info (name, icon), a reference to the unit's UnitData, resource cost, and build time.
+    /// ScriptableObject, що описує один запис виробленого юніта, відображуваного у UI заводу.
+    /// Зберігає інформацію для відображення (назва, іконка), посилання на UnitData юніта, вартість ресурсів та час побудови.
     /// </summary>
     [CreateAssetMenu(menuName = "RTS/Production Item")]
     public class ProductionItemData : ScriptableObject
@@ -28,8 +28,8 @@ namespace Strategy.Data
         public float ProductionTime => _productionTime;
 
         /// <summary>
-        /// Writes all production item fields at once; used by editor builder scripts to stamp
-        /// canonical cost and time values. Skips the icon field when null to preserve existing art.
+        /// Записує всі поля запису виробництва за один виклик; використовується редакторними скриптами
+        /// для встановлення еталонних вартостей та часу. Пропускає поле іконки, якщо воно null, щоб зберегти наявне зображення.
         /// </summary>
         public void Configure(string itemName, UnitData unitData, int cost, float productionTime, Sprite icon = null)
         {

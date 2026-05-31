@@ -10,9 +10,9 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Manages per-muzzle visual effects for the Quad Autocannon: flash, smoke, and an optional
-    /// point light for each barrel, plus a single shared gun recoil animation. All particle systems
-    /// and lights are created procedurally at runtime.
+    /// Керує візуальними ефектами для кожного дула Quad Autocannon: спалах, дим та необов'язкове
+    /// точкове світло для кожного ствола, плюс єдина спільна анімація відкату гармати. Усі системи
+    /// частинок та світла створюються процедурно під час виконання.
     /// </summary>
     public class AutocannonVisualEffects : MonoBehaviour
     {
@@ -45,8 +45,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Assigns gun and muzzle references if not already set, then calls EnsureReady to build
-        /// per-muzzle effect sets.
+        /// Призначає посилання на гармату та дула, якщо вони ще не встановлені, потім викликає EnsureReady
+        /// для побудови наборів ефектів для кожного дула.
         /// </summary>
         public void Configure(Transform gun, Transform[] muzzles)
         {
@@ -60,8 +60,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Emits flash and smoke particles for the specified muzzle index, flashes its point light,
-        /// and triggers a shared gun recoil. Any in-progress light or recoil coroutine is restarted.
+        /// Випромінює частинки спалаху та диму для вказаного індексу дула, спалахує його точкове світло,
+        /// та запускає спільний відкат гармати. Будь-яка поточна корутина світла або відкату перезапускається.
         /// </summary>
         public void PlayShotEffect(int muzzleIndex)
         {
@@ -97,8 +97,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Lazily initialises all runtime objects: records gun rest position, creates shared materials,
-        /// and builds one MuzzleEffectSet per muzzle transform when the list is out of sync.
+        /// Ліниво ініціалізує всі об'єкти під час виконання: записує позицію спокою гармати, створює спільні матеріали,
+        /// та будує один MuzzleEffectSet для кожного трансформу дула, коли список не синхронізований.
         /// </summary>
         private void EnsureReady()
         {
@@ -135,8 +135,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns true when the effect set list already matches the current _muzzles array in both
-        /// count and per-element identity.
+        /// Повертає true, коли список наборів ефектів вже відповідає поточному масиву _muzzles за
+        /// кількістю та ідентичністю кожного елемента.
         /// </summary>
         private bool EffectsMatchMuzzles()
         {
@@ -153,8 +153,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Builds a narrow-cone muzzle flash ParticleSystem as a child of the given muzzle transform.
-        /// Uses the shared _flashMaterial and Emit-based bursts.
+        /// Будує систему частинок спалаху дула у вузькому конусі як дочірній об'єкт заданого трансформу дула.
+        /// Використовує спільний _flashMaterial та вибухи на основі Emit.
         /// </summary>
         private ParticleSystem CreateMuzzleFlash(Transform muzzle)
         {
@@ -189,8 +189,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Builds a wider smoke ParticleSystem with a fade-out colour gradient as a child of the
-        /// given muzzle transform, using the shared _smokeMaterial.
+        /// Будує систему частинок диму з ширшим конусом та градієнтом затухання кольору як дочірній об'єкт
+        /// заданого трансформу дула, використовуючи спільний _smokeMaterial.
         /// </summary>
         private ParticleSystem CreateSmoke(Transform muzzle)
         {
@@ -242,8 +242,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a new GameObject with a stopped ParticleSystem as a child of muzzle; shared
-        /// helper for both flash and smoke system construction.
+        /// Створює новий GameObject зі зупиненою ParticleSystem як дочірній об'єкт дула; спільний
+        /// допоміжний метод для побудови систем спалаху та диму.
         /// </summary>
         private ParticleSystem CreateParticleSystem(Transform muzzle, string objectName)
         {
@@ -260,8 +260,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a small orange point light at the muzzle position, initially disabled, for use
-        /// by the FlashMuzzleLight coroutine.
+        /// Створює мале помаранчеве точкове світло у позиції дула, спочатку вимкнене, для використання
+        /// корутиною FlashMuzzleLight.
         /// </summary>
         private Light CreateMuzzleLight(Transform muzzle)
         {
@@ -282,8 +282,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that moves the gun to its recoil position over _recoilBackDuration, then returns
-        /// it to rest over _recoilReturnDuration, using smooth-step interpolation.
+        /// Корутина, що переміщує гармату до позиції відкату за _recoilBackDuration, потім повертає
+        /// її до спокою за _recoilReturnDuration, використовуючи інтерполяцію smooth-step.
         /// </summary>
         private IEnumerator PlayRecoil()
         {
@@ -304,8 +304,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that interpolates the gun's local position from 'from' to 'to' over duration
-        /// seconds with a smooth-step curve.
+        /// Корутина, що інтерполює локальну позицію гармати з 'from' в 'to' за duration
+        /// секунд з кривою smooth-step.
         /// </summary>
         private IEnumerator MoveGun(Vector3 from, Vector3 to, float duration)
         {
@@ -330,7 +330,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that enables the given muzzle light at full intensity for 32 ms then disables it.
+        /// Корутина, що вмикає задане підсвітку дула на повну інтенсивність на 32 мс, потім вимикає її.
         /// </summary>
         private IEnumerator FlashMuzzleLight(MuzzleEffectSet effectSet)
         {
@@ -343,8 +343,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a new unlit particle material using the best available shader and sets colour
-        /// properties for both URP and legacy Standard pipelines.
+        /// Створює новий матеріал частинок без освітлення, використовуючи найкращий доступний шейдер,
+        /// та встановлює властивості кольору для URP та застарілих конвеєрів Standard.
         /// </summary>
         private static Material CreateParticleMaterial(Color color)
         {
@@ -360,8 +360,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Sets _BaseColor and _Color on a material when those properties exist, covering both URP
-        /// and legacy Standard shader naming.
+        /// Встановлює _BaseColor та _Color на матеріалі, коли ці властивості існують, охоплюючи як
+        /// URP, так і назви властивостей застарілого Standard шейдера.
         /// </summary>
         private static void SetMaterialColor(Material material, Color color)
         {
@@ -376,7 +376,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Destroys a runtime UnityEngine.Object safely in both play and edit mode.
+        /// Безпечно знищує об'єкт UnityEngine.Object під час виконання як у режимі гри, так і в режимі редагування.
         /// </summary>
         private static void DestroyRuntimeObject(Object runtimeObject)
         {
@@ -390,8 +390,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Groups the particle systems, light, and muzzle transform for a single barrel.
-        /// LightCoroutine is mutable so the flash coroutine reference can be restarted per shot.
+        /// Групує системи частинок, світло та трансформ дула для одного ствола.
+        /// LightCoroutine є змінним, щоб посилання на корутину спалаху можна було перезапустити для кожного пострілу.
         /// </summary>
         private sealed class MuzzleEffectSet
         {

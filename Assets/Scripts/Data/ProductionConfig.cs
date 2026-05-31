@@ -5,8 +5,8 @@ using UnityEngine.Serialization;
 namespace Strategy.Data
 {
     /// <summary>
-    /// ScriptableObject acting as the master list of all units a factory can produce.
-    /// The "Factory Production Config.asset" is the single instance used at runtime by BuildingProduction.
+    /// ScriptableObject, що є головним списком усіх юнітів, які може виробляти завод.
+    /// Асет "Factory Production Config.asset" є єдиним екземпляром, що використовується під час гри компонентом BuildingProduction.
     /// </summary>
     [CreateAssetMenu(menuName = "RTS/Production Config")]
     public class ProductionConfig : ScriptableObject
@@ -22,8 +22,8 @@ namespace Strategy.Data
         }
 
         /// <summary>
-        /// Adds a ProductionItemData entry to the list if it is not null and not already present.
-        /// Called by editor prefab builders to register newly created unit production data.
+        /// Додає запис ProductionItemData до списку, якщо він не null і ще не присутній.
+        /// Викликається редакторними конфігураторами префабів для реєстрації щойно створених даних виробництва юніта.
         /// </summary>
         public void AddItem(ProductionItemData item)
         {

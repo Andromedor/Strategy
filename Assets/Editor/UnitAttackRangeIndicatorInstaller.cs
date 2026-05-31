@@ -9,12 +9,12 @@ using Strategy.Data;
 using Strategy.UI;
 
 /// <summary>
-/// Editor-only tool that installs a UnitAttackRangeIndicator component onto tank unit prefabs
-/// listed in <see cref="TankUnitDataPaths"/>. Invoked via Tools/RTS/Install Tank Range Indicators.
+/// Редакторний інструмент, що встановлює компонент UnitAttackRangeIndicator на префаби танкових юнітів,
+/// перелічені в <see cref="TankUnitDataPaths"/>. Викликається через Tools/RTS/Install Tank Range Indicators.
 /// </summary>
 public static class UnitAttackRangeIndicatorInstaller
 {
-    // UnitData asset paths for every tank variant that should receive a range indicator.
+    // Шляхи до асетів UnitData для кожного варіанту танка, що має отримати індикатор дальності.
     private static readonly string[] TankUnitDataPaths =
     {
         "Assets/Balance/LightTank.asset",
@@ -22,8 +22,8 @@ public static class UnitAttackRangeIndicatorInstaller
     };
 
     /// <summary>
-    /// Iterates <see cref="TankUnitDataPaths"/>, resolves each UnitData's prefab path, and
-    /// calls <see cref="InstallOnPrefab"/> to add or update the range indicator component.
+    /// Перебирає <see cref="TankUnitDataPaths"/>, визначає шлях до префабу кожного UnitData та
+    /// викликає <see cref="InstallOnPrefab"/> для додавання або оновлення компонента індикатора дальності.
     /// </summary>
     [MenuItem("Tools/RTS/Install Tank Range Indicators")]
     public static void InstallTankIndicators()
@@ -49,9 +49,9 @@ public static class UnitAttackRangeIndicatorInstaller
     }
 
     /// <summary>
-    /// Loads the prefab at <paramref name="prefabPath"/>, adds a UnitAttackRangeIndicator if
-    /// absent, sets its visual parameters (segments, line width, color, toggle mode), wires the
-    /// UnitCombat reference, then saves the prefab.
+    /// Завантажує префаб за шляхом <paramref name="prefabPath"/>, додає UnitAttackRangeIndicator,
+    /// якщо його немає, встановлює візуальні параметри (сегменти, ширина лінії, колір, режим перемикання),
+    /// підключає посилання на UnitCombat, після чого зберігає префаб.
     /// </summary>
     private static void InstallOnPrefab(string prefabPath)
     {
@@ -86,7 +86,7 @@ public static class UnitAttackRangeIndicatorInstaller
         }
     }
 
-    /// <summary>Sets an Object reference serialized property on <paramref name="target"/> by name.</summary>
+    /// <summary>Встановлює серіалізовану властивість-посилання на Object у <paramref name="target"/> за назвою.</summary>
     private static void SetObjectReference(Object target, string propertyName, Object value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -99,7 +99,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Sets a bool serialized property on <paramref name="target"/> by name.</summary>
+    /// <summary>Встановлює серіалізовану властивість типу bool у <paramref name="target"/> за назвою.</summary>
     private static void SetBool(Object target, string propertyName, bool value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -112,7 +112,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Sets an int serialized property on <paramref name="target"/> by name.</summary>
+    /// <summary>Встановлює серіалізовану властивість типу int у <paramref name="target"/> за назвою.</summary>
     private static void SetInt(Object target, string propertyName, int value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -125,7 +125,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Sets a float serialized property on <paramref name="target"/> by name.</summary>
+    /// <summary>Встановлює серіалізовану властивість типу float у <paramref name="target"/> за назвою.</summary>
     private static void SetFloat(Object target, string propertyName, float value)
     {
         SerializedObject serializedObject = new SerializedObject(target);
@@ -138,7 +138,7 @@ public static class UnitAttackRangeIndicatorInstaller
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Sets a Color serialized property on <paramref name="target"/> by name.</summary>
+    /// <summary>Встановлює серіалізовану властивість типу Color у <paramref name="target"/> за назвою.</summary>
     private static void SetColor(Object target, string propertyName, Color value)
     {
         SerializedObject serializedObject = new SerializedObject(target);

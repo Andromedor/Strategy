@@ -6,8 +6,8 @@ using UnityEngine.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// HUD button that opens the Construction panel via <see cref="EventManager.RaiseOpenPanel"/>.
-    /// Automatically disables itself when no <see cref="ConstructionCenter"/> is active in the scene.
+    /// HUD-кнопка, що відкриває панель будівництва через <see cref="EventManager.RaiseOpenPanel"/>.
+    /// Автоматично вимикається, коли жоден <see cref="ConstructionCenter"/> не є активним у сцені.
     /// </summary>
     [RequireComponent(typeof(Button))]
     public class ButtonOpenConstruction : MonoBehaviour
@@ -37,13 +37,13 @@ namespace Strategy.UI
             EventManager.OnConstructionCentersChanged -= Refresh;
         }
 
-        /// <summary>Raises the open-panel event to switch the HUD to the Construction panel.</summary>
+        /// <summary>Генерує подію відкриття панелі для перемикання HUD на панель будівництва.</summary>
         private void OpenConstruction()
         {
             EventManager.RaiseOpenPanel(PanelType.Construction);
         }
 
-        /// <summary>Enables the button only when at least one active construction center exists.</summary>
+        /// <summary>Вмикає кнопку лише тоді, коли існує хоча б один активний будівельний центр.</summary>
         private void Refresh()
         {
             if (_button != null)

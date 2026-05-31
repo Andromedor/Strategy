@@ -9,9 +9,9 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Artillery-specific subclass of UnitCombat. Overrides gun elevation to use a distance-based
-    /// curve, and overrides firing to create an ArtilleryProjectile with parabolic flight, accuracy
-    /// roll, and splash damage instead of a pooled bullet.
+    /// Підклас UnitCombat для артилерії. Перевизначає підйом гармати для використання кривої на основі
+    /// дистанції, та перевизначає стрільбу для створення ArtilleryProjectile з параболічним польотом,
+    /// перевіркою точності та площинною шкодою замість пулі з пулу.
     /// </summary>
     public class ArtilleryWeapon : UnitCombat
     {
@@ -54,8 +54,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Overrides the base direct-pitch logic. Maps distance ratio through a power curve to derive
-        /// an elevation angle, then calls MoveGunPitch to step toward it.
+        /// Перевизначає базову логіку прямого кута. Відображає співвідношення дистанції через степеневу криву
+        /// для отримання кута підйому, потім викликає MoveGunPitch для наближення до нього.
         /// </summary>
         protected override bool RotateGunToTarget(Transform target)
         {
@@ -70,8 +70,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Rolls for hit vs. miss, optionally offsets the impact point, snaps it to ground,
-        /// then creates an ArtilleryProjectile with all required damage and flight parameters.
+        /// Виконує перевірку влучання або промаху, за потреби зміщує точку удару, прив'язує її до землі,
+        /// потім створює ArtilleryProjectile з усіма необхідними параметрами шкоди та польоту.
         /// </summary>
         protected override IEnumerator FireAtTarget(Transform target)
         {
@@ -114,7 +114,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Lerps between stationary and moving hit-chance extremes based on distance ratio and motion state.
+        /// Інтерполює між крайніми значеннями ймовірності влучання для нерухомої та рухомої цілі
+        /// залежно від співвідношення дистанції та стану руху.
         /// </summary>
         private float GetHitChance(float distanceRatio, bool isMoving)
         {
@@ -125,7 +126,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Generates a random offset point around the target within a miss radius scaled by distance and motion.
+        /// Генерує випадкову зміщену точку навколо цілі в межах радіусу промаху, масштабованого за дистанцією та рухом.
         /// </summary>
         private Vector3 GetMissPoint(Vector3 targetPoint, float distanceRatio, bool isMoving)
         {

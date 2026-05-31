@@ -8,10 +8,10 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Extends NavMeshVehicleMotor with differential track speed computation for tanks and SPAs.
-    /// Calculates left/right track speeds from the heading angle: pivot-in-place when alignment is
-    /// needed (WaitingForAlignment), or a curve differential when turning while moving.
-    /// TankTrackAnimator reads LeftTrackSpeed / RightTrackSpeed each frame to scroll segments.
+    /// Розширює NavMeshVehicleMotor диференціальним обчисленням швидкостей гусениць для танків та СПГ.
+    /// Обчислює швидкості лівої/правої гусениць з кута курсу: розворот на місці при вирівнюванні
+    /// (WaitingForAlignment), або диференціал кривої при повороті під час руху.
+    /// TankTrackAnimator зчитує LeftTrackSpeed / RightTrackSpeed щокадру для прокручування секцій.
     /// </summary>
     public class TrackedVehicleMotor : NavMeshVehicleMotor
     {
@@ -51,10 +51,10 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Called by the base Update after heading/speed are resolved. Computes target left and right
-        /// track speeds: pivot rotation when WaitingForAlignment, differential curve when moving with
-        /// a turn, or equal forward speed when going straight.
-        /// Results are smoothed via an exponential blend controlled by _trackResponse.
+        /// Викликається базовим Update після вирішення курсу/швидкості. Обчислює цільові швидкості лівої та правої
+        /// гусениць: розворот на місці при WaitingForAlignment, диференціал кривої при русі з поворотом,
+        /// або однакова пряма швидкість при русі прямо.
+        /// Результати згладжуються через експоненційне змішування, кероване _trackResponse.
         /// </summary>
         protected override void OnMotorUpdated(
             Vector3 headingDirection,
@@ -82,7 +82,7 @@ namespace Strategy.Units
 
                     if (WaitingForAlignment)
                     {
-                        // Pivot in place: one track forward, one backward proportional to heading error.
+                        // Розворот на місці: одна гусениця вперед, інша назад пропорційно до похибки курсу.
                         float turnSign = Mathf.Sign(signedHeadingAngle);
                         if (Mathf.Approximately(turnSign, 0f))
                             turnSign = 1f;
@@ -98,7 +98,7 @@ namespace Strategy.Units
                     }
                     else
                     {
-                        // Curve differential: add/subtract a fraction of speed to steer while moving.
+                        // Диференціал кривої: додавання/віднімання частки швидкості для керування під час руху.
                         float curveMagnitude = Mathf.Max(
                             _minimumCurveDifferentialSpeed,
                             Mathf.Max(forwardSpeed, CruiseSpeed * 0.25f) * _curveDifferentialMultiplier);
@@ -123,7 +123,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Snaps near-zero track speeds to exactly 0 to prevent micro-scrolling of track segments.
+        /// Прив'язує майже нульові швидкості гусениць до точно 0, щоб запобігти мікропрокручуванню секцій.
         /// </summary>
         private static float SnapSmall(float value)
         {

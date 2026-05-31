@@ -13,9 +13,9 @@ using Strategy.Core;
 using Strategy.UI;
 
 /// <summary>
-/// Editor-only tool for configuring the Quad Autocannon prefab and validating it from CI.
-/// Invoked via Tools/RTS/Configure Quad Autocannon. Sets up combat, visual effects, wheel
-/// animation, movement, balance stats, production data, and scene NavMesh settings.
+/// Редакторний інструмент для конфігурації префабу Quad Autocannon та його валідації з CI.
+/// Викликається через Tools/RTS/Configure Quad Autocannon. Налаштовує бойові характеристики,
+/// візуальні ефекти, анімацію коліс, рух, балансові параметри, дані виробництва та NavMesh сцени.
 /// </summary>
 public static class QuadAutocannonPrefabConfigurator
 {
@@ -28,8 +28,8 @@ public static class QuadAutocannonPrefabConfigurator
     private const string ProductionDataPath = "Assets/Balance/LightTankProduction.asset";
 
     /// <summary>
-    /// Main configuration pass: loads the prefab, wires all components, and saves it back to disk.
-    /// Also calls ConfigureSceneNavigation to update the main scene NavMeshSurface layer mask.
+    /// Основний прохід конфігурації: завантажує префаб, з'єднує всі компоненти та зберігає його на диск.
+    /// Також викликає ConfigureSceneNavigation для оновлення маски шарів NavMeshSurface головної сцени.
     /// </summary>
     [MenuItem("Tools/RTS/Configure Quad Autocannon")]
     public static void Configure()
@@ -68,9 +68,9 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Headless validation entry point callable from CI (EditorApplication.Exit(1) on failure).
-    /// Checks component presence, serialized-field assignments, agent tuning, balance constraints,
-    /// factory prefab setup, and main-scene NavMesh configuration.
+    /// Точка входу для беззупинної валідації з CI (EditorApplication.Exit(1) при помилці).
+    /// Перевіряє наявність компонентів, призначення серіалізованих полів, налаштування агента,
+    /// обмеження балансу, конфігурацію префабу заводу та NavMesh головної сцени.
     /// </summary>
     public static void Validate()
     {
@@ -175,8 +175,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Ensures exactly one QuadAutocannonCombat component exists on the prefab root,
-    /// removes any other UnitCombat subclasses, and wires turret, gun, muzzle, and effects references.
+    /// Переконується, що на корені префабу є рівно один компонент QuadAutocannonCombat,
+    /// видаляє інші підкласи UnitCombat та прив'язує посилання на турель, гармату, дула і ефекти.
     /// </summary>
     private static void ConfigureCombat(
         GameObject root,
@@ -218,7 +218,7 @@ public static class QuadAutocannonPrefabConfigurator
         SetFloat(serializedCombat, "_barrelSpacing", 0.18f);
         serializedCombat.ApplyModifiedPropertiesWithoutUndo();
 
-        // If a range indicator is present, update its combat reference to the new component.
+        // Якщо присутній індикатор дальності, оновлюємо його посилання на бойовий компонент.
         UnitAttackRangeIndicator indicator = root.GetComponent<UnitAttackRangeIndicator>();
 
         if (indicator != null)
@@ -230,8 +230,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Configures AutocannonVisualEffects with gun transform, dual muzzle transforms, and
-    /// recoil/particle-count parameters for the Quad Autocannon's rapid-fire visual feel.
+    /// Налаштовує AutocannonVisualEffects з трансформом гармати, двома трансформами дул та
+    /// параметрами віддачі/кількості частинок для візуального відчуття швидкострільності Quad Autocannon.
     /// </summary>
     private static void ConfigureEffects(
         GameObject root,
@@ -254,8 +254,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Sets up NavMeshAgent, NavMeshVehicleMotor, WheeledVehicleAnimator, and UnitSpawnActivator
-    /// for wheeled vehicle movement. Agent rotation is handled by NavMeshVehicleMotor, not Unity.
+    /// Налаштовує NavMeshAgent, NavMeshVehicleMotor, WheeledVehicleAnimator та UnitSpawnActivator
+    /// для руху колісного транспортного засобу. Поворот агента обробляється NavMeshVehicleMotor, а не Unity.
     /// </summary>
     private static void ConfigureMovement(GameObject root, Transform frontWheel, Transform rearWheel)
     {
@@ -318,8 +318,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Writes canonical combat stats to the LightTank UnitData asset for the Quad Autocannon
-    /// (rapid fire, short range, low per-shot damage).
+    /// Записує еталонні бойові характеристики в асет UnitData LightTank для Quad Autocannon
+    /// (швидкострільність, коротка дальність, малий збиток за постріл).
     /// </summary>
     private static void ConfigureBalance(UnitData unitData)
     {
@@ -345,7 +345,7 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Stamps canonical cost and build time onto the LightTankProduction ProductionItemData asset.
+    /// Записує еталонну вартість та час побудови в асет ProductionItemData LightTankProduction.
     /// </summary>
     private static void ConfigureProduction()
     {
@@ -364,8 +364,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Opens the main scene, finds the NavMeshSurface, and ensures the required physics layers
-    /// and agent/obstacle ignore flags are set, then saves the scene.
+    /// Відкриває головну сцену, знаходить NavMeshSurface та переконується, що встановлено
+    /// потрібні фізичні шари та прапорці ігнорування агентів/перешкод, після чого зберігає сцену.
     /// </summary>
     private static void ConfigureSceneNavigation()
     {
@@ -394,8 +394,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Validates the factory prefab for required components and checks that the UnitExitPoint
-    /// is sufficiently far outside the NavMeshObstacle carving box to allow spawned units to path.
+    /// Перевіряє префаб заводу на наявність необхідних компонентів та перевіряє, чи
+    /// UnitExitPoint знаходиться достатньо далеко від NavMeshObstacle, щоб заспавнені юніти могли прокласти маршрут.
     /// </summary>
     private static void ValidateFactoryPrefab(List<string> errors, float quadAgentRadius)
     {
@@ -439,8 +439,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Checks that the factory's UnitExitPoint is at least two agent-radii outside the obstacle
-    /// extents in the horizontal plane, ensuring units can path away after spawning.
+    /// Перевіряє, що UnitExitPoint заводу знаходиться щонайменше на два радіуси агента за межами
+    /// NavMeshObstacle в горизонтальній площині, щоб юніти могли прокласти маршрут після спауну.
     /// </summary>
     private static void ValidateFactoryExitClearance(
         Transform factoryTransform,
@@ -477,8 +477,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Validates that mainScene has a NavMeshSurface with the required layer mask, ignore flags,
-    /// and baked NavMesh data present.
+    /// Перевіряє, що mainScene має NavMeshSurface з потрібною маскою шарів, прапорцями ігнорування
+    /// та наявними запеченими даними NavMesh.
     /// </summary>
     private static void ValidateMainSceneNavigation(List<string> errors)
     {
@@ -523,16 +523,16 @@ public static class QuadAutocannonPrefabConfigurator
         ValidateObject(surface, "m_NavMeshData", errors);
     }
 
-    /// <summary>Returns the combined layer mask covering all layers the NavMeshSurface must include.</summary>
+    /// <summary>Повертає об'єднану маску шарів, що охоплює всі шари, які має включати NavMeshSurface.</summary>
     private static int GetRequiredNavSurfaceMask()
     {
         return LayerMask.GetMask("Ground", "PlayerUnit", "EnemyUnit", "Obstacle");
     }
 
     /// <summary>
-    /// Returns the named child under <paramref name="gun"/>, or creates a new GameObject parented
-    /// to <paramref name="gun"/> at the given local X offset from <paramref name="center"/>.
-    /// Used to set up left/right muzzle points for dual-barrel fire.
+    /// Повертає дочірній об'єкт з іменем під <paramref name="gun"/> або створює новий GameObject,
+    /// прив'язаний до <paramref name="gun"/>, зі зміщенням по локальній осі X від <paramref name="center"/>.
+    /// Використовується для налаштування лівої/правої точки дула при стрільбі з двох стволів.
     /// </summary>
     private static Transform GetOrCreateMuzzle(
         Transform gun,
@@ -556,7 +556,7 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Depth-first recursive search for a child Transform with the given name.
+    /// Рекурсивний пошук у глибину дочірнього Transform із заданою назвою.
     /// </summary>
     private static Transform FindChildRecursive(Transform parent, string childName)
     {
@@ -579,7 +579,7 @@ public static class QuadAutocannonPrefabConfigurator
         return null;
     }
 
-    /// <summary>Sets an Object reference property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість-посилання на Object у вже відкритому SerializedObject.</summary>
     private static void SetObject(SerializedObject serializedObject, string propertyName, Object value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -589,7 +589,7 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Sets an Object array property to exactly the provided values, resizing as needed.
+    /// Встановлює властивість-масив Object точно до наданих значень, змінюючи розмір за потреби.
     /// </summary>
     private static void SetObjectArray(SerializedObject serializedObject, string propertyName, params Object[] values)
     {
@@ -604,7 +604,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
     }
 
-    /// <summary>Sets a float property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу float у вже відкритому SerializedObject.</summary>
     private static void SetFloat(SerializedObject serializedObject, string propertyName, float value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -613,7 +613,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.floatValue = value;
     }
 
-    /// <summary>Sets an int property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу int у вже відкритому SerializedObject.</summary>
     private static void SetInt(SerializedObject serializedObject, string propertyName, int value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -622,7 +622,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.intValue = value;
     }
 
-    /// <summary>Sets a bool property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу bool у вже відкритому SerializedObject.</summary>
     private static void SetBool(SerializedObject serializedObject, string propertyName, bool value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -631,7 +631,7 @@ public static class QuadAutocannonPrefabConfigurator
             property.boolValue = value;
     }
 
-    /// <summary>Sets an int (layer mask) property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу int (маска шарів) у вже відкритому SerializedObject.</summary>
     private static void SetLayerMask(SerializedObject serializedObject, string propertyName, int value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -641,8 +641,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Validates that a float serialized property on <paramref name="target"/> is at least
-    /// <paramref name="minimum"/>, appending a descriptive error message if not.
+    /// Перевіряє, що серіалізована властивість типу float на <paramref name="target"/> не менша
+    /// за <paramref name="minimum"/>, додаючи описове повідомлення про помилку, якщо це не так.
     /// </summary>
     private static void ValidateFloatAtLeast(Object target, string propertyName, float minimum, List<string> errors)
     {
@@ -665,7 +665,7 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Validates that a bool property on an already-open SerializedObject matches the expected value.
+    /// Перевіряє, що властивість типу bool у вже відкритому SerializedObject відповідає очікуваному значенню.
     /// </summary>
     private static void ValidateBool(
         SerializedObject serializedObject,
@@ -686,7 +686,7 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Validates that a serialized Object reference property on <paramref name="target"/> is assigned.
+    /// Перевіряє, що серіалізована властивість-посилання на Object у <paramref name="target"/> призначена.
     /// </summary>
     private static void ValidateObject(Object target, string propertyName, List<string> errors)
     {
@@ -703,8 +703,8 @@ public static class QuadAutocannonPrefabConfigurator
     }
 
     /// <summary>
-    /// Validates that a serialized Object array on <paramref name="target"/> has exactly
-    /// <paramref name="expectedSize"/> non-null entries.
+    /// Перевіряє, що серіалізований масив Object на <paramref name="target"/> має рівно
+    /// <paramref name="expectedSize"/> ненульових записів.
     /// </summary>
     private static void ValidateObjectArray(
         Object target,

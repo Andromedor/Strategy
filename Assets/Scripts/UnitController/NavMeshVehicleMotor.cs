@@ -9,10 +9,10 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Bicycle-model wheeled vehicle driver that takes over NavMeshAgent steering.
-    /// Disables agent rotation, reads its desired velocity for heading, then directly rotates and
-    /// moves the GameObject. Manages forward speed, alignment pauses, and smooth steer angle.
-    /// Subclassed by TrackedVehicleMotor for differential track speeds.
+    /// Драйвер колісного транспортного засобу за моделлю велосипеда, що перебирає на себе керування NavMeshAgent.
+    /// Вимикає обертання агента, зчитує його бажану швидкість для визначення напрямку, потім безпосередньо
+    /// обертає та переміщує GameObject. Керує прямою швидкістю, паузами вирівнювання та плавним кутом повороту.
+    /// Успадковується TrackedVehicleMotor для диференціальних швидкостей гусениць.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     public class NavMeshVehicleMotor : MonoBehaviour
@@ -116,8 +116,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Writes motor parameters (speed, acceleration, rotation) to the NavMeshAgent so it
-        /// matches the vehicle settings. Skips if _applyAgentTuning is disabled.
+        /// Записує параметри мотора (швидкість, прискорення, обертання) до NavMeshAgent, щоб він
+        /// відповідав налаштуванням транспортного засобу. Пропускає, якщо _applyAgentTuning вимкнено.
         /// </summary>
         protected virtual void ApplyAgentTuning()
         {
@@ -134,8 +134,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Computes the actual velocity from frame-to-frame position delta; falls back to
-        /// agent.velocity when the displacement is negligible (e.g. first frame or standing still).
+        /// Обчислює фактичну швидкість із дельти позиції між кадрами; повертається до
+        /// agent.velocity, коли переміщення незначне (наприклад, перший кадр або стоїть).
         /// </summary>
         protected virtual void UpdateMeasuredVelocity(float deltaTime)
         {
@@ -158,8 +158,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Derives a normalised heading direction from the agent's desiredVelocity, then steeringTarget,
-        /// then destination as successive fallbacks.
+        /// Отримує нормалізований напрямок руху з desiredVelocity агента, потім steeringTarget,
+        /// потім destination як послідовні запасні варіанти.
         /// </summary>
         protected virtual Vector3 GetHeadingDirection()
         {
@@ -194,8 +194,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Adjusts agent.speed based on heading angle; halts movement (_waitingForAlignment = true)
-        /// when the required turn exceeds _alignmentStopAngle and resumes below _alignmentResumeAngle.
+        /// Регулює agent.speed залежно від кута курсу; зупиняє рух (_waitingForAlignment = true),
+        /// коли необхідний поворот перевищує _alignmentStopAngle, та відновлює нижче _alignmentResumeAngle.
         /// </summary>
         protected virtual void UpdateAgentSpeed(float headingAngle, bool hasHeading)
         {
@@ -232,7 +232,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Rotates the vehicle body toward headingDirection at _bodyTurnSpeed degrees per second.
+        /// Обертає корпус транспортного засобу до headingDirection зі швидкістю _bodyTurnSpeed градусів на секунду.
         /// </summary>
         protected virtual void UpdateBodyRotation(Vector3 headingDirection, float deltaTime)
         {
@@ -247,8 +247,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Smoothly moves _currentSteerAngle toward the signed heading angle, clamped to _maxSteerAngle,
-        /// using an exponential blend combined with a max-speed cap.
+        /// Плавно переміщує _currentSteerAngle до знакового кута курсу, обмеженого _maxSteerAngle,
+        /// використовуючи експоненційне змішування разом з обмеженням максимальної швидкості.
         /// </summary>
         protected virtual void UpdateSteering(Vector3 headingDirection, float deltaTime)
         {
@@ -270,9 +270,9 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Extension point called every Update after all motor state is updated.
-        /// Override in subclasses (e.g. TrackedVehicleMotor) to compute per-track speeds or other
-        /// derivative data without duplicating the base Update logic.
+        /// Точка розширення, що викликається щокадру після оновлення всіх станів мотора.
+        /// Перевизначається в підкласах (наприклад, TrackedVehicleMotor) для обчислення швидкостей
+        /// кожної гусениці або інших похідних даних без дублювання базової логіки Update.
         /// </summary>
         protected virtual void OnMotorUpdated(
             Vector3 headingDirection,

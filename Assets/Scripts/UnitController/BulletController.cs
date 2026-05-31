@@ -4,9 +4,8 @@ using UnityEngine;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Controls a single pooled bullet: moves it toward its target each frame and deals damage on
-    /// trigger contact, then returns itself to BulletPool. Cleared and re-initialised by BulletPool
-    /// for each reuse.
+    /// Керує однією пулею з пулу: переміщує її до цілі щокадру та завдає шкоду при контакті з тригером,
+    /// потім повертає себе до BulletPool. Очищається та повторно ініціалізується BulletPool при кожному повторному використанні.
     /// </summary>
     public class BulletController : MonoBehaviour
     {
@@ -27,7 +26,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Sets damage, speed, homing target, and owner before the bullet is activated from the pool.
+        /// Встановлює шкоду, швидкість, ціль самонаведення та власника перед активацією кулі з пулу.
         /// </summary>
         public void Initialize(float damage, float speed, Transform target, GameObject owner)
         {
@@ -38,8 +37,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Moves the bullet toward _target using MoveTowards; returns to pool if the target becomes
-        /// invalid (null or inactive).
+        /// Переміщує кулю до _target за допомогою MoveTowards; повертає до пулу, якщо ціль стає
+        /// недійсною (null або неактивна).
         /// </summary>
         private void FlyBullet()
         {
@@ -54,8 +53,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// On trigger contact: skips the owner's own colliders and friendly targets, applies damage
-        /// to the first IDamageable hit, then returns the bullet to BulletPool.
+        /// При контакті з тригером: пропускає власні колайдери та союзні цілі, завдає шкоду
+        /// першому IDamageable при влученні, потім повертає кулю до BulletPool.
         /// </summary>
         private void OnTriggerEnter(Collider other)
         {
@@ -84,8 +83,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns this bullet to BulletPool.Instance, or deactivates the GameObject if the pool
-        /// is unavailable.
+        /// Повертає цю кулю до BulletPool.Instance, або деактивує GameObject, якщо пул
+        /// недоступний.
         /// </summary>
         private void ReturnToPool()
         {

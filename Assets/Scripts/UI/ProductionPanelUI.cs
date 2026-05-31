@@ -11,9 +11,9 @@ using Strategy.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Displays the production queue buttons for the currently selected (or first available)
-    /// player <see cref="BuildingProduction"/> factory. Rebuilds button rows when the factory
-    /// changes and greys out items the player cannot afford via <see cref="ResourceManager"/>.
+    /// Відображає кнопки черги виробництва для поточного вибраного (або першого доступного)
+    /// заводу гравця <see cref="BuildingProduction"/>. Перебудовує рядки кнопок при зміні заводу
+    /// та робить неактивними позиції, які гравець не може собі дозволити, через <see cref="ResourceManager"/>.
     /// </summary>
     public class ProductionPanelUI : MonoBehaviour
     {
@@ -44,8 +44,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Re-evaluates which factory to display after a factory is added or removed from the scene.
-        /// Falls back to <see cref="GetInitialFactory"/> if the current one becomes invalid.
+        /// Повторно визначає, який завод відображати, після додавання або видалення заводу зі сцени.
+        /// Повертається до <see cref="GetInitialFactory"/>, якщо поточний завод стає недійсним.
         /// </summary>
         private void RefreshCurrentFactory()
         {
@@ -55,8 +55,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Clears existing buttons and spawns a fresh set of <see cref="ProductionButtonUI"/> rows
-        /// for every valid <see cref="ProductionItemData"/> on <paramref name="factory"/>.
+        /// Очищає існуючі кнопки та створює новий набір рядків <see cref="ProductionButtonUI"/>
+        /// для кожного дійсного <see cref="ProductionItemData"/> на <paramref name="factory"/>.
         /// </summary>
         private void OpenFactory(BuildingProduction factory)
         {
@@ -96,7 +96,7 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Forwards a production button click to the factory's queue, then refreshes affordability.
+        /// Передає клік кнопки виробництва до черги заводу, потім оновлює доступність за ресурсами.
         /// </summary>
         private void OnItemClicked(ProductionItemData item)
         {
@@ -108,8 +108,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Updates the interactable/color state of every button based on current player resources.
-        /// Called on <see cref="ResourceManager.OnResourceChanged"/>.
+        /// Оновлює стан інтерактивності та колір кожної кнопки залежно від поточних ресурсів гравця.
+        /// Викликається на <see cref="ResourceManager.OnResourceChanged"/>.
         /// </summary>
         private void RefreshButtons(int playerResource)
         {
@@ -120,7 +120,7 @@ namespace Strategy.UI
             }
         }
 
-        /// <summary>Destroys all instantiated button children and clears the button list.</summary>
+        /// <summary>Знищує всі створені дочірні кнопки та очищає список кнопок.</summary>
         private void ClearButtons()
         {
             if (_contentRoot == null)
@@ -138,8 +138,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Configures the <see cref="GridLayoutGroup"/> and <see cref="ContentSizeFitter"/> on the
-        /// content root to a fixed 3-column layout that auto-sizes its height.
+        /// Налаштовує <see cref="GridLayoutGroup"/> та <see cref="ContentSizeFitter"/> на кореневому
+        /// контейнері для фіксованого 3-колонкового макету з автоматичним підбором висоти.
         /// </summary>
         private void ApplyLayout(int itemCount)
         {
@@ -164,14 +164,14 @@ namespace Strategy.UI
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
-        /// <summary>Forces an immediate layout recalculation on the content root RectTransform.</summary>
+        /// <summary>Примусово виконує негайний перерахунок макету для RectTransform кореневого контейнера.</summary>
         private void RebuildLayout()
         {
             if (_contentRoot is RectTransform rect)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
-        /// <summary>Shows or hides the empty-state label with the given message.</summary>
+        /// <summary>Показує або приховує мітку порожнього стану із заданим повідомленням.</summary>
         private void SetEmptyText(string message)
         {
             if (_emptyText == null)
@@ -181,7 +181,7 @@ namespace Strategy.UI
             _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
-        /// <summary>Returns the number of non-null <see cref="ProductionItemData"/> entries on the factory.</summary>
+        /// <summary>Повертає кількість ненульових записів <see cref="ProductionItemData"/> на заводі.</summary>
         private static int CountValidItems(BuildingProduction factory)
         {
             if (factory == null)
@@ -199,8 +199,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Returns the best factory to display: the currently selected one first,
-        /// then the first active player-team factory found in <see cref="BuildingProduction.All"/>.
+        /// Повертає найкращий завод для відображення: спочатку поточний вибраний,
+        /// потім перший активний завод команди гравця з <see cref="BuildingProduction.All"/>.
         /// </summary>
         private BuildingProduction GetInitialFactory()
         {
@@ -216,7 +216,7 @@ namespace Strategy.UI
             return null;
         }
 
-        /// <summary>Returns true if <paramref name="component"/> is owned by the panel's configured team.</summary>
+        /// <summary>Повертає true, якщо <paramref name="component"/> належить налаштованій команді панелі.</summary>
         private bool BelongsToTeam(Component component)
         {
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();

@@ -10,9 +10,10 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Animates the wheels of a wheeled vehicle: steerable front wheels yaw to match the current
-    /// steer angle from NavMeshVehicleMotor (or the agent), and all drive wheels spin proportionally
-    /// to forward speed. Pivot GameObjects are created at runtime around each wheel transform.
+    /// Анімує колеса колісного транспортного засобу: кермові передні колеса повертаються відповідно до
+    /// поточного кута повороту з NavMeshVehicleMotor (або агента), а всі ведучі колеса обертаються
+    /// пропорційно до прямолінійної швидкості. GameObject-и опорних точок створюються під час виконання
+    /// навколо кожного трансформу колеса.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     public class WheeledVehicleAnimator : MonoBehaviour
@@ -66,8 +67,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a WheelVisual for every unique wheel transform in _driveWheels and _steeringWheels,
-        /// inserting a pivot GameObject between each wheel and its original parent for steer rotation.
+        /// Створює WheelVisual для кожного унікального трансформу колеса в _driveWheels і _steeringWheels,
+        /// вставляючи опорний GameObject між кожним колесом та його оригінальним батьком для обертання при керуванні.
         /// </summary>
         private void BuildWheelVisuals()
         {
@@ -90,8 +91,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Iterates wheelSet and registers each unique, non-null wheel as a WheelVisual, marking
-        /// it as steerable if it is present in steeringSet.
+        /// Перебирає wheelSet та реєструє кожне унікальне ненульове колесо як WheelVisual, позначаючи
+        /// його як кермоване, якщо воно присутнє в steeringSet.
         /// </summary>
         private void AddWheelSet(
             Transform[] wheelSet,
@@ -114,8 +115,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Inserts a "_MotionPivot" parent between the wheel and its original parent, preserving
-        /// world position and scale, so the pivot can be yawed for steering without affecting spin.
+        /// Вставляє батьківський об'єкт "_MotionPivot" між колесом та його оригінальним батьком, зберігаючи
+        /// світову позицію та масштаб, щоб опорна точка могла повертатися для керування без впливу на обертання.
         /// </summary>
         private WheelVisual CreateWheelVisual(Transform wheel, bool canSteer)
         {
@@ -140,8 +141,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Measures per-frame velocity from position delta; falls back to agent.velocity when
-        /// displacement is below _moveThreshold (avoids jitter when nearly stationary).
+        /// Вимірює швидкість за кадр із дельти позиції; повертається до agent.velocity, коли
+        /// переміщення нижче _moveThreshold (уникає тремтіння майже в стані спокою).
         /// </summary>
         private Vector3 GetVelocity(float deltaTime)
         {
@@ -170,8 +171,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the desired steer angle, preferring NavMeshVehicleMotor.CurrentSteerAngle when
-        /// available, otherwise computing it from the agent's steeringTarget or fallback velocity.
+        /// Повертає бажаний кут повороту, надаючи перевагу NavMeshVehicleMotor.CurrentSteerAngle, коли
+        /// доступний, інакше обчислює його зі steeringTarget агента або запасної швидкості.
         /// </summary>
         private float GetTargetSteerAngle(Vector3 fallbackVelocity)
         {
@@ -196,8 +197,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Converts a world-space steering direction to a local steer angle in degrees, clamped
-        /// to _maxSteerAngle and scaled by _steerDirection.
+        /// Перетворює напрямок керування у світовому просторі на локальний кут повороту в градусах,
+        /// обмежений _maxSteerAngle та масштабований _steerDirection.
         /// </summary>
         private float GetSteerAngleFromDirection(Vector3 steeringVelocity)
         {
@@ -214,8 +215,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Smoothly moves _currentSteerAngle toward targetSteerAngle and applies the result as a
-        /// Y rotation on the pivot of each steerable wheel.
+        /// Плавно переміщує _currentSteerAngle до targetSteerAngle та застосовує результат як
+        /// обертання по Y до опорної точки кожного кермованого колеса.
         /// </summary>
         private void UpdateSteering(float targetSteerAngle, float deltaTime)
         {
@@ -238,8 +239,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Accumulates a spin angle from forward speed divided by wheel circumference, then applies
-        /// it as an X rotation on every wheel mesh transform.
+        /// Накопичує кут обертання з прямолінійної швидкості, поділеної на довжину кола колеса, потім
+        /// застосовує його як обертання по X до кожного трансформу меша колеса.
         /// </summary>
         private void UpdateSpin(Vector3 velocity, float deltaTime)
         {
@@ -259,8 +260,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Holds references to the pivot (steer parent) and wheel (spin child) transforms for one
-        /// wheel, along with its base rotation and steerability flag.
+        /// Зберігає посилання на опорну точку (батько для керування) та колесо (дочірній об'єкт для обертання)
+        /// трансформи для одного колеса, разом з його базовим обертанням та прапорцем керованості.
         /// </summary>
         private sealed class WheelVisual
         {

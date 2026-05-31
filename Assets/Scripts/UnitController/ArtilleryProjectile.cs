@@ -9,8 +9,8 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Self-propelled artillery shell that flies a parabolic arc to its impact point, then detonates
-    /// with direct and splash damage. Created at runtime by ArtilleryWeapon; not pooled.
+    /// Артилерійський снаряд, що летить параболічною дугою до точки удару, після чого вибухає
+    /// з прямою та площинною шкодою. Створюється під час виконання через ArtilleryWeapon; не пулується.
     /// </summary>
     public class ArtilleryProjectile : MonoBehaviour
     {
@@ -36,8 +36,8 @@ namespace Strategy.Units
         private static readonly Dictionary<int, Material> CachedMaterials = new();
 
         /// <summary>
-        /// Creates the projectile GameObject (collider-free sphere primitive) at the given position
-        /// and attaches an ArtilleryProjectile component. Call Initialize immediately after.
+        /// Створює GameObject снаряду (сфера-примітив без колайдера) у заданій позиції
+        /// та прикріплює компонент ArtilleryProjectile. Одразу після цього викликайте Initialize.
         /// </summary>
         public static ArtilleryProjectile Create(Vector3 position)
         {
@@ -58,8 +58,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Sets all flight, damage, and target parameters before the shell begins moving.
-        /// Must be called once immediately after Create().
+        /// Встановлює всі параметри польоту, шкоди та цілі перед тим, як снаряд почне рухатись.
+        /// Потрібно викликати один раз одразу після Create().
         /// </summary>
         public void Initialize(
             Vector3 start,
@@ -95,7 +95,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Advances the projectile along the parabolic arc each frame; calls Detonate when t reaches 1.
+        /// Просуває снаряд вздовж параболічної дуги щокадру; викликає Detonate, коли t досягає 1.
         /// </summary>
         private void Update()
         {
@@ -116,8 +116,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Computes the world position on the arc at normalised time t, adding a sine-based vertical
-        /// offset to create the parabolic trajectory.
+        /// Обчислює світову позицію на дузі при нормалізованому часі t, додаючи вертикальне зміщення
+        /// на основі синуса для створення параболічної траєкторії.
         /// </summary>
         private Vector3 GetArcPosition(float t)
         {
@@ -127,7 +127,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Disables the component, spawns the explosion visual effect, applies damage, and destroys the shell.
+        /// Вимикає компонент, породжує візуальний ефект вибуху, застосовує шкоду та знищує снаряд.
         /// </summary>
         private void Detonate()
         {
@@ -138,8 +138,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Deals direct damage to _directTarget (if this was a direct hit) then splash damage to all
-        /// IDamageable colliders within _splashRadius, skipping the owner and friendly units.
+        /// Завдає пряму шкоду _directTarget (якщо це було пряме влучання), потім площинну шкоду всім
+        /// колайдерам IDamageable в межах _splashRadius, пропускаючи власника та союзні юніти.
         /// </summary>
         private void ApplyDamage()
         {
@@ -181,7 +181,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns false if the target is the owner or shares the owner's team; true otherwise.
+        /// Повертає false, якщо ціль є власником або належить до тієї самої команди; інакше повертає true.
         /// </summary>
         private bool CanDamage(Transform target)
         {
@@ -197,8 +197,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Spawns a runtime explosion at position: point light, flash, smoke, debris, and spark
-        /// particle systems; attaches ArtilleryExplosionCleanup to fade and destroy the effect.
+        /// Породжує вибух під час виконання в позиції: точкове світло, спалах, дим, уламки та іскри
+        /// системи частинок; прикріплює ArtilleryExplosionCleanup для затухання та знищення ефекту.
         /// </summary>
         private static void CreateExplosionEffect(Vector3 position)
         {
@@ -276,8 +276,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Builds and configures a ParticleSystem child object under parent with all supplied parameters.
-        /// The system is set to a single burst emission with sphere shape and a fade-out colour gradient.
+        /// Будує та налаштовує дочірній об'єкт ParticleSystem під parent з усіма заданими параметрами.
+        /// Система налаштована на одиночний вибуховий викид із сферичною формою та градієнтом затухання кольору.
         /// </summary>
         private static ParticleSystem CreateParticleSystem(
             Transform parent,
@@ -345,8 +345,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns a cached sphere mesh used for all explosion particles; creates it once from a
-        /// temporary primitive to avoid asset-import overhead.
+        /// Повертає кешований меш сфери для всіх часток вибуху; створює його один раз із тимчасового
+        /// примітиву, щоб уникнути накладних витрат на імпорт ресурсів.
         /// </summary>
         private static Mesh GetParticleMesh()
         {
@@ -365,8 +365,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns a cached material for the given colour and smoothness, creating it once via the
-        /// best available URP/Standard shader. Uses a hash of colour components as the cache key.
+        /// Повертає кешований матеріал для заданого кольору та гладкості, створюючи його один раз через
+        /// найкращий доступний шейдер URP/Standard. Використовує хеш компонентів кольору як ключ кешу.
         /// </summary>
         private static Material CreateMaterial(Color color, float smoothness)
         {
@@ -400,7 +400,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Produces a deterministic integer hash from RGBA bytes and smoothness for material caching.
+        /// Генерує детермінований цілочисельний хеш з байтів RGBA та гладкості для кешування матеріалів.
         /// </summary>
         private static int GetMaterialKey(Color color, float smoothness)
         {
@@ -419,8 +419,8 @@ namespace Strategy.Units
     }
 
     /// <summary>
-    /// Fades out the explosion point light over a short duration and then destroys the
-    /// entire explosion effect GameObject.
+    /// Поступово гасить точкове світло вибуху протягом короткого часу, а потім знищує
+    /// весь GameObject ефекту вибуху.
     /// </summary>
     public sealed class ArtilleryExplosionCleanup : MonoBehaviour
     {
@@ -430,7 +430,7 @@ namespace Strategy.Units
         private float _initialIntensity;
 
         /// <summary>
-        /// Stores references needed to fade the light and schedule self-destruction.
+        /// Зберігає посилання, необхідні для затухання світла та планування самознищення.
         /// </summary>
         public void Initialize(Light explosionLight, float lifetime, float initialIntensity)
         {
@@ -440,7 +440,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Dims the light to zero over 0.2 s, then destroys the effect GameObject after _lifetime seconds.
+        /// Зменшує інтенсивність світла до нуля за 0.2 с, потім знищує GameObject ефекту після _lifetime секунд.
         /// </summary>
         private void Update()
         {

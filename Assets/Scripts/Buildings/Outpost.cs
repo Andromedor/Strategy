@@ -10,9 +10,9 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Capturable map objective that generates resources for its owner over time.
-    /// Tracks ownership, capture progress, and an optional one-time upgrade that
-    /// doubles income and activates an extra ConstructionCenter build area.
+    /// Захоплюваний об'єкт на карті, що генерує ресурси для власника з плином часу.
+    /// Відстежує власника, прогрес захоплення та необов'язкове одноразове покращення, яке
+    /// подвоює дохід і активує додаткову зону будівництва ConstructionCenter.
     /// </summary>
     public class Outpost : MonoBehaviour
     {
@@ -77,7 +77,7 @@ namespace Strategy.Buildings
             }
         }
 
-    /// <summary>Returns the zone color assigned to the given team (player = green, enemy = red).</summary>
+    /// <summary>Повертає колір зони, призначений для вказаної команди (гравець = зелений, ворог = червоний).</summary>
     public Color GetColorForTeam(TeamType team)
     {
         return team == TeamType.Player ? _playerColor : _enemyColor;
@@ -90,7 +90,7 @@ namespace Strategy.Buildings
         OnStatsChanged = null;
     }
 
-        /// <summary>Returns the number of outposts currently owned by the specified team.</summary>
+        /// <summary>Повертає кількість аванпостів, якими зараз володіє вказана команда.</summary>
         public static int GetOwnedCount(TeamType team)
         {
             int count = 0;
@@ -104,7 +104,7 @@ namespace Strategy.Buildings
             return count;
         }
 
-        /// <summary>Sums the current resource-per-minute income across all outposts owned by the given team.</summary>
+        /// <summary>Підсумовує поточний дохід ресурсів на хвилину з усіх аванпостів, якими володіє вказана команда.</summary>
         public static float GetResourcePerMinute(TeamType team)
         {
             float resourcePerMinute = 0f;
@@ -118,7 +118,7 @@ namespace Strategy.Buildings
             return resourcePerMinute;
         }
 
-        /// <summary>Sums the resource-tick frequency (ticks per minute) across all outposts owned by the given team.</summary>
+        /// <summary>Підсумовує частоту тіків ресурсів (тіків на хвилину) з усіх аванпостів, якими володіє вказана команда.</summary>
         public static float GetResourceTicksPerMinute(TeamType team)
         {
             float ticksPerMinute = 0f;
@@ -160,8 +160,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Called every frame by OutpostCaptureZone with current occupancy counts.
-        /// Advances or resets capture progress and triggers ownership transfer when complete.
+        /// Викликається щокадру з OutpostCaptureZone із поточними лічильниками окупації.
+        /// Збільшує або скидає прогрес захоплення та запускає передачу власності після завершення.
         /// </summary>
         public void TickCapture(int playerUnits, int enemyUnits, bool hasBlockingBuildings, float deltaTime)
         {
@@ -184,8 +184,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Determines whether a capture attempt is valid given current unit counts and blocking buildings.
-        /// Returns false and sets capturingTeam to default when capture is not permitted.
+        /// Визначає, чи є спроба захоплення дійсною з урахуванням поточної кількості юнітів та блокуючих будівель.
+        /// Повертає false і встановлює capturingTeam у значення за замовчуванням, якщо захоплення не дозволено.
         /// </summary>
         private bool CanCapture(
             int playerUnits,
@@ -218,7 +218,7 @@ namespace Strategy.Buildings
             return true;
         }
 
-        /// <summary>Finalises ownership transfer to the capturing team, resets timers, and refreshes visuals and stats.</summary>
+        /// <summary>Завершує передачу власності команді-захопнику, скидає таймери та оновлює візуал і статистику.</summary>
         private void Capture(TeamType team)
         {
             bool ownerChanged = _owner != null && _owner != team;
@@ -235,7 +235,7 @@ namespace Strategy.Buildings
             NotifyStatsChanged();
         }
 
-        /// <summary>Reverts the upgrade state and disables the extra build area when the outpost changes hands.</summary>
+        /// <summary>Скасовує стан покращення та вимикає додаткову зону будівництва, коли аванпост змінює власника.</summary>
         private void ResetUpgrade()
         {
             _isUpgraded = false;
@@ -249,8 +249,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Attempts to purchase the outpost upgrade by spending resources.
-        /// Doubles resource income and activates the extra ConstructionCenter on success.
+        /// Намагається придбати покращення аванпосту, витрачаючи ресурси.
+        /// У разі успіху подвоює дохід ресурсів та активує додатковий ConstructionCenter.
         /// </summary>
         public bool TryUpgrade()
         {
@@ -268,8 +268,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Called each frame; accumulates elapsed time and calls ResourceManager.Add when a tick interval elapses.
-        /// Does nothing when the outpost has no owner.
+        /// Викликається щокадру; накопичує час, що минув, і викликає ResourceManager.Add, коли закінчується інтервал тіку.
+        /// Нічого не робить, якщо аванпост не має власника.
         /// </summary>
         private void GenerateResource()
         {
@@ -289,7 +289,7 @@ namespace Strategy.Buildings
                 ResourceManager.Instance.Add(_owner.Value, CurrentResourcePerTick);
         }
 
-        /// <summary>Applies the owner-dependent zone color to the zone renderer via a MaterialPropertyBlock.</summary>
+        /// <summary>Застосовує колір зони залежно від власника до рендерера зони через MaterialPropertyBlock.</summary>
         private void UpdateVisual()
         {
             if (_zoneRenderer == null)
@@ -304,7 +304,7 @@ namespace Strategy.Buildings
             _zoneRenderer.SetPropertyBlock(_propertyBlock);
         }
 
-        /// <summary>Enables or disables the optional extra ConstructionCenter and controls its visual indicator.</summary>
+        /// <summary>Вмикає або вимикає необов'язковий додатковий ConstructionCenter і керує його візуальним індикатором.</summary>
         private void SetBuildAreaActive(bool active, bool showVisual)
         {
             if (_extraBuildArea == null)

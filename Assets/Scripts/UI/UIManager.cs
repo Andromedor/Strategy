@@ -7,9 +7,9 @@ using UnityEngine.Serialization;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Central HUD panel manager. Maintains a registry of panel GameObjects keyed by
-    /// <see cref="PanelType"/> and ensures only one panel is visible at a time.
-    /// Responds to <see cref="EventManager.OnOpenPanel"/> to switch panels from anywhere in the codebase.
+    /// Центральний менеджер HUD-панелей. Веде реєстр ігрових об'єктів панелей з ключем
+    /// <see cref="PanelType"/> та гарантує, що лише одна панель є видимою одночасно.
+    /// Реагує на <see cref="EventManager.OnOpenPanel"/> для перемикання панелей з будь-якого місця коду.
     /// </summary>
     public class UIManager : MonoBehaviour
     {
@@ -29,7 +29,7 @@ namespace Strategy.UI
 
         private void Awake()
         {
-            // Build the type-to-GameObject lookup from the serialized panel list.
+            // Будуємо словник type→GameObject зі серіалізованого списку панелей.
             _panelDictionary.Clear();
 
             if (_panels == null)
@@ -60,8 +60,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Hides all registered panels then activates the panel that matches <paramref name="type"/>.
-        /// Called directly and via <see cref="EventManager.OnOpenPanel"/>.
+        /// Приховує всі зареєстровані панелі, потім активує ту, що відповідає <paramref name="type"/>.
+        /// Викликається напряму або через <see cref="EventManager.OnOpenPanel"/>.
         /// </summary>
         public void OpenPanel(PanelType type)
         {
@@ -76,7 +76,7 @@ namespace Strategy.UI
         }
     }
 
-    /// <summary>Identifies each distinct HUD panel that <see cref="UIManager"/> can show.</summary>
+    /// <summary>Ідентифікує кожну окрему HUD-панель, яку може відображати <see cref="UIManager"/>.</summary>
     public enum PanelType
     {
         MainMenu,

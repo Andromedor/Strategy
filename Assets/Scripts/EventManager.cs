@@ -7,9 +7,9 @@ using UnityEngine;
 namespace Strategy.Core
 {
     /// <summary>
-    /// Static inter-system event bus for the RTS game. All cross-system communication should go through
-    /// this class instead of direct component references. Static events are cleared on each domain reload
-    /// via RuntimeInitializeOnLoadMethod to prevent stale subscribers between play sessions.
+    /// Статична шина міжсистемних подій для RTS-гри. Усі крос-системні комунікації мають проходити через
+    /// цей клас замість прямих посилань на компоненти. Статичні події очищаються при кожному перезавантаженні домену
+    /// через RuntimeInitializeOnLoadMethod, щоб запобігти застарілим підписникам між ігровими сесіями.
     /// </summary>
     public static class EventManager
     {
@@ -39,43 +39,43 @@ namespace Strategy.Core
             OnOutpostSelected = null;
         }
 
-        /// <summary>Requests the HUD to open the specified panel type.</summary>
+        /// <summary>Запитує HUD відкрити вказаний тип панелі.</summary>
         public static void RaiseOpenPanel(PanelType type) =>
             OnOpenPanel?.Invoke(type);
 
-        /// <summary>Notifies listeners that a unit has been added to the player's selection.</summary>
+        /// <summary>Сповіщає слухачів, що юніт додано до виділення гравця.</summary>
         public static void RaiseUnitSelected(GameObject unit) =>
             OnUnitSelected?.Invoke(unit);
 
-        /// <summary>Notifies listeners that a unit has been removed from the player's selection.</summary>
+        /// <summary>Сповіщає слухачів, що юніт видалено з виділення гравця.</summary>
         public static void RaiseUnitDeselected(GameObject unit) =>
             OnUnitDeselected?.Invoke(unit);
 
-        /// <summary>Broadcasts a move order for a unit to the given world-space destination.</summary>
+        /// <summary>Розсилає наказ переміщення юніта до вказаної точки у світових координатах.</summary>
         public static void RaiseUnitMoveCommand(GameObject unit, Vector3 destination) =>
             OnUnitMoveCommand?.Invoke(unit, destination);
 
-        /// <summary>Broadcasts that a unit has been given a manual attack target.</summary>
+        /// <summary>Розсилає повідомлення, що юніту задано ручну ціль атаки.</summary>
         public static void RaiseUnitAttackTargetChanged(GameObject unit, Transform target) =>
             OnUnitAttackTargetChanged?.Invoke(unit, target);
 
-        /// <summary>Notifies the HUD that a factory building has been selected.</summary>
+        /// <summary>Сповіщає HUD, що обрано будівлю-завод.</summary>
         public static void RaiseFactorySelected(BuildingProduction factory) =>
             OnFactorySelected?.Invoke(factory);
 
-        /// <summary>Notifies systems (including BuildingPlacementManager) that a construction center has been selected.</summary>
+        /// <summary>Сповіщає системи (включно з BuildingPlacementManager), що обрано центр будівництва.</summary>
         public static void RaiseConstructionCenterSelected(ConstructionCenter constructionCenter) =>
             OnConstructionCenterSelected?.Invoke(constructionCenter);
 
-        /// <summary>Signals that the construction panel has been dismissed (e.g., click on empty ground).</summary>
+        /// <summary>Сигналізує, що панель будівництва закрита (наприклад, клік на порожню землю).</summary>
         public static void RaiseConstructionClosed() =>
             OnConstructionClosed?.Invoke();
 
-        /// <summary>Fired when a ConstructionCenter is enabled or disabled, so the UI can refresh available build options.</summary>
+        /// <summary>Викидається, коли ConstructionCenter вмикається або вимикається, щоб UI міг оновити доступні варіанти будівництва.</summary>
         public static void RaiseConstructionCentersChanged() =>
             OnConstructionCentersChanged?.Invoke();
 
-        /// <summary>Notifies the HUD that a player-owned outpost has been selected, passing the Outpost reference for the panel.</summary>
+        /// <summary>Сповіщає HUD, що обрано аванпост гравця, передаючи посилання на Outpost для панелі.</summary>
         public static void RaiseOutpostSelected(Outpost outpost) =>
             OnOutpostSelected?.Invoke(outpost);
     }

@@ -8,8 +8,8 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Plain C# class (not a MonoBehaviour) that tracks hit points for a unit.
-    /// Created by UnitCombat.Awake with the unit's MaxHealth value from UnitData.
+    /// Звичайний C# клас (не MonoBehaviour), що відстежує очки здоров'я юніта.
+    /// Створюється в UnitCombat.Awake зі значенням MaxHealth юніта з UnitData.
     /// </summary>
     public class UnitHealth
     {
@@ -25,7 +25,7 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Subtracts damage from current health, clamping the result to a minimum of zero.
+        /// Віднімає шкоду від поточного здоров'я, обмежуючи результат мінімумом нуля.
         /// </summary>
         public void TakeDamage(float damage)
         {

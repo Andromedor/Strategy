@@ -5,8 +5,8 @@ using UnityEngine;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Singleton object pool for bullet GameObjects. Pre-instantiates _poolSize bullets on Awake
-    /// and recycles them via TryGetBullet / ReturnBullet to avoid runtime allocations during combat.
+    /// Синглтон-пул об'єктів для куль. Попередньо створює _poolSize куль при Awake
+    /// та переробляє їх через TryGetBullet / ReturnBullet, щоб уникнути виділення пам'яті під час бою.
     /// </summary>
     public class BulletPool : MonoBehaviour
     {
@@ -19,7 +19,7 @@ namespace Strategy.Units
         private Transform _bulletContainer;
 
         /// <summary>
-        /// Resets the static Instance reference between domain reloads / play mode sessions.
+        /// Скидає статичне посилання Instance між перезавантаженнями домену / сесіями режиму гри.
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
@@ -53,8 +53,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Dequeues a bullet from the pool (or creates one if the pool is empty), activates it,
-        /// and returns true. Returns false only if the prefab is null.
+        /// Вилучає кулю з пулу (або створює нову, якщо пул порожній), активує її
+        /// та повертає true. Повертає false лише якщо префаб є null.
         /// </summary>
         public bool TryGetBullet(out GameObject bullet)
         {
@@ -74,8 +74,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Convenience wrapper around TryGetBullet; returns null instead of false when no bullet
-        /// is available.
+        /// Зручна обгортка навколо TryGetBullet; повертає null замість false, коли
+        /// куля недоступна.
         /// </summary>
         public GameObject GetBullet()
         {
@@ -83,7 +83,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Deactivates the bullet, re-parents it under the pool container, and enqueues it for reuse.
+        /// Деактивує кулю, повертає її до контейнера пулу та додає до черги для повторного використання.
         /// </summary>
         public void ReturnBullet(GameObject bullet)
         {
@@ -99,8 +99,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Instantiates a new bullet from the prefab under the pool container and immediately
-        /// deactivates it. Returns null if bulletPrefab is not assigned.
+        /// Створює нову кулю з префабу під контейнером пулу та одразу
+        /// деактивує її. Повертає null, якщо bulletPrefab не призначений.
         /// </summary>
         private GameObject CreateBullet()
         {

@@ -5,9 +5,9 @@ using UnityEngine;
 namespace Strategy.Core
 {
     /// <summary>
-    /// Singleton that tracks separate resource pools for the player and enemy.
-    /// Outposts add resources via Add(); units and buildings spend them via Spend().
-    /// Fires OnResourceChanged whenever the player's pool changes.
+    /// Синглтон, що відстежує окремі пули ресурсів для гравця та ворога.
+    /// Аванпости додають ресурси через Add(); юніти та будівлі витрачають їх через Spend().
+    /// Викидає OnResourceChanged щоразу, коли пул гравця змінюється.
     /// </summary>
     public class ResourceManager : MonoBehaviour
     {
@@ -53,7 +53,7 @@ namespace Strategy.Core
                 Instance = null;
         }
 
-        /// <summary>Deducts amount from the player's resource pool if affordable; fires OnResourceChanged and returns true on success.</summary>
+        /// <summary>Вираховує суму з пулу ресурсів гравця, якщо вистачає коштів; викидає OnResourceChanged та повертає true у разі успіху.</summary>
         public bool Spend(int amount)
         {
             if (amount <= 0)
@@ -69,13 +69,13 @@ namespace Strategy.Core
             return true;
         }
 
-        /// <summary>Convenience overload that adds resources to the player's pool.</summary>
+        /// <summary>Зручне перевантаження, що додає ресурси до пулу гравця.</summary>
         public void Add(int amount)
         {
             Add(TeamType.Player, amount);
         }
 
-        /// <summary>Adds resources to the specified team's pool; fires OnResourceChanged only for the player team.</summary>
+        /// <summary>Додає ресурси до пулу вказаної команди; викидає OnResourceChanged лише для команди гравця.</summary>
         public void Add(TeamType team, int amount)
         {
             if (amount <= 0)

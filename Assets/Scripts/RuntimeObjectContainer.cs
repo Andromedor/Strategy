@@ -8,8 +8,8 @@ using Strategy.UI;
 namespace Strategy.Core
 {
     /// <summary>
-    /// Static helper that lazily creates and caches named child GameObjects under a single "Runtime Objects"
-    /// root in the scene hierarchy. Used to keep spawned units, buildings, and UI helpers organised at runtime.
+    /// Статичний помічник, що ліниво створює та кешує іменовані дочірні GameObject під єдиним коренем "Runtime Objects"
+    /// в ієрархії сцени. Використовується для впорядкування спавнених юнітів, будівель та UI-помічників під час виконання.
     /// </summary>
     public static class RuntimeObjectContainer
     {
@@ -23,7 +23,7 @@ namespace Strategy.Core
             _root = null;
         }
 
-        /// <summary>Returns the Transform of a named container under the root, creating it if it does not yet exist.</summary>
+        /// <summary>Повертає трансформ іменованого контейнера під коренем, створюючи його, якщо він ще не існує.</summary>
         public static Transform Get(string containerName)
         {
             Transform root = GetRoot();
@@ -37,7 +37,7 @@ namespace Strategy.Core
             return containerObject.transform;
         }
 
-        /// <summary>Returns the cached root Transform, finding or creating the "Runtime Objects" GameObject in the scene if needed.</summary>
+        /// <summary>Повертає кешований кореневий трансформ, знаходячи або створюючи GameObject "Runtime Objects" у сцені за потреби.</summary>
         private static Transform GetRoot()
         {
             if (_root != null)

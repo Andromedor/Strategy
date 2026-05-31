@@ -10,9 +10,9 @@ using Strategy.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Bottom-HUD panel that shows contextual information about the current selection.
-    /// Handles single/multi-unit selections, factories, construction centers, and outposts,
-    /// polling the live data at ~4 Hz to keep health and capture progress up to date.
+    /// Нижня HUD-панель, що показує контекстну інформацію про поточний вибір.
+    /// Обробляє вибір одного/кількох юнітів, заводів, будівельних центрів та аванпостів,
+    /// опитуючи живі дані з частотою ~4 Гц для підтримки актуальності здоров'я та прогресу захоплення.
     /// </summary>
     public class SelectionInfoPanelUI : MonoBehaviour
     {
@@ -61,7 +61,7 @@ namespace Strategy.UI
                 RefreshObject();
         }
 
-        /// <summary>Adds the unit to the selection list and refreshes the display.</summary>
+        /// <summary>Додає юніт до списку вибору та оновлює відображення.</summary>
         private void OnUnitSelected(GameObject unit)
         {
             if (unit == null)
@@ -75,7 +75,7 @@ namespace Strategy.UI
             RefreshUnits();
         }
 
-        /// <summary>Removes the unit from the selection and either refreshes the remaining list or shows idle state.</summary>
+        /// <summary>Видаляє юніт із вибору та або оновлює решту списку, або показує стан бездіяльності.</summary>
         private void OnUnitDeselected(GameObject unit)
         {
             if (unit != null)
@@ -87,7 +87,7 @@ namespace Strategy.UI
                 ShowIdle();
         }
 
-        /// <summary>Switches display to factory info, clearing any unit selection.</summary>
+        /// <summary>Перемикає відображення на інформацію про завод, очищуючи будь-який вибір юнітів.</summary>
         private void OnFactorySelected(BuildingProduction factory)
         {
             ClearUnits();
@@ -95,7 +95,7 @@ namespace Strategy.UI
             RefreshObject();
         }
 
-        /// <summary>Switches display to construction center info, clearing any unit selection.</summary>
+        /// <summary>Перемикає відображення на інформацію про будівельний центр, очищуючи будь-який вибір юнітів.</summary>
         private void OnConstructionCenterSelected(ConstructionCenter center)
         {
             ClearUnits();
@@ -103,7 +103,7 @@ namespace Strategy.UI
             RefreshObject();
         }
 
-        /// <summary>Switches display to outpost info, clearing any unit selection.</summary>
+        /// <summary>Перемикає відображення на інформацію про аванпост, очищуючи будь-який вибір юнітів.</summary>
         private void OnOutpostSelected(Outpost outpost)
         {
             ClearUnits();
@@ -111,7 +111,7 @@ namespace Strategy.UI
             RefreshObject();
         }
 
-        /// <summary>Resets the panel to the default "no selection" placeholder text.</summary>
+        /// <summary>Скидає панель до стандартного тексту-заповнювача "немає вибору".</summary>
         private void ShowIdle()
         {
             ClearUnits();
@@ -121,8 +121,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Prunes destroyed units from the selection, then renders single-unit stats or a
-        /// multi-unit compact list depending on selection count.
+        /// Видаляє знищені юніти з вибору, потім відображає характеристики одного юніта або
+        /// компактний список кількох юнітів залежно від кількості у виборі.
         /// </summary>
         private void RefreshUnits()
         {
@@ -176,8 +176,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Renders info text for the currently selected non-unit object (factory, construction center,
-        /// or outpost), pattern-matching on <see cref="_selectedObject"/>'s runtime type.
+        /// Відображає інформаційний текст для поточного вибраного не-юніт об'єкта (завод, будівельний центр
+        /// або аванпост), зіставляючи шаблон за типом виконання <see cref="_selectedObject"/>.
         /// </summary>
         private void RefreshObject()
         {
@@ -220,14 +220,14 @@ namespace Strategy.UI
             ShowIdle();
         }
 
-        /// <summary>Clears the selected unit list and removes compact list rows.</summary>
+        /// <summary>Очищає список вибраних юнітів та видаляє рядки компактного списку.</summary>
         private void ClearUnits()
         {
             _selectedUnits.Clear();
             SetCompactRows(null);
         }
 
-        /// <summary>Removes null (destroyed) entries from the selected units list.</summary>
+        /// <summary>Видаляє нульові (знищені) записи зі списку вибраних юнітів.</summary>
         private void RemoveDeadUnits()
         {
             for (int i = _selectedUnits.Count - 1; i >= 0; i--)
@@ -237,7 +237,7 @@ namespace Strategy.UI
             }
         }
 
-        /// <summary>Assigns text to the title, subtitle, and stats label fields.</summary>
+        /// <summary>Призначає текст полям заголовка, підзаголовка та характеристик.</summary>
         private void SetText(string title, string subtitle, string stats)
         {
             if (_titleText != null)
@@ -251,8 +251,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Destroys old compact row labels and instantiates a fresh set from <paramref name="rows"/>.
-        /// Passing null clears the list without creating new entries.
+        /// Знищує старі мітки компактних рядків та створює новий набір з <paramref name="rows"/>.
+        /// Передача null очищає список без створення нових записів.
         /// </summary>
         private void SetCompactRows(List<string> rows)
         {
@@ -279,7 +279,7 @@ namespace Strategy.UI
             }
         }
 
-        /// <summary>Strips Unity suffixes and internal naming conventions from a GameObject name for display.</summary>
+        /// <summary>Видаляє суфікси Unity та внутрішні угоди про іменування з назви GameObject для відображення.</summary>
         private static string GetDisplayName(string objectName)
         {
             if (string.IsNullOrWhiteSpace(objectName))
@@ -294,7 +294,7 @@ namespace Strategy.UI
                 .Trim();
         }
 
-        /// <summary>Formats a float as an integer when whole, otherwise to two decimal places.</summary>
+        /// <summary>Форматує число з плаваючою точкою як ціле, якщо воно ціле, інакше до двох знаків після коми.</summary>
         private static string FormatNumber(float value)
         {
             return Mathf.Approximately(value, Mathf.Round(value))

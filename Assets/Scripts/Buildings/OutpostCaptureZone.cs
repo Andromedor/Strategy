@@ -9,8 +9,8 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Trigger-collider wrapper around an Outpost that tracks which team's units (and blocking buildings)
-    /// are inside the capture zone. Feeds occupancy counts into Outpost.TickCapture every frame.
+    /// Обгортка-тригер навколо Outpost, що відстежує, які юніти якої команди (та блокуючі будівлі)
+    /// знаходяться всередині зони захоплення. Щокадру передає лічильники окупації до Outpost.TickCapture.
     /// </summary>
     public class OutpostCaptureZone : MonoBehaviour
     {
@@ -104,7 +104,7 @@ namespace Strategy.Buildings
                 RemoveTouch(_blockingBuildingsInside, blockingBuilding);
         }
 
-        /// <summary>Extracts the TeamComponent from a collider if it belongs to a unit layer (PlayerUnit or EnemyUnit).</summary>
+        /// <summary>Отримує TeamComponent із колайдера, якщо він належить шару юніта (PlayerUnit або EnemyUnit).</summary>
         private bool TryGetUnit(Collider other, out TeamComponent unit)
         {
             unit = other.GetComponentInParent<TeamComponent>();
@@ -116,8 +116,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Returns the root GameObject of a building that blocks capture (BuildingProduction,
-        /// ConstructionCenter, or any object on the Building layer), or null if the collider is not a blocker.
+        /// Повертає кореневий GameObject будівлі, що блокує захоплення (BuildingProduction,
+        /// ConstructionCenter або будь-який об'єкт на шарі Building), або null, якщо колайдер не є блокером.
         /// </summary>
         private GameObject GetBlockingBuilding(Collider other)
         {
@@ -142,7 +142,7 @@ namespace Strategy.Buildings
             return layer == _playerUnitLayer || layer == _enemyUnitLayer;
         }
 
-        /// <summary>Walks up the transform hierarchy and returns the first GameObject whose layer matches, or null.</summary>
+        /// <summary>Обходить ієрархію трансформів угору і повертає перший GameObject, шар якого збігається, або null.</summary>
         private static GameObject GetParentOnLayer(Transform start, int layer)
         {
             if (layer < 0)
@@ -161,7 +161,7 @@ namespace Strategy.Buildings
             return null;
         }
 
-        /// <summary>Increments the touch/overlap reference count for an item, adding a new entry if needed.</summary>
+        /// <summary>Збільшує лічильник дотиків/перекриттів для елемента, додаючи новий запис при необхідності.</summary>
         private static void AddTouch<T>(Dictionary<T, int> touches, T item)
         {
             if (touches.TryGetValue(item, out int count))
@@ -170,7 +170,7 @@ namespace Strategy.Buildings
                 touches.Add(item, 1);
         }
 
-        /// <summary>Decrements the touch reference count for an item and removes it from the dictionary when it reaches zero.</summary>
+        /// <summary>Зменшує лічильник дотиків для елемента та видаляє його зі словника, коли він досягає нуля.</summary>
         private static void RemoveTouch<T>(Dictionary<T, int> touches, T item)
         {
             if (!touches.TryGetValue(item, out int count))
@@ -184,7 +184,7 @@ namespace Strategy.Buildings
                 touches[item] = count;
         }
 
-        /// <summary>Removes dictionary entries for units or buildings that have been destroyed since the last frame.</summary>
+        /// <summary>Видаляє записи словника для юнітів або будівель, які були знищені з моменту останнього кадру.</summary>
         private void CleanupDestroyedEntries()
         {
             _staleUnits.Clear();
@@ -209,7 +209,7 @@ namespace Strategy.Buildings
                 _blockingBuildingsInside.Remove(building);
         }
 
-        /// <summary>Syncs the BoxCollider size/center and optional visual plane scale with the serialized zone fields.</summary>
+        /// <summary>Синхронізує розмір/центр BoxCollider та необов'язковий масштаб візуальної площини із серіалізованими полями зони.</summary>
         private void ApplyZoneSettings()
         {
             ResolveZoneReferences();
@@ -236,7 +236,7 @@ namespace Strategy.Buildings
             _captureZoneVisual.localScale = visualScale;
         }
 
-        /// <summary>Auto-populates the Outpost, BoxCollider, and visual transform references if they are not assigned in the Inspector.</summary>
+        /// <summary>Автоматично заповнює посилання на Outpost, BoxCollider та візуальний трансформ, якщо вони не призначені в Inspector.</summary>
         private void ResolveZoneReferences()
         {
             if (_outpost == null)

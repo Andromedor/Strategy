@@ -10,9 +10,9 @@ using Strategy.UI;
 namespace Strategy.UI
 {
     /// <summary>
-    /// Top-bar HUD widget that shows the player's current money, number of captured outpost zones,
-    /// and resource income per minute. Refreshes on <see cref="ResourceManager.OnResourceChanged"/>
-    /// and <see cref="Outpost.OnStatsChanged"/> using rich-text color formatting.
+    /// Верхній HUD-віджет, що показує поточні кошти гравця, кількість захоплених зон аванпостів
+    /// та дохід ресурсів за хвилину. Оновлюється на <see cref="ResourceManager.OnResourceChanged"/>
+    /// та <see cref="Outpost.OnStatsChanged"/> з використанням кольорового форматування rich-text.
     /// </summary>
     public class OutpostStatusUI : MonoBehaviour
     {
@@ -57,8 +57,8 @@ namespace Strategy.UI
         }
 
         /// <summary>
-        /// Queries <see cref="ResourceManager"/> and <see cref="Outpost"/> aggregates, then
-        /// rebuilds the rich-text status string showing zones, money, and income per minute.
+        /// Запитує агрегати <see cref="ResourceManager"/> та <see cref="Outpost"/>, потім
+        /// перебудовує рядок статусу rich-text, що показує зони, кошти та дохід за хвилину.
         /// </summary>
         private void Refresh()
         {
@@ -78,7 +78,7 @@ namespace Strategy.UI
                 $"{Label("Income/min")} {Value("+" + resourcePerMinute, _incomeColor)}";
         }
 
-        /// <summary>Applies font, sizing, and style settings to the status TMP_Text element.</summary>
+        /// <summary>Застосовує налаштування шрифту, розміру та стилю до елемента статусу TMP_Text.</summary>
         private void EnsureStatusText()
         {
             if (_statusText == null)
@@ -99,7 +99,7 @@ namespace Strategy.UI
             _statusText.richText = true;
         }
 
-        /// <summary>Creates a narrow vertical accent bar on the left edge of the status panel for visual styling.</summary>
+        /// <summary>Створює вузьку вертикальну акцентну смугу на лівому краї панелі статусу для візуального стилю.</summary>
         private void CreateAccent(Transform parent)
         {
             GameObject accentObject = new GameObject(
@@ -122,7 +122,7 @@ namespace Strategy.UI
             accent.raycastTarget = false;
         }
 
-        /// <summary>Procedurally creates the TMP_Text child that displays the resource status line.</summary>
+        /// <summary>Процедурно створює дочірній TMP_Text, що відображає рядок статусу ресурсів.</summary>
         private void CreateStatusText(Transform parent)
         {
             GameObject textObject = new GameObject(
@@ -154,13 +154,13 @@ namespace Strategy.UI
             _statusText.richText = true;
         }
 
-        /// <summary>Wraps text in a color tag using the configured label color for dimmed field names.</summary>
+        /// <summary>Обгортає текст у кольоровий тег з налаштованим кольором мітки для затемнених назв полів.</summary>
         private string Label(string text)
         {
             return $"<color=#{ColorUtility.ToHtmlStringRGB(_labelColor)}>{text}:</color>";
         }
 
-        /// <summary>Wraps text in bold and a caller-specified color tag for highlighted numeric values.</summary>
+        /// <summary>Обгортає текст у жирний шрифт та кольоровий тег, вказаний ззовні, для виділених числових значень.</summary>
         private static string Value(string text, Color color)
         {
             return $"<b><color=#{ColorUtility.ToHtmlStringRGB(color)}>{text}</color></b>";

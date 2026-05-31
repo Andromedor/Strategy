@@ -6,12 +6,12 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Common interface for any game object that can receive damage.
-    /// Implemented by units and buildings that participate in combat.
+    /// Загальний інтерфейс для будь-якого ігрового об'єкта, що може отримувати пошкодження.
+    /// Реалізується юнітами та будівлями, які беруть участь у бойових діях.
     /// </summary>
     public interface IDamageable
     {
-        /// <summary>Applies the given damage amount to the implementing object.</summary>
+        /// <summary>Застосовує вказану кількість пошкоджень до об'єкта, що реалізує інтерфейс.</summary>
         void TakeDamage(float damage);
     }
 }

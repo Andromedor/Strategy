@@ -11,9 +11,9 @@ using Strategy.Data;
 using Strategy.UI;
 
 /// <summary>
-/// Editor-only tool that configures NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator,
-/// and UnitSpawnActivator for all tracked vehicle prefabs (Tank and Self-Propelled Artillery).
-/// Invoked via Tools/RTS/Configure Tracked Vehicles, and also exposes a CI-callable Validate method.
+/// Редакторний інструмент, що налаштовує NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator
+/// та UnitSpawnActivator для всіх префабів гусеничних транспортних засобів (Танк і САУ).
+/// Викликається через Tools/RTS/Configure Tracked Vehicles та надає метод Validate для виклику з CI.
 /// </summary>
 public static class TrackedVehiclePrefabConfigurator
 {
@@ -21,7 +21,7 @@ public static class TrackedVehiclePrefabConfigurator
         "Assets/Canopus-III_Low-Poly_Sci-Fi_Desert_Units_Set_2/prefabs_yup/unit_Tank_Combat_B_yup.prefab";
     private const string ArtilleryPrefabPath = "Assets/Prefabs/unit_SelfPropelledArtillery.prefab";
 
-    // Pre-built configuration bundles for each tracked vehicle type.
+    // Готові пакети конфігурації для кожного типу гусеничного транспортного засобу.
     private static readonly VehicleConfig TankConfig = new VehicleConfig(
         TankPrefabPath,
         "Tank",
@@ -79,7 +79,7 @@ public static class TrackedVehiclePrefabConfigurator
         3.4f);
 
     /// <summary>
-    /// Configures both tracked vehicle prefabs and saves them to disk.
+    /// Налаштовує обидва префаби гусеничних транспортних засобів та зберігає їх на диск.
     /// </summary>
     [MenuItem("Tools/RTS/Configure Tracked Vehicles")]
     public static void Configure()
@@ -92,8 +92,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Headless validation entry point for CI. Checks both prefabs for correct component setup
-    /// and calls EditorApplication.Exit(1) if any errors are found.
+    /// Точка входу для беззупинної валідації з CI. Перевіряє обидва префаби на правильне налаштування компонентів
+    /// та викликає EditorApplication.Exit(1) при наявності помилок.
     /// </summary>
     public static void Validate()
     {
@@ -114,8 +114,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Loads a prefab, applies NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator, and
-    /// UnitSpawnActivator settings from <paramref name="config"/>, then saves the prefab.
+    /// Завантажує префаб, застосовує налаштування NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator та
+    /// UnitSpawnActivator з <paramref name="config"/>, після чого зберігає префаб.
     /// </summary>
     private static void ConfigurePrefab(VehicleConfig config)
     {
@@ -147,8 +147,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Applies NavMeshAgent movement parameters from <paramref name="config"/>. Rotation is
-    /// disabled because TrackedVehicleMotor drives orientation directly.
+    /// Застосовує параметри руху NavMeshAgent з <paramref name="config"/>. Поворот вимкнено,
+    /// оскільки TrackedVehicleMotor безпосередньо керує орієнтацією.
     /// </summary>
     private static void ConfigureAgent(NavMeshAgent agent, VehicleConfig config)
     {
@@ -165,8 +165,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Ensures exactly one TrackedVehicleMotor exists on the root, removing duplicates and
-    /// any stale NavMeshVehicleMotor components that belong to wheeled vehicles.
+    /// Переконується, що на корені існує рівно один TrackedVehicleMotor, видаляючи дублікати та
+    /// застарілі компоненти NavMeshVehicleMotor, що належать колісним транспортним засобам.
     /// </summary>
     private static TrackedVehicleMotor EnsureTrackedMotor(GameObject root)
     {
@@ -188,8 +188,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Destroys all WheeledVehicleAnimator components on the root; tracked vehicles use
-    /// TankTrackAnimator instead.
+    /// Знищує всі компоненти WheeledVehicleAnimator на корені; гусеничні транспортні засоби
+    /// використовують TankTrackAnimator замість них.
     /// </summary>
     private static void RemoveWheelAnimator(GameObject root)
     {
@@ -200,8 +200,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Writes all TrackedVehicleMotor serialized fields from <paramref name="config"/> via
-    /// SerializedObject so values persist in the prefab asset.
+    /// Записує всі серіалізовані поля TrackedVehicleMotor з <paramref name="config"/> через
+    /// SerializedObject, щоб значення зберігались в асеті префабу.
     /// </summary>
     private static void ConfigureMotor(
         TrackedVehicleMotor motor,
@@ -232,8 +232,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Configures TankTrackAnimator with per-vehicle geometry values (segment count, track
-    /// dimensions, scroll speed) from <paramref name="config"/>.
+    /// Налаштовує TankTrackAnimator з геометричними значеннями для кожного транспортного засобу
+    /// (кількість сегментів, розміри гусениці, швидкість прокрутки) з <paramref name="config"/>.
     /// </summary>
     private static void ConfigureTrackAnimator(
         TankTrackAnimator animator,
@@ -258,8 +258,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Configures UnitSpawnActivator with the exit speed and NavMesh snap radii for safe factory
-    /// spawning behaviour.
+    /// Налаштовує UnitSpawnActivator зі швидкістю виходу та радіусами прив'язки до NavMesh для
+    /// безпечного поведінки спауну на заводі.
     /// </summary>
     private static void ConfigureSpawnActivator(UnitSpawnActivator spawnActivator, VehicleConfig config)
     {
@@ -272,8 +272,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Loads a prefab and validates that its NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator,
-    /// and UnitSpawnActivator are correctly set up, appending errors to <paramref name="errors"/>.
+    /// Завантажує префаб та перевіряє, що його NavMeshAgent, TrackedVehicleMotor, TankTrackAnimator
+    /// та UnitSpawnActivator правильно налаштовані, додаючи помилки до <paramref name="errors"/>.
     /// </summary>
     private static void ValidatePrefab(VehicleConfig config, List<string> errors)
     {
@@ -334,8 +334,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Checks that the UnitSpawnActivator's NavMesh snap radii meet the minimum values required
-    /// for reliable post-spawn pathing.
+    /// Перевіряє, що радіуси прив'язки NavMesh у UnitSpawnActivator відповідають мінімальним значенням,
+    /// необхідним для надійного прокладання маршруту після спауну.
     /// </summary>
     private static void ValidateSpawnActivator(
         UnitSpawnActivator spawnActivator,
@@ -348,8 +348,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Checks that a serialized Object reference property on <paramref name="target"/> is assigned,
-    /// prefixing the error with <paramref name="displayName"/> for context.
+    /// Перевіряє, що серіалізована властивість-посилання на Object у <paramref name="target"/> призначена,
+    /// додаючи до повідомлення про помилку префікс <paramref name="displayName"/> для контексту.
     /// </summary>
     private static void ValidateObject(
         Object target,
@@ -364,8 +364,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Checks that a float serialized property meets a minimum value, prefixing the error
-    /// with <paramref name="displayName"/> for context.
+    /// Перевіряє, що серіалізована властивість типу float відповідає мінімальному значенню,
+    /// додаючи до повідомлення про помилку префікс <paramref name="displayName"/> для контексту.
     /// </summary>
     private static void ValidateFloatAtLeast(
         SerializedObject serializedObject,
@@ -386,7 +386,7 @@ public static class TrackedVehiclePrefabConfigurator
             errors.Add(displayName + " " + propertyName + " should be at least " + minimum.ToString("0.##") + ".");
     }
 
-    /// <summary>Sets an Object reference property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість-посилання на Object у вже відкритому SerializedObject.</summary>
     private static void SetObject(SerializedObject serializedObject, string propertyName, Object value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -395,7 +395,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.objectReferenceValue = value;
     }
 
-    /// <summary>Sets a Vector3 property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу Vector3 у вже відкритому SerializedObject.</summary>
     private static void SetVector3(SerializedObject serializedObject, string propertyName, Vector3 value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -404,7 +404,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.vector3Value = value;
     }
 
-    /// <summary>Sets a float property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу float у вже відкритому SerializedObject.</summary>
     private static void SetFloat(SerializedObject serializedObject, string propertyName, float value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -413,7 +413,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.floatValue = value;
     }
 
-    /// <summary>Sets an int property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу int у вже відкритому SerializedObject.</summary>
     private static void SetInt(SerializedObject serializedObject, string propertyName, int value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -422,7 +422,7 @@ public static class TrackedVehiclePrefabConfigurator
             property.intValue = value;
     }
 
-    /// <summary>Sets a bool property on an already-open SerializedObject.</summary>
+    /// <summary>Встановлює властивість типу bool у вже відкритому SerializedObject.</summary>
     private static void SetBool(SerializedObject serializedObject, string propertyName, bool value)
     {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
@@ -432,8 +432,8 @@ public static class TrackedVehiclePrefabConfigurator
     }
 
     /// <summary>
-    /// Immutable value type that bundles all per-vehicle tuning parameters passed to the
-    /// configure/validate methods, avoiding long parameter lists.
+    /// Незмінний тип-значення, що об'єднує всі параметри налаштування для кожного транспортного засобу,
+    /// що передаються методам configure/validate, уникаючи довгих списків параметрів.
     /// </summary>
     private readonly struct VehicleConfig
     {

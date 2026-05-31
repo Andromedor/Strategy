@@ -12,9 +12,9 @@ using Strategy.Core;
 using Strategy.UI;
 
 /// <summary>
-/// Editor-only tool that fully rebuilds the Self-Propelled Artillery (SPA) prefab from scratch.
-/// Invoked via menu Tools/RTS/Rebuild Self-Propelled Artillery. Creates the prefab, assigns
-/// all components, wires serialized references, and updates UnitData and ProductionItemData assets.
+/// Редакторний інструмент, що повністю перебудовує префаб самохідної артилерійської установки (САУ) з нуля.
+/// Викликається через меню Tools/RTS/Rebuild Self-Propelled Artillery. Створює префаб, призначає
+/// всі компоненти, встановлює серіалізовані посилання та оновлює асети UnitData і ProductionItemData.
 /// </summary>
 public static class SelfPropelledArtilleryPrefabBuilder
 {
@@ -26,7 +26,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     private const string SelectionMaterialPath = "Assets/Material/SelectionVisual.mat";
     private const string MaterialFolderPath = "Assets/Models/SelfPropelledArtillery/Materials";
 
-    // Per-material color/roughness/metallic values keyed by the exact material name in the FBX.
+    // Значення кольору/шорсткості/металічності для кожного матеріалу за його точною назвою у FBX.
     private static readonly Dictionary<string, MaterialSettings> MaterialSettingsByName =
         new Dictionary<string, MaterialSettings>
         {
@@ -45,8 +45,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
         };
 
     /// <summary>
-    /// Entry point for the menu item. Builds the SPA prefab from the FBX model, attaches all
-    /// required components, saves the prefab asset, and updates balance/production data.
+    /// Точка входу для пункту меню. Будує префаб САУ з FBX-моделі, прикріплює всі
+    /// необхідні компоненти, зберігає асет префабу та оновлює дані балансу й виробництва.
     /// </summary>
     [MenuItem("Tools/RTS/Rebuild Self-Propelled Artillery")]
     public static void Build()
@@ -121,7 +121,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
 
         GameObject selectionVisual = CreateSelectionVisual(root.transform, root.layer);
 
-        // Wire serialized fields on ArtilleryWeapon using reflection-free SerializedObject access.
+        // Встановлення серіалізованих полів ArtilleryWeapon через SerializedObject без використання рефлексії.
         SetObjectReference(combat, "_unitData", unitData);
         SetObjectReference(combat, "_pointPosition", muzzle);
         SetObjectReference(combat, "_shotEffects", cannonEffects);
@@ -134,7 +134,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         SetInt(cannonEffects, "_flashParticles", 26);
         SetInt(cannonEffects, "_smokeParticles", 36);
 
-        // Artillery-specific aiming and accuracy parameters.
+        // Параметри прицілювання та точності, специфічні для артилерії.
         SetFloat(combat, "_minElevationAngle", 10f);
         SetFloat(combat, "_maxElevationAngle", 52f);
         SetFloat(combat, "_minElevationDistanceRatio", 0.08f);
@@ -170,7 +170,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         if (prefab == null)
             throw new System.InvalidOperationException($"Could not save prefab: {PrefabPath}");
 
-        // Re-configure UnitData now that the saved prefab asset exists.
+        // Повторна конфігурація UnitData після збереження асету префабу.
         ConfigureUnitData(unitData, prefab);
 
         ProductionItemData productionItem = LoadOrCreate<ProductionItemData>(ProductionItemPath);
@@ -186,8 +186,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Ensures the FBX model importer has axis-conversion baking disabled, then force-reimports.
-    /// Prevents incorrect orientation when the model is instantiated into the prefab.
+    /// Переконується, що імпортер FBX-моделі має вимкнену конвертацію осей, після чого примусово переімпортує.
+    /// Запобігає неправильній орієнтації при інстанціюванні моделі в префаб.
     /// </summary>
     private static void ConfigureModelImporter()
     {
@@ -214,8 +214,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Iterates every MeshRenderer on the model and replaces its materials with project assets
-    /// created from the <see cref="MaterialSettingsByName"/> table, creating new material assets as needed.
+    /// Перебирає всі MeshRenderer на моделі та замінює їх матеріали на асети проекту,
+    /// створені за таблицею <see cref="MaterialSettingsByName"/>, при необхідності створюючи нові асети матеріалів.
     /// </summary>
     private static void ConfigureModelMaterials(GameObject modelInstance)
     {
@@ -239,8 +239,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Loads a material asset by name from the materials folder, or creates one with URP/Standard
-    /// shader if it does not exist yet, then applies the preset color/smoothness/metallic values.
+    /// Завантажує асет матеріалу за назвою з теки матеріалів або створює новий з шейдером URP/Standard,
+    /// якщо він ще не існує, після чого застосовує попередньо задані значення кольору/гладкості/металічності.
     /// </summary>
     private static Material LoadOrCreateMaterial(string materialName)
     {
@@ -270,8 +270,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Applies color, smoothness, and metallic values to a material, checking for each shader
-    /// property by name so the method works with both URP and the Built-in pipeline.
+    /// Застосовує колір, гладкість та металічність до матеріалу, перевіряючи наявність кожної властивості шейдера
+    /// за назвою, щоб метод працював як з URP, так і з вбудованим рендер-пайплайном.
     /// </summary>
     private static void SetMaterialProperties(Material material, MaterialSettings settings)
     {
@@ -289,8 +289,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Strips the Unity " (Instance)" suffix from runtime material names so they can be matched
-    /// against the <see cref="MaterialSettingsByName"/> dictionary keys.
+    /// Видаляє суфікс Unity " (Instance)" з назв матеріалів під час виконання,
+    /// щоб вони збігались із ключами словника <see cref="MaterialSettingsByName"/>.
     /// </summary>
     private static string NormalizeMaterialName(string materialName)
     {
@@ -306,7 +306,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Replaces any characters that are invalid in a file name with underscores.
+    /// Замінює символи, що є неприпустимими у назві файлу, на підкреслення.
     /// </summary>
     private static string SanitizeFileName(string fileName)
     {
@@ -317,8 +317,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Recursively ensures that all parent folders for <paramref name="folderPath"/> exist,
-    /// creating any missing intermediate folders via AssetDatabase.
+    /// Рекурсивно переконується, що всі батьківські теки для <paramref name="folderPath"/> існують,
+    /// створюючи відсутні проміжні теки через AssetDatabase.
     /// </summary>
     private static void EnsureFolder(string folderPath)
     {
@@ -335,8 +335,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Stamps canonical balance values onto the UnitData asset. When <paramref name="prefab"/>
-    /// is provided it also updates the Prefab reference on the asset.
+    /// Записує еталонні балансові значення в асет UnitData. Якщо <paramref name="prefab"/>
+    /// вказано, також оновлює посилання на Prefab в асеті.
     /// </summary>
     private static void ConfigureUnitData(UnitData data, GameObject prefab = null)
     {
@@ -359,8 +359,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets all TrackedVehicleMotor serialized fields for the SPA's movement tuning,
-    /// linking it to the provided NavMeshAgent.
+    /// Встановлює всі серіалізовані поля TrackedVehicleMotor для налаштування руху САУ,
+    /// прив'язуючи його до вказаного NavMeshAgent.
     /// </summary>
     private static void ConfigureVehicleMotor(TrackedVehicleMotor vehicleMotor, NavMeshAgent agent)
     {
@@ -386,8 +386,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Creates a child Plane GameObject used as the unit's selection highlight decal.
-    /// Removes its MeshCollider, assigns the selection material, and starts it inactive.
+    /// Створює дочірній GameObject-площину, що використовується як декаль підсвітки вибору юніта.
+    /// Видаляє його MeshCollider, призначає матеріал виділення та починає як неактивний.
     /// </summary>
     private static GameObject CreateSelectionVisual(Transform parent, int layer)
     {
@@ -413,8 +413,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Loads a ScriptableObject asset at <paramref name="path"/>, or creates and saves a new
-    /// instance if none exists.
+    /// Завантажує асет ScriptableObject за шляхом <paramref name="path"/> або створює та зберігає
+    /// новий екземпляр, якщо такого асету не існує.
     /// </summary>
     private static T LoadOrCreate<T>(string path) where T : ScriptableObject
     {
@@ -429,8 +429,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Registers <paramref name="productionItem"/> in the master Factory Production Config asset
-    /// so it appears in the factory UI at runtime.
+    /// Реєструє <paramref name="productionItem"/> в головному асеті Factory Production Config,
+    /// щоб він відображався у UI заводу під час гри.
     /// </summary>
     private static void AddToFactoryConfig(ProductionItemData productionItem)
     {
@@ -443,7 +443,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Depth-first search for a child Transform with the given name anywhere in the hierarchy.
+    /// Пошук у глибину дочірнього Transform із заданою назвою в будь-якому місці ієрархії.
     /// </summary>
     private static Transform FindChildRecursive(Transform parent, string name)
     {
@@ -461,7 +461,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Recursively assigns <paramref name="layer"/> to <paramref name="target"/> and all its children.
+    /// Рекурсивно призначає <paramref name="layer"/> об'єкту <paramref name="target"/> та всім його дочірнім об'єктам.
     /// </summary>
     private static void SetLayerRecursively(GameObject target, int layer)
     {
@@ -471,8 +471,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets the tag on <paramref name="target"/>, falling back to "Untagged" if the tag has
-    /// not been defined in the project's tag manager.
+    /// Встановлює тег на <paramref name="target"/>, повертаючись до "Untagged", якщо тег
+    /// не визначений у менеджері тегів проекту.
     /// </summary>
     private static void TrySetTag(GameObject target, string tagName)
     {
@@ -487,8 +487,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets an Object reference serialized property on <paramref name="target"/> by property name,
-    /// using SerializedObject so the change is tracked by the AssetDatabase without undo.
+    /// Встановлює серіалізовану властивість-посилання на Object на <paramref name="target"/> за назвою властивості,
+    /// використовуючи SerializedObject, щоб зміна відстежувалась AssetDatabase без скасування.
     /// </summary>
     private static void SetObjectReference(Object target, string propertyName, Object value)
     {
@@ -502,7 +502,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets a float serialized property on <paramref name="target"/> by property name.
+    /// Встановлює серіалізовану властивість типу float на <paramref name="target"/> за назвою властивості.
     /// </summary>
     private static void SetFloat(Object target, string propertyName, float value)
     {
@@ -516,7 +516,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets a bool serialized property on <paramref name="target"/> by property name.
+    /// Встановлює серіалізовану властивість типу bool на <paramref name="target"/> за назвою властивості.
     /// </summary>
     private static void SetBool(Object target, string propertyName, bool value)
     {
@@ -530,7 +530,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets a Vector3 serialized property on <paramref name="target"/> by property name.
+    /// Встановлює серіалізовану властивість типу Vector3 на <paramref name="target"/> за назвою властивості.
     /// </summary>
     private static void SetVector3(Object target, string propertyName, Vector3 value)
     {
@@ -544,7 +544,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
     }
 
     /// <summary>
-    /// Sets an int serialized property on <paramref name="target"/> by property name.
+    /// Встановлює серіалізовану властивість типу int на <paramref name="target"/> за назвою властивості.
     /// </summary>
     private static void SetInt(Object target, string propertyName, int value)
     {
@@ -557,7 +557,7 @@ public static class SelfPropelledArtilleryPrefabBuilder
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Value type holding the PBR surface settings for one named material slot.</summary>
+    /// <summary>Тип-значення, що зберігає налаштування PBR-поверхні для одного іменованого слоту матеріалу.</summary>
     private readonly struct MaterialSettings
     {
         public MaterialSettings(Color color, float smoothness, float metallic)

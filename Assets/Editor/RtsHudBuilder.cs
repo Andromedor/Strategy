@@ -16,10 +16,10 @@ using Strategy.Data;
 using Strategy.Units;
 
 /// <summary>
-/// Editor-only tool that rebuilds the full RTS HUD inside mainScene from scratch.
-/// Invoked via Tools/RTS/Build RTS HUD. Creates the Canvas hierarchy (top resource bar,
-/// bottom HUD with minimap, selection info panel, and command deck), wires all UI
-/// components, and exposes a CI-callable Validate method.
+/// Редакторний інструмент, що повністю перебудовує RTS HUD всередині mainScene з нуля.
+/// Викликається через Tools/RTS/Build RTS HUD. Створює ієрархію Canvas (верхня панель ресурсів,
+/// нижній HUD з мінімапою, панеллю інформації про вибір та командною палубою), підключає всі UI-компоненти
+/// та надає метод Validate для виклику з CI.
 /// </summary>
 public static class RtsHudBuilder
 {
@@ -43,8 +43,8 @@ public static class RtsHudBuilder
     private static TMP_FontAsset _uiFontAsset;
 
     /// <summary>
-    /// Main build entry point. Opens mainScene, clears the canvas, recreates the full HUD
-    /// hierarchy, wires all component references, and saves the scene.
+    /// Головна точка входу побудови. Відкриває mainScene, очищає canvas, відтворює повну ієрархію HUD,
+    /// підключає всі посилання компонентів та зберігає сцену.
     /// </summary>
     [MenuItem("Tools/RTS/Build RTS HUD")]
     public static void Build()
@@ -117,8 +117,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Headless validation entry point for CI. Checks canvas scaling, all required HUD objects,
-    /// component presence, UIManager panel list, and the ProductionButton prefab structure.
+    /// Точка входу для беззупинної валідації з CI. Перевіряє масштабування canvas, всі необхідні об'єкти HUD,
+    /// наявність компонентів, список панелей UIManager та структуру префабу ProductionButton.
     /// </summary>
     public static void Validate()
     {
@@ -189,8 +189,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Finds or creates the scene Canvas and configures it with a CanvasScaler set to
-    /// Scale With Screen Size at 1920x1080 and a GraphicRaycaster.
+    /// Знаходить або створює Canvas сцени та налаштовує його з CanvasScaler у режимі
+    /// Scale With Screen Size на 1920x1080 та GraphicRaycaster.
     /// </summary>
     private static Canvas EnsureCanvas()
     {
@@ -226,7 +226,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates an EventSystem with InputSystemUIInputModule if one does not already exist in the scene.
+    /// Створює EventSystem з InputSystemUIInputModule, якщо такого об'єкта ще немає в сцені.
     /// </summary>
     private static void EnsureEventSystem()
     {
@@ -240,7 +240,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Destroys all direct children of the canvas so the HUD can be rebuilt from scratch.
+    /// Знищує всіх прямих нащадків canvas, щоб HUD можна було відтворити з нуля.
     /// </summary>
     private static void ClearCanvas(Canvas canvas)
     {
@@ -254,8 +254,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Removes any OutpostStatusUI components that are NOT on the canonical "TopResources"
-    /// object, cleaning up stale components left from earlier HUD layouts.
+    /// Видаляє всі компоненти OutpostStatusUI, що НЕ знаходяться на канонічному об'єкті "TopResources",
+    /// прибираючи застарілі компоненти з попередніх макетів HUD.
     /// </summary>
     private static void RemoveLegacyResourceStatus()
     {
@@ -274,9 +274,9 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Loads the ProductionButtonPrefab and re-applies sizing, Image, Button, Outline, child
-    /// text/icon layout, and ProductionButtonUI field assignments so the prefab matches the
-    /// current HUD style even if it has drifted.
+    /// Завантажує ProductionButtonPrefab та повторно застосовує розміри, Image, Button, Outline,
+    /// макет дочірніх тексту/іконки та призначення полів ProductionButtonUI, щоб префаб відповідав
+    /// поточному стилю HUD навіть якщо він змінився.
     /// </summary>
     private static void RepairProductionButtonPrefab(Sprite buttonSprite)
     {
@@ -364,7 +364,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Returns an existing component of type T on <paramref name="target"/>, or adds one if absent.
+    /// Повертає наявний компонент типу T на <paramref name="target"/> або додає новий, якщо його немає.
     /// </summary>
     private static T EnsureComponent<T>(GameObject target) where T : Component
     {
@@ -373,7 +373,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Finds or creates a child GameObject with an Image component under <paramref name="parent"/>.
+    /// Знаходить або створює дочірній GameObject з компонентом Image під <paramref name="parent"/>.
     /// </summary>
     private static Image EnsureChildImage(Transform parent, string objectName)
     {
@@ -394,8 +394,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Finds or creates a child GameObject with a TMP_Text component under <paramref name="parent"/>.
-    /// Renames a legacy-named child if found; creates a new one if neither name is present.
+    /// Знаходить або створює дочірній GameObject з компонентом TMP_Text під <paramref name="parent"/>.
+    /// Перейменовує застарілий дочірній об'єкт, якщо знайдено; створює новий, якщо жодного імені немає.
     /// </summary>
     private static TMP_Text EnsureChildText(Transform parent, string objectName, string legacyName)
     {
@@ -423,7 +423,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Applies anchor, pivot, position, and size to a RectTransform in a single call.
+    /// Застосовує якір, pivot, позицію та розмір до RectTransform за один виклик.
     /// </summary>
     private static void ConfigureChildRect(
         RectTransform rect,
@@ -444,8 +444,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Configures a TMP_Text element inside a prefab with font, size, auto-sizing, style,
-    /// alignment, and color; skips font assignment if <see cref="_uiFontAsset"/> is null.
+    /// Налаштовує елемент TMP_Text всередині префабу з шрифтом, розміром, авто-масштабуванням,
+    /// стилем, вирівнюванням та кольором; пропускає призначення шрифту, якщо <see cref="_uiFontAsset"/> є null.
     /// </summary>
     private static void ConfigurePrefabText(
         TMP_Text text,
@@ -474,8 +474,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Populates the SelectionInfoPanel with title, subtitle, stats text, and a compact unit
-    /// list, then attaches SelectionInfoPanelUI and wires all serialized references.
+    /// Заповнює SelectionInfoPanel заголовком, підзаголовком, текстом статистики та компактним
+    /// списком юнітів, після чого прикріплює SelectionInfoPanelUI та підключає всі серіалізовані посилання.
     /// </summary>
     private static void BuildSelectionInfo(RectTransform parent)
     {
@@ -517,9 +517,9 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates the CommandDeck area: a tab strip (Build/Units/Outpost) and content sub-panels
-    /// for ConstructionPanelUI, ProductionPanelUI, and OutpostPanelUI. Returns the panel refs
-    /// via a CommandPanels struct for use by ConfigureUIManager.
+    /// Створює область CommandDeck: смужку вкладок (Build/Units/Outpost) та підпанелі вмісту
+    /// для ConstructionPanelUI, ProductionPanelUI і OutpostPanelUI. Повертає посилання на панелі
+    /// через структуру CommandPanels для використання в ConfigureUIManager.
     /// </summary>
     private static CommandPanels BuildCommandDeck(RectTransform parent, Sprite buttonSprite)
     {
@@ -577,8 +577,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a scrollable grid content area and an "empty" placeholder text inside
-    /// <paramref name="parent"/>; outputs the empty label via the out parameter.
+    /// Створює область вмісту з прокруткою у вигляді сітки та плейсхолдер-текст "порожньо" всередині
+    /// <paramref name="parent"/>; виводить порожній ярлик через параметр out.
     /// </summary>
     private static RectTransform CreateScrollContent(RectTransform parent, string objectName, out TMP_Text emptyText)
     {
@@ -595,8 +595,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Builds the Outpost sub-panel with info/resource text fields and an Upgrade button,
-    /// then wires the references onto <paramref name="outpostPanel"/>.
+    /// Будує підпанель Outpost з текстовими полями інформації/ресурсів та кнопкою Upgrade,
+    /// після чого підключає посилання до <paramref name="outpostPanel"/>.
     /// </summary>
     private static void BuildOutpostPanel(RectTransform parent, OutpostPanelUI outpostPanel, Sprite buttonSprite)
     {
@@ -622,7 +622,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a transparent full-stretch panel RectTransform for a command sub-panel slot.
+    /// Створює прозорий повністю розтягнутий RectTransform панелі для слоту підпанелі команд.
     /// </summary>
     private static RectTransform CreateCommandPanel(string objectName, Transform parent)
     {
@@ -632,8 +632,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a tab Button with a HudPanelButton component wired to the given PanelType,
-    /// and adds a LayoutElement with fixed minimum height.
+    /// Створює кнопку вкладки з компонентом HudPanelButton, прив'язаним до заданого PanelType,
+    /// та додає LayoutElement з фіксованою мінімальною висотою.
     /// </summary>
     private static Button CreateTabButton(
         Transform parent,
@@ -658,8 +658,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a UI Button GameObject with a label text child, styled with ButtonColor and
-    /// an optional sliced sprite background.
+    /// Створює GameObject UI-кнопки з дочірнім текстом-ярликом, стилізованим кольором ButtonColor
+    /// та необов'язковим фоном у вигляді нарізаного спрайту.
     /// </summary>
     private static Button CreateButton(string objectName, Transform parent, string label, Sprite sprite)
     {
@@ -687,7 +687,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a panel RectTransform with an Image component using the given sprite and color.
+    /// Створює панель RectTransform з компонентом Image, використовуючи заданий спрайт та колір.
     /// </summary>
     private static RectTransform CreatePanel(string objectName, Transform parent, Sprite sprite, Color color)
     {
@@ -710,7 +710,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a plain RectTransform GameObject (no Image) with the given anchor extents.
+    /// Створює простий RectTransform GameObject (без Image) із заданими межами якоря.
     /// </summary>
     private static RectTransform CreateRect(string objectName, Transform parent, Vector2 anchorMin, Vector2 anchorMax)
     {
@@ -727,8 +727,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a TextMeshProUGUI GameObject with the project font, auto-sizing, and text color
-    /// applied; returns the TMP_Text reference.
+    /// Створює GameObject TextMeshProUGUI із шрифтом проекту, авто-масштабуванням та кольором тексту;
+    /// повертає посилання на TMP_Text.
     /// </summary>
     private static TMP_Text CreateText(
         string objectName,
@@ -764,8 +764,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Populates the UIManager's _panels list with the four command-deck panel entries
-    /// (MainMenu/idle, Factory, Construction, Outpost) via SerializedObject.
+    /// Заповнює список _panels UIManager чотирма записами панелей командної палуби
+    /// (MainMenu/idle, Factory, Construction, Outpost) через SerializedObject.
     /// </summary>
     private static void ConfigureUIManager(UIManager manager, CommandPanels panels)
     {
@@ -785,8 +785,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Sets the PanelType enum and panel GameObject reference on a single UIManager panel entry.
-    /// Supports both "_type"/"_panelObject" and "type"/"panelObject" property naming conventions.
+    /// Встановлює enum PanelType та посилання на GameObject панелі в одному записі панелі UIManager.
+    /// Підтримує обидві угоди щодо іменування властивостей: "_type"/"_panelObject" та "type"/"panelObject".
     /// </summary>
     private static void SetPanelEntry(SerializedProperty element, PanelType type, GameObject panel)
     {
@@ -803,8 +803,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Writes the _buildings array on a ConstructionPanelUI with a single BuildingData entry
-    /// (or clears it when building is null).
+    /// Записує масив _buildings у ConstructionPanelUI з одним записом BuildingData
+    /// (або очищає його, якщо building є null).
     /// </summary>
     private static void SetBuildingList(ConstructionPanelUI target, BuildingData building)
     {
@@ -824,8 +824,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Validates that UIManager has at least four panel entries covering all required PanelTypes
-    /// and that every panel object reference is assigned.
+    /// Перевіряє, що UIManager має щонайменше чотири записи панелей, що охоплюють усі необхідні PanelType,
+    /// та що кожне посилання на об'єкт панелі призначене.
     /// </summary>
     private static void ValidatePanelList(UIManager manager, List<string> errors)
     {
@@ -864,8 +864,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Validates the TopResources panel: checks TMP text size, panel RectTransform dimensions,
-    /// and that exactly one OutpostStatusUI exists on that object.
+    /// Перевіряє панель TopResources: розмір TMP-тексту, розміри RectTransform панелі
+    /// та наявність рівно одного OutpostStatusUI на цьому об'єкті.
     /// </summary>
     private static void ValidateResourceHud(List<string> errors)
     {
@@ -904,9 +904,9 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Validates that the BottomHud frame is full-width, anchored at the screen bottom, tall
-    /// enough to contain its children, and that MinimapSlot/SelectionInfoPanel/CommandDeck
-    /// are visually inside the frame bounds.
+    /// Перевіряє, що рамка BottomHud є повноширинною, прикріпленою до нижньої частини екрана,
+    /// достатньо високою для своїх дочірніх елементів, а MinimapSlot/SelectionInfoPanel/CommandDeck
+    /// візуально знаходяться всередині меж рамки.
     /// </summary>
     private static void ValidateBottomHudFrame(List<string> errors)
     {
@@ -930,8 +930,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Uses world-space corners to check that <paramref name="childName"/> is fully contained
-    /// within <paramref name="bottom"/> with at least an 8-unit margin.
+    /// Використовує кути у світовому просторі для перевірки, що <paramref name="childName"/> повністю
+    /// міститься всередині <paramref name="bottom"/> з відступом не менше 8 одиниць.
     /// </summary>
     private static void ValidateChildInsideBottom(RectTransform bottom, string childName, List<string> errors)
     {
@@ -957,8 +957,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Validates the ProductionButton prefab for required components, non-transparent background,
-    /// visible outline, and all serialized UI field references being assigned.
+    /// Перевіряє префаб ProductionButton на наявність необхідних компонентів, непрозорого фону,
+    /// видимого контуру та всіх призначених серіалізованих посилань на UI-поля.
     /// </summary>
     private static void ValidateProductionButtonPrefab(List<string> errors)
     {
@@ -997,7 +997,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Checks that a named serialized Object reference is assigned; appends <paramref name="message"/> on failure.
+    /// Перевіряє, що іменоване серіалізоване посилання на Object призначене; додає <paramref name="message"/> при невдачі.
     /// </summary>
     private static void ValidateObjectReference(
         SerializedObject serialized,
@@ -1011,7 +1011,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Checks that a named GameObject exists in the scene; appends a missing-object error if not.
+    /// Перевіряє, що іменований GameObject існує в сцені; додає помилку про відсутній об'єкт, якщо ні.
     /// </summary>
     private static void ValidateObject(string objectName, List<string> errors)
     {
@@ -1020,8 +1020,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Adds four border line Image children (top, bottom, left, right) to <paramref name="target"/>
-    /// with the given color and thickness.
+    /// Додає чотири дочірніх Image-рядки рамки (зверху, знизу, зліва, справа) до <paramref name="target"/>
+    /// із заданим кольором та товщиною.
     /// </summary>
     private static void AddBorder(RectTransform target, Color color, float thickness)
     {
@@ -1039,7 +1039,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Creates a single thin Image child used as one edge of a border decoration.
+    /// Створює один тонкий дочірній Image, що використовується як один бік декоративної рамки.
     /// </summary>
     private static void CreateBorderLine(
         RectTransform parent,
@@ -1072,7 +1072,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Stretches a RectTransform to fill its parent completely, with optional inset offsets.
+    /// Розтягує RectTransform для повного заповнення батьківського об'єкта з необов'язковими відступами.
     /// </summary>
     private static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
     {
@@ -1087,7 +1087,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Sets all anchor, pivot, position, and size properties on a RectTransform in one call.
+    /// Встановлює всі властивості якоря, pivot, позиції та розміру RectTransform за один виклик.
     /// </summary>
     private static void SetAnchor(
         RectTransform rect,
@@ -1108,8 +1108,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Loads a Sprite from <paramref name="path"/>; falls back to scanning all sub-assets when
-    /// the primary load returns null (e.g. for PSD files with multiple slices).
+    /// Завантажує Sprite зі шляху <paramref name="path"/>; повертається до сканування всіх підасетів,
+    /// якщо основне завантаження повертає null (наприклад, для PSD-файлів із кількома фрагментами).
     /// </summary>
     private static Sprite LoadSprite(string path)
     {
@@ -1129,8 +1129,8 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Loads the Jupiter TMP_FontAsset if it already has a valid atlas texture; otherwise
-    /// deletes the stale asset and regenerates it from the source TTF using dynamic atlas mode.
+    /// Завантажує Jupiter TMP_FontAsset, якщо він вже має дійсну текстуру атласу; інакше
+    /// видаляє застарілий асет і регенерує його з вихідного TTF у режимі динамічного атласу.
     /// </summary>
     private static TMP_FontAsset LoadOrCreateFontAsset()
     {
@@ -1180,7 +1180,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Sets an Object reference serialized property on <paramref name="target"/> and applies immediately.
+    /// Встановлює серіалізовану властивість-посилання на Object у <paramref name="target"/> та негайно застосовує.
     /// </summary>
     private static void SetObject(Object target, string propertyName, Object value)
     {
@@ -1194,7 +1194,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Sets an enum (int) serialized property on <paramref name="target"/> and applies immediately.
+    /// Встановлює серіалізовану властивість-enum (int) у <paramref name="target"/> та негайно застосовує.
     /// </summary>
     private static void SetInt(Object target, string propertyName, int value)
     {
@@ -1208,7 +1208,7 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Sets a bool serialized property on <paramref name="target"/> and applies immediately.
+    /// Встановлює серіалізовану властивість типу bool у <paramref name="target"/> та негайно застосовує.
     /// </summary>
     private static void SetBool(Object target, string propertyName, bool value)
     {
@@ -1221,7 +1221,7 @@ public static class RtsHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Value type grouping the four command-deck sub-panel GameObjects returned by BuildCommandDeck.</summary>
+    /// <summary>Тип-значення, що групує чотири GameObject підпанелей командної палуби, повернутих BuildCommandDeck.</summary>
     private readonly struct CommandPanels
     {
         public CommandPanels(GameObject idlePanel, GameObject factoryPanel, GameObject constructionPanel, GameObject outpostPanel)

@@ -9,8 +9,8 @@ using UnityEngine;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Factory building that queues and produces units one at a time, charging player resources per item.
-    /// Spawned units drive themselves out through the factory gate via UnitSpawnActivator before becoming active.
+    /// Будівля-завод, що ставить юнітів у чергу та виробляє їх по одному, витрачаючи ресурси гравця за кожен елемент.
+    /// Виготовлені юніти самостійно виїжджають через браму заводу за допомогою UnitSpawnActivator перед тим, як стати активними.
     /// </summary>
     public class BuildingProduction : MonoBehaviour
     {
@@ -64,8 +64,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Validates the item, spends player resources if applicable, enqueues the unit for production,
-        /// and starts the ProcessQueue coroutine if it is not already running.
+        /// Перевіряє елемент, витрачає ресурси гравця якщо застосовно, ставить юніта у чергу виробництва
+        /// та запускає корутину ProcessQueue, якщо вона ще не виконується.
         /// </summary>
         public bool AddToQueue(ProductionItemData item)
         {
@@ -91,7 +91,7 @@ namespace Strategy.Buildings
             return true;
         }
 
-        /// <summary>Dequeues items one at a time, waiting for each unit's production time then calling SpawnAndReleaseUnit.</summary>
+        /// <summary>Виймає елементи з черги по одному, очікує час виробництва кожного юніта, після чого викликає SpawnAndReleaseUnit.</summary>
         private IEnumerator ProcessQueue()
         {
             _isProducing = true;
@@ -109,8 +109,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Instantiates the unit prefab at the spawn point in a disabled state, opens the gate,
-        /// drives the unit to the exit point via UnitSpawnActivator, then closes the gate.
+        /// Створює префаб юніта у точці спавну у вимкненому стані, відкриває браму,
+        /// переміщує юніта до точки виходу через UnitSpawnActivator, після чого закриває браму.
         /// </summary>
         private IEnumerator SpawnAndReleaseUnit(ProductionItemData item)
         {
@@ -140,7 +140,7 @@ namespace Strategy.Buildings
                 yield return StartCoroutine(_gate.Close());
         }
 
-        /// <summary>Copies the factory's team onto the newly spawned unit's TeamComponent and assigns the correct layer mask.</summary>
+        /// <summary>Копіює команду заводу на TeamComponent щойно створеного юніта та призначає правильну маску шару.</summary>
         private void SetupUnitTeam(GameObject spawnedUnit)
         {
             if (spawnedUnit == null || _teamComponent == null)
@@ -160,7 +160,7 @@ namespace Strategy.Buildings
                 spawnedUnit.layer = layer;
         }
 
-        /// <summary>Puts the unit into the spawning (disabled) state via UnitSpawnActivator before it exits the factory.</summary>
+        /// <summary>Переводить юніта у стан спавну (вимкнений) через UnitSpawnActivator перед виходом із заводу.</summary>
         private static void DisableUnitBeforeExit(GameObject spawnedUnit)
         {
             if (spawnedUnit == null)

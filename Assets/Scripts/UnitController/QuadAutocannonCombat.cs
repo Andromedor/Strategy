@@ -9,9 +9,9 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Autocannon subclass of UnitCombat. Fires from two alternating muzzle points and delegates
-    /// visual effects to AutocannonVisualEffects. Muzzle transforms are auto-created at runtime if
-    /// not assigned in the Inspector.
+    /// Підклас UnitCombat для автогармати. Стріляє з двох почергових точок дула та делегує
+    /// візуальні ефекти до AutocannonVisualEffects. Трансформи дула автоматично створюються під час
+    /// виконання, якщо не призначені в Інспекторі.
     /// </summary>
     public class QuadAutocannonCombat : UnitCombat
     {
@@ -32,8 +32,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Fires a pooled bullet from the next alternating muzzle, aimed directly at the target's
-        /// collider centre, and triggers the corresponding per-muzzle visual effect.
+        /// Стріляє пулею з пулу з наступного почергового дула, прямо в центр колайдера цілі,
+        /// та запускає відповідний візуальний ефект для кожного дула.
         /// </summary>
         protected override IEnumerator FireAtTarget(Transform target)
         {
@@ -70,8 +70,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Ensures _muzzlePoints contains two valid transforms; creates left/right child objects under
-        /// the gun transform if they are missing.
+        /// Гарантує, що _muzzlePoints містить два дійсних трансформи; створює лівий/правий дочірні об'єкти
+        /// під трансформом гармати, якщо вони відсутні.
         /// </summary>
         private void EnsureMuzzlePoints()
         {
@@ -96,7 +96,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Finds or adds AutocannonVisualEffects and configures it with the gun and muzzle transforms.
+        /// Знаходить або додає AutocannonVisualEffects та налаштовує його з трансформами гармати та дул.
         /// </summary>
         private void EnsureEffects()
         {
@@ -110,7 +110,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns true when _muzzlePoints has at least two non-null entries.
+        /// Повертає true, коли _muzzlePoints має принаймні два ненульових записи.
         /// </summary>
         private bool HasUsableMuzzles()
         {
@@ -127,7 +127,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the current muzzle index and advances the counter to alternate between barrels each shot.
+        /// Повертає поточний індекс дула та збільшує лічильник для чергування між стволами при кожному пострілі.
         /// </summary>
         private int GetNextMuzzleIndex()
         {
@@ -140,7 +140,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the muzzle transform at muzzleIndex, falling back to _pointPosition if the index is invalid.
+        /// Повертає трансформ дула за індексом muzzleIndex, повертаючись до _pointPosition, якщо індекс недійсний.
         /// </summary>
         private Transform GetMuzzle(int muzzleIndex)
         {
@@ -156,7 +156,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a child transform under parent at the centre's local position offset by localX on the X axis.
+        /// Створює дочірній трансформ під parent у локальній позиції center, зміщений на localX по осі X.
         /// </summary>
         private static Transform CreateMuzzle(Transform parent, Transform center, string objectName, float localX)
         {
@@ -170,7 +170,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Depth-first search for a named child transform; returns null if not found.
+        /// Пошук у глибину дочірнього трансформу за іменем; повертає null, якщо не знайдено.
         /// </summary>
         private static Transform FindChildRecursive(Transform parent, string childName)
         {

@@ -9,9 +9,9 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Manages all visual effects for a single tracked-unit cannon: muzzle flash, smoke, gun recoil,
-    /// and an optional point light flash. All particle systems and the light are created procedurally
-    /// at runtime; no prefab assets are required.
+    /// Керує всіма візуальними ефектами для гармати гусеничного юніта: спалах дула, дим, відкат гармати
+    /// та необов'язковий спалах точкового світла. Усі системи частинок та світло створюються процедурно
+    /// під час виконання; готові ресурси не потрібні.
     /// </summary>
     public class TankCannonEffects : MonoBehaviour
     {
@@ -47,8 +47,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Assigns gun and muzzle references if not already set in the Inspector, then calls
-        /// EnsureReady to build particle systems.
+        /// Призначає посилання на гармату та дуло, якщо вони ще не встановлені в Інспекторі, потім
+        /// викликає EnsureReady для побудови систем частинок.
         /// </summary>
         public void Configure(Transform gun, Transform muzzle)
         {
@@ -62,8 +62,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Triggers muzzle flash and smoke particle bursts, starts the gun recoil coroutine,
-        /// and flashes the muzzle light (if enabled). Any in-progress recoil/light is restarted.
+        /// Запускає спалахи систем частинок дула та диму, починає корутину відкату гармати,
+        /// та спалахує підсвітку дула (якщо увімкнено). Будь-який поточний відкат/світло перезапускається.
         /// </summary>
         public void PlayShotEffect()
         {
@@ -93,8 +93,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Lazily initialises all runtime objects: records the gun rest position, creates flash and
-        /// smoke particle systems, and optionally creates the muzzle point light.
+        /// Ліниво ініціалізує всі об'єкти під час виконання: записує позицію спокою гармати, створює
+        /// системи частинок спалаху та диму, та за потреби створює точкове світло дула.
         /// </summary>
         private void EnsureReady()
         {
@@ -118,8 +118,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Builds and returns a cone-shaped muzzle flash ParticleSystem as a child of _muzzle;
-        /// uses Emit-based bursts rather than continuous emission.
+        /// Будує та повертає систему частинок спалаху дула у формі конуса як дочірній об'єкт _muzzle;
+        /// використовує вибухи на основі Emit замість безперервного випромінювання.
         /// </summary>
         private ParticleSystem CreateMuzzleFlash()
         {
@@ -154,8 +154,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Builds and returns a wider cone smoke ParticleSystem as a child of _muzzle, with a
-        /// fade-out alpha gradient over lifetime.
+        /// Будує та повертає систему частинок диму з ширшим конусом як дочірній об'єкт _muzzle, з
+        /// градієнтом затухання альфа за час існування.
         /// </summary>
         private ParticleSystem CreateSmoke()
         {
@@ -207,8 +207,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a new GameObject with a ParticleSystem component as a child of _muzzle; stops
-        /// the system immediately to prevent auto-play.
+        /// Створює новий GameObject із компонентом ParticleSystem як дочірній об'єкт _muzzle;
+        /// зупиняє систему одразу, щоб запобігти автовідтворенню.
         /// </summary>
         private ParticleSystem CreateParticleSystem(string objectName)
         {
@@ -225,8 +225,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates an orange point light at the muzzle position, initially disabled, ready for
-        /// the FlashMuzzleLight coroutine.
+        /// Створює помаранчеве точкове світло у позиції дула, спочатку вимкнене, готове для
+        /// корутини FlashMuzzleLight.
         /// </summary>
         private Light CreateMuzzleLight()
         {
@@ -247,8 +247,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that snaps the gun to the recoil position over _recoilBackDuration then returns
-        /// it to its rest position over _recoilReturnDuration, using smooth-step interpolation.
+        /// Корутина, що миттєво переміщує гармату до позиції відкату за _recoilBackDuration, потім
+        /// повертає її до позиції спокою за _recoilReturnDuration, використовуючи інтерполяцію smooth-step.
         /// </summary>
         private IEnumerator PlayRecoil()
         {
@@ -269,8 +269,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that smoothly moves the gun's local position from 'from' to 'to' over duration
-        /// seconds using Mathf.SmoothStep for ease-in/ease-out motion.
+        /// Корутина, що плавно переміщує локальну позицію гармати з 'from' в 'to' за duration
+        /// секунд, використовуючи Mathf.SmoothStep для плавного входу/виходу.
         /// </summary>
         private IEnumerator MoveGun(Vector3 from, Vector3 to, float duration)
         {
@@ -295,7 +295,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Coroutine that enables the muzzle light at full intensity for 45 ms then disables it.
+        /// Корутина, що вмикає підсвітку дула на повну інтенсивність на 45 мс, потім вимикає її.
         /// </summary>
         private IEnumerator FlashMuzzleLight()
         {
@@ -308,8 +308,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a new unlit particle material using the best available URP/Standard/fallback shader
-        /// and sets its colour properties.
+        /// Створює новий матеріал частинок без освітлення, використовуючи найкращий доступний шейдер
+        /// URP/Standard/запасний, та встановлює властивості кольору.
         /// </summary>
         private static Material CreateParticleMaterial(Color color)
         {
@@ -325,8 +325,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Sets _BaseColor and _Color properties on a material if they exist, supporting both URP
-        /// and legacy Standard shader property names.
+        /// Встановлює властивості _BaseColor та _Color на матеріалі, якщо вони існують, підтримуючи
+        /// як назви властивостей URP, так і застарілого Standard шейдера.
         /// </summary>
         private static void SetMaterialColor(Material material, Color color)
         {
@@ -341,7 +341,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Destroys a runtime UnityEngine.Object correctly in both play mode and edit mode.
+        /// Знищує об'єкт UnityEngine.Object під час виконання правильно як у режимі гри, так і в режимі редагування.
         /// </summary>
         private static void DestroyRuntimeObject(Object runtimeObject)
         {

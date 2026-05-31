@@ -8,8 +8,8 @@ using UnityEngine.InputSystem;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Handles left-click selection of buildings (factories, construction centers, outposts).
-    /// Raises the appropriate EventManager events and opens the matching HUD panel.
+    /// Обробляє виділення будівель лівою кнопкою миші (заводи, центри будівництва, аванпости).
+    /// Викидає відповідні події EventManager та відкриває відповідну панель HUD.
     /// </summary>
     public class SelectionManager : MonoBehaviour
     {
@@ -44,7 +44,7 @@ namespace Strategy.Buildings
             SelectBuilding();
         }
 
-        /// <summary>Raycasts from the mouse cursor and dispatches to the appropriate selection handler based on the hit component.</summary>
+        /// <summary>Кидає промінь від курсора миші та направляє до відповідного обробника вибору залежно від знайденого компонента.</summary>
         private void SelectBuilding()
         {
             if (_camera == null)
@@ -86,7 +86,7 @@ namespace Strategy.Buildings
             ClearBuildingSelection();
         }
 
-        /// <summary>Opens the construction panel for a player-owned ConstructionCenter; clears selection if it belongs to the enemy.</summary>
+        /// <summary>Відкриває панель будівництва для ConstructionCenter гравця; знімає виділення, якщо він належить ворогу.</summary>
         private static void SelectConstructionCenter(ConstructionCenter constructionCenter)
         {
             TeamComponent teamComponent = constructionCenter.GetComponentInParent<TeamComponent>();
@@ -101,7 +101,7 @@ namespace Strategy.Buildings
             EventManager.RaiseOpenPanel(PanelType.Construction);
         }
 
-        /// <summary>Opens the outpost panel if the outpost is player-owned; clears selection otherwise.</summary>
+        /// <summary>Відкриває панель аванпосту, якщо він належить гравцю; інакше знімає виділення.</summary>
         private static void SelectOutpost(Outpost outpost)
         {
             SelectedFactory = null;
@@ -116,7 +116,7 @@ namespace Strategy.Buildings
             EventManager.RaiseOutpostSelected(outpost);
         }
 
-        /// <summary>Deselects any active factory, fires ConstructionClosed, and returns the HUD to the main menu panel.</summary>
+        /// <summary>Знімає виділення з активного заводу, викидає ConstructionClosed та повертає HUD до панелі головного меню.</summary>
         private static void ClearBuildingSelection()
         {
             SelectedFactory = null;

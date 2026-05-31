@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Strategy.Units
 {
     /// <summary>
-    /// MonoBehaviour implementation of ITeam. Stores the unit's team assignment and fires a
-    /// TeamChanged event whenever the team is switched at runtime (e.g. outpost capture or debug).
+    /// Реалізація MonoBehaviour для ITeam. Зберігає призначення команди юніта та викидає подію
+    /// TeamChanged щоразу, коли команда змінюється під час виконання (наприклад, захоплення опорного пункту або налагодження).
     /// </summary>
     public class TeamComponent : MonoBehaviour, ITeam
     {
@@ -16,8 +16,8 @@ namespace Strategy.Units
         public TeamType Team => _team;
 
         /// <summary>
-        /// Changes the unit's team and broadcasts TeamChanged to all subscribers (e.g. UnitCombat
-        /// rebuilds its target layer mask). Does nothing if the new team equals the current one.
+        /// Змінює команду юніта та транслює TeamChanged всім підписникам (наприклад, UnitCombat
+        /// перебудовує маску шару цілі). Нічого не робить, якщо нова команда збігається з поточною.
         /// </summary>
         public void SetTeam(TeamType team)
         {
@@ -30,7 +30,7 @@ namespace Strategy.Units
     }
 
     /// <summary>
-    /// Identifies which side a unit or building belongs to.
+    /// Визначає, до якої сторони належить юніт або будівля.
     /// </summary>
     public enum TeamType
     {

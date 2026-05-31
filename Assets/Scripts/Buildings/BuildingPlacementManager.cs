@@ -11,16 +11,16 @@ using Strategy.UI;
 namespace Strategy.Buildings
 {
     /// <summary>
-    /// Manages the interactive building-placement workflow: creates a ghost preview object that
-    /// follows the cursor, validates placement against construction areas and overlap checks,
-    /// handles Q/E rotation, and confirms or cancels the placement on mouse click.
+    /// Керує інтерактивним процесом розміщення будівель: створює примарний об'єкт попереднього перегляду, що
+    /// слідує за курсором, перевіряє розміщення відносно зон будівництва та на перетин,
+    /// обробляє обертання клавішами Q/E, підтверджує або скасовує розміщення за кліком миші.
     /// </summary>
     public class BuildingPlacementManager : MonoBehaviour
     {
-        [Header("Raycast")] 
+        [Header("Raycast")]
         [SerializeField] private UnityEngine.Camera _camera;
         [SerializeField] private LayerMask _groundMask;
-        
+
         [Header("Team")]
         [SerializeField] private TeamType _currentTeam;
 
@@ -29,15 +29,15 @@ namespace Strategy.Buildings
 
         [Header("Rotation")]
         [SerializeField] private float _rotationStep = 90f;
-        
+
         [Header("Preview Colors")]
         [SerializeField] private Color _validColor = new Color(0f, 1f, 0f, 0.5f);
         [SerializeField] private Color _invalidColor = new Color(1f, 0f, 0f, 0.5f);
-        
+
         public static bool IsPlacing { get; private set; }
         private bool _isValidPlacement;
         private bool _canPlaceClick;
-        
+
         private GameObject _previewObject;
         private Renderer[] _renderers;
         private MaterialPropertyBlock _propertyBlock;
@@ -70,8 +70,8 @@ namespace Strategy.Buildings
             EventManager.OnConstructionCenterSelected -= SetConstructionCenter;
             EventManager.OnConstructionClosed -= ClearConstructionCenter;
         }
-        
-        /// <summary>Stores the active ConstructionCenter when it belongs to the current team; clears it otherwise.</summary>
+
+        /// <summary>Зберігає активний ConstructionCenter, якщо він належить поточній команді; інакше очищає посилання.</summary>
         private void SetConstructionCenter(ConstructionCenter constructionCenter)
         {
             _currentConstructionCenter = IsConstructionCenterForCurrentTeam(constructionCenter)
@@ -79,7 +79,7 @@ namespace Strategy.Buildings
                 : null;
         }
 
-        /// <summary>Cancels any active placement, hides the build-area visual, and clears the stored ConstructionCenter reference.</summary>
+        /// <summary>Скасовує активне розміщення, приховує візуал зони будівництва та очищає збережене посилання на ConstructionCenter.</summary>
         private void ClearConstructionCenter()
         {
             if (IsPlacing)
@@ -90,17 +90,17 @@ namespace Strategy.Buildings
 
             _currentConstructionCenter = null;
         }
-        
+
         private void Update()
         {
             if (!IsPlacing || _previewObject == null || Mouse.current == null)
                 return;
-            
+
             PositionObject();
             HandleRotation();
             CheckPlacement();
             UpdatePreviewColor();
-            
+
             if (!_canPlaceClick)
             {
                 if (!Mouse.current.leftButton.isPressed)
@@ -108,7 +108,7 @@ namespace Strategy.Buildings
 
                 return;
             }
-            
+
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
                 if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
@@ -123,10 +123,10 @@ namespace Strategy.Buildings
                 CancelPlacement();
             }
         }
-        
+
         /// <summary>
-        /// Begins a placement session for the given BuildingData: instantiates the preview object,
-        /// disables its gameplay components, and shows all valid construction-area overlays.
+        /// Починає сеанс розміщення для вказаного BuildingData: створює об'єкт попереднього перегляду,
+        /// вимикає його ігрові компоненти та показує всі доступні оверлеї зон будівництва.
         /// </summary>
         public void StartPlacement(BuildingData buildingData)
         {
@@ -145,7 +145,7 @@ namespace Strategy.Buildings
 
             IsPlacing = true;
             _canPlaceClick = false;
-            
+
             ShowAllBuildAreas();
 
             _renderers = _previewObject.GetComponentsInChildren<Renderer>();
@@ -156,7 +156,7 @@ namespace Strategy.Buildings
             UpdatePreviewColor();
         }
 
-        /// <summary>Instantiates the prefab inside a temporary inactive root so Awake is deferred, then reparents it to the preview container.</summary>
+        /// <summary>Створює префаб усередині тимчасового неактивного кореня, щоб відкласти виклик Awake, після чого переміщує його до контейнера попереднього перегляду.</summary>
         private void CreatePreviewObject(GameObject prefab)
         {
             Transform previewContainer = RuntimeObjectContainer.Get("Building Previews");
@@ -174,7 +174,7 @@ namespace Strategy.Buildings
             Destroy(inactiveRoot);
         }
 
-        /// <summary>Records original enabled/kinematic states of all Behaviours, Colliders, and Rigidbodies on the preview, then disables them.</summary>
+        /// <summary>Зберігає початкові стани увімкнення/кінематики всіх Behaviour, Collider та Rigidbody на попередньому перегляді, після чого вимикає їх.</summary>
         private void CacheAndDisablePreviewGameplay()
         {
             _previewBehaviourStates.Clear();
@@ -201,7 +201,7 @@ namespace Strategy.Buildings
             }
         }
 
-        /// <summary>Raycasts from the mouse cursor against the ground mask and moves the preview object to the hit point.</summary>
+        /// <summary>Кидає промінь від курсора миші проти маски землі та переміщує об'єкт попереднього перегляду до точки попадання.</summary>
         private void PositionObject()
         {
             if (_camera == null)
@@ -217,7 +217,7 @@ namespace Strategy.Buildings
             }
         }
 
-        /// <summary>Rotates the preview object by _rotationStep degrees around Y when Q or E is pressed.</summary>
+        /// <summary>Обертає об'єкт попереднього перегляду на _rotationStep градусів навколо осі Y при натисканні Q або E.</summary>
         private void HandleRotation()
         {
             if (Keyboard.current == null)
@@ -235,8 +235,8 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Sets _isValidPlacement by verifying the preview is inside a valid construction area
-        /// and that an OverlapBox at its position finds no blocking objects.
+        /// Встановлює _isValidPlacement, перевіряючи, чи знаходиться попередній перегляд усередині дійсної зони будівництва
+        /// та чи не виявляє OverlapBox у його позиції жодних блокуючих об'єктів.
         /// </summary>
         private void CheckPlacement()
         {
@@ -274,8 +274,8 @@ namespace Strategy.Buildings
                 break;
             }
         }
-        
-        /// <summary>Returns true if the given world position falls within the build radius of at least one active construction center for the current team.</summary>
+
+        /// <summary>Повертає true, якщо вказана світова позиція знаходиться в межах радіуса будівництва хоча б одного активного центру будівництва поточної команди.</summary>
         private bool IsInsideAnyConstructionArea(Vector3 position)
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -286,8 +286,8 @@ namespace Strategy.Buildings
 
             return false;
         }
-        
-        /// <summary>Tints all preview renderers green (valid) or red (invalid) via a MaterialPropertyBlock.</summary>
+
+        /// <summary>Забарвлює всі рендерери попереднього перегляду зеленим (допустимо) або червоним (недопустимо) через MaterialPropertyBlock.</summary>
         private void UpdatePreviewColor()
         {
             if (_renderers == null || _propertyBlock == null)
@@ -305,8 +305,8 @@ namespace Strategy.Buildings
                 renderer.SetPropertyBlock(_propertyBlock);
             }
         }
-        
-        /// <summary>Removes the tint property block from all preview renderers, restoring their original material appearance.</summary>
+
+        /// <summary>Видаляє блок властивостей тонування з усіх рендерерів попереднього перегляду, відновлюючи їх оригінальний вигляд матеріалу.</summary>
         private void ResetPreviewColor()
         {
             if (_renderers == null)
@@ -318,10 +318,10 @@ namespace Strategy.Buildings
                     renderer.SetPropertyBlock(null);
             }
         }
-        
+
         /// <summary>
-        /// Spends the building cost, reparents the preview to the Buildings container,
-        /// restores all gameplay components, and finalises placement.
+        /// Витрачає вартість будівлі, перебатьківщує попередній перегляд до контейнера Buildings,
+        /// відновлює всі ігрові компоненти та завершує розміщення.
         /// </summary>
         private void ConfirmPlacement()
         {
@@ -346,7 +346,7 @@ namespace Strategy.Buildings
             HideAllBuildAreas();
         }
 
-        /// <summary>Destroys the preview object and exits placement mode, hiding all construction-area overlays.</summary>
+        /// <summary>Знищує об'єкт попереднього перегляду та виходить із режиму розміщення, приховуючи всі оверлеї зон будівництва.</summary>
         private void CancelPlacement()
         {
             if (_previewObject != null)
@@ -359,7 +359,7 @@ namespace Strategy.Buildings
             HideAllBuildAreas();
         }
 
-        /// <summary>Re-enables all Behaviours, Colliders, and Rigidbodies on the confirmed building using the cached original states.</summary>
+        /// <summary>Повторно вмикає всі Behaviour, Collider та Rigidbody підтвердженої будівлі, використовуючи збережені початкові стани.</summary>
         private void RestorePreviewGameplay()
         {
             foreach (RigidbodyState state in _previewRigidbodyStates)
@@ -394,7 +394,7 @@ namespace Strategy.Buildings
             _currentBuildingData = null;
         }
 
-        /// <summary>Deducts the building's economy cost from the player's resources; returns true if affordable (or free).</summary>
+        /// <summary>Вираховує економічну вартість будівлі з ресурсів гравця; повертає true, якщо доступно (або безкоштовно).</summary>
         private bool TrySpendPlacementCost()
         {
             if (_currentBuildingData == null || _currentTeam != TeamType.Player)
@@ -405,7 +405,7 @@ namespace Strategy.Buildings
                    ResourceManager.Instance == null ||
                    ResourceManager.Instance.Spend(cost);
         }
-        
+
         private void ShowAllBuildAreas()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -424,7 +424,7 @@ namespace Strategy.Buildings
             }
         }
 
-        /// <summary>Returns true if at least one enabled ConstructionCenter belonging to the current team exists in the scene.</summary>
+        /// <summary>Повертає true, якщо в сцені існує хоча б один увімкнений ConstructionCenter, що належить поточній команді.</summary>
         private bool HasAvailableConstructionArea()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -436,7 +436,7 @@ namespace Strategy.Buildings
             return false;
         }
 
-        /// <summary>Returns true when the center is active and either has no TeamComponent or its team matches _currentTeam.</summary>
+        /// <summary>Повертає true, якщо центр активний і або не має TeamComponent, або його команда збігається з _currentTeam.</summary>
         private bool IsConstructionCenterForCurrentTeam(ConstructionCenter center)
         {
             if (center == null || !center.isActiveAndEnabled)

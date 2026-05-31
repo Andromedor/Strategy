@@ -10,10 +10,10 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Procedurally animates tank track segments by scrolling them around a looping path composed of
-    /// two straight runs and two semicircular ends. Segment positions and pitches are recomputed every
-    /// frame from the left/right track speeds provided by TrackedVehicleMotor (or NavMeshAgent velocity
-    /// as fallback). All geometry is built at runtime — no prefab assets required.
+    /// Процедурно анімує секції гусениць танка, прокручуючи їх по замкненому шляху, що складається
+    /// з двох прямих ділянок та двох напівкіл. Позиції та кути нахилу секцій перераховуються щокадру
+    /// зі швидкостей лівої/правої гусениць, що надає TrackedVehicleMotor (або швидкість NavMeshAgent
+    /// як запасний варіант). Уся геометрія будується під час виконання — готові ресурси не потрібні.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     public class TankTrackAnimator : MonoBehaviour
@@ -90,7 +90,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Destroys the runtime track material to prevent memory leaks when this component is removed.
+        /// Знищує матеріал гусениць під час виконання, щоб запобігти витокам пам'яті при видаленні цього компонента.
         /// </summary>
         private void OnDestroy()
         {
@@ -104,8 +104,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates the track root object, shared material, shared segment mesh, and all TrackSegment
-        /// entries for both the left and right loop.
+        /// Створює кореневий об'єкт гусениць, спільний матеріал, спільний меш секцій та всі записи TrackSegment
+        /// для лівого та правого замкненого контуру.
         /// </summary>
         private void BuildSegments()
         {
@@ -134,8 +134,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Instantiates segmentCount pad GameObjects evenly spaced around one track loop on the given
-        /// side (-1 = left, +1 = right), each with a shared mesh and material.
+        /// Створює segmentCount пластин GameObject рівномірно розподілених по одному контуру гусениці на заданій
+        /// стороні (-1 = ліво, +1 = право), кожна зі спільним мешем та матеріалом.
         /// </summary>
         private void CreateLoop(float side, int segmentCount, Mesh mesh)
         {
@@ -164,8 +164,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the vehicle velocity, preferring the NavMeshAgent's reported velocity when active,
-        /// or computing it from position delta as a fallback for kinematically moved vehicles.
+        /// Повертає швидкість транспортного засобу, надаючи перевагу повідомленій швидкості NavMeshAgent,
+        /// або обчислює її з дельти позиції як запасний варіант для кінематично переміщуваних транспортних засобів.
         /// </summary>
         private Vector3 GetVelocity(float deltaTime)
         {
@@ -189,8 +189,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Recomputes the local position and pitch angle of every segment based on its updated
-        /// loop offset, placing left and right segments at +/- _trackHalfWidth.
+        /// Перераховує локальну позицію та кут нахилу кожної секції на основі оновленого
+        /// зміщення по контуру, розміщуючи ліві та праві секції на +/- _trackHalfWidth.
         /// </summary>
         private void UpdateSegmentPositions()
         {
@@ -207,8 +207,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Reads left and right track speeds from TrackedVehicleMotor when available; otherwise uses
-        /// the forward component of velocity for both tracks equally.
+        /// Зчитує швидкості лівої та правої гусениць із TrackedVehicleMotor, якщо доступний; інакше
+        /// використовує прямолінійну складову швидкості для обох гусениць однаково.
         /// </summary>
         private void GetTrackSpeeds(float deltaTime, out float leftSpeed, out float rightSpeed)
         {
@@ -227,7 +227,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Clamps speed to [-_maxVisualTrackSpeed, +_maxVisualTrackSpeed] to prevent runaway scroll.
+        /// Обмежує швидкість до [-_maxVisualTrackSpeed, +_maxVisualTrackSpeed], щоб запобігти нескінченному прокручуванню.
         /// </summary>
         private float ClampVisualSpeed(float speed)
         {
@@ -236,8 +236,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Wraps the track scroll offset into [0, _loopLength] using Mathf.Repeat so it never drifts
-        /// out of range.
+        /// Обертає зміщення прокручування гусениці в [0, _loopLength] за допомогою Mathf.Repeat,
+        /// щоб воно ніколи не виходило за межі діапазону.
         /// </summary>
         private float WrapOffset(float offset)
         {
@@ -245,8 +245,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Computes the total loop perimeter: two straight sections of _trackLength plus two
-        /// semicircles of radius derived from _trackVerticalSpacing.
+        /// Обчислює загальний периметр контуру: дві прямі ділянки _trackLength плюс два
+        /// напівкола радіусу, отриманого з _trackVerticalSpacing.
         /// </summary>
         private float CalculateLoopLength()
         {
@@ -255,8 +255,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Maps a distance along the loop to a TrackPose (Y height, Z forward offset, pitch angle)
-        /// by evaluating the four sections: top straight, front arc, bottom straight, rear arc.
+        /// Відображає відстань вздовж контуру на TrackPose (висота Y, зміщення Z вперед, кут нахилу)
+        /// шляхом оцінки чотирьох ділянок: верхня пряма, передня дуга, нижня пряма, задня дуга.
         /// </summary>
         private TrackPose EvaluateTrackPose(float distance)
         {
@@ -299,7 +299,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the track sprocket radius (half of _trackVerticalSpacing, minimum 0.05).
+        /// Повертає радіус зірочки гусениці (половина _trackVerticalSpacing, мінімум 0.05).
         /// </summary>
         private float GetTrackRadius()
         {
@@ -307,8 +307,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a unique runtime material for the track segments using the best available shader
-        /// and the configured _trackColor.
+        /// Створює унікальний матеріал під час виконання для секцій гусениці, використовуючи найкращий
+        /// доступний шейдер та налаштований _trackColor.
         /// </summary>
         private Material CreateTrackMaterial()
         {
@@ -332,8 +332,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Returns the shared track-pad mesh, building it once from several AddBox calls and caching
-        /// it in a static field. The Unity bool operator check guards against fake-null after domain reload.
+        /// Повертає спільний меш пластини гусениці, будуючи його один раз із кількох викликів AddBox та
+        /// кешуючи в статичному полі. Перевірка оператором bool Unity захищає від фіктивного null після перезавантаження домену.
         /// </summary>
         private static Mesh GetSegmentMesh()
         {
@@ -365,7 +365,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Appends 8 vertices and 12 triangles (6 faces) for an axis-aligned box to the mesh lists.
+        /// Додає 8 вершин та 12 трикутників (6 граней) для вісь-вирівняного паралелепіпеда до списків меша.
         /// </summary>
         private static void AddBox(List<Vector3> vertices, List<int> triangles, Vector3 center, Vector3 size)
         {
@@ -390,7 +390,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Appends a triangle fan of indices (offset by start) to the triangle list.
+        /// Додає масив індексів (зміщених на start) до списку трикутників.
         /// </summary>
         private static void AddFace(List<int> triangles, int start, params int[] indices)
         {
@@ -399,8 +399,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Data container for a single track pad: its Transform, which side it belongs to (-1/+1),
-        /// and its base distance along the loop used to compute its scrolling position.
+        /// Контейнер даних для однієї пластини гусениці: її Transform, до якої сторони вона належить (-1/+1),
+        /// та її базова відстань вздовж контуру, що використовується для обчислення позиції прокручування.
         /// </summary>
         private readonly struct TrackSegment
         {
@@ -417,8 +417,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Immutable position/orientation result returned by EvaluateTrackPose for a single pad
-        /// placement on the loop.
+        /// Незмінний результат позиції/орієнтації, що повертається EvaluateTrackPose для розміщення
+        /// однієї пластини на контурі.
         /// </summary>
         private readonly struct TrackPose
         {
