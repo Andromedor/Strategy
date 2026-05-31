@@ -1,10 +1,13 @@
 using System.Collections.Generic;
-using DefaultNamespace;
+using Strategy.Core;
+using Strategy.Buildings;
 using TMPro;
-using UnitController;
+using Strategy.Units;
 using UnityEngine;
 
-namespace UI
+using Strategy.Data;
+using Strategy.UI;
+namespace Strategy.UI
 {
     public class SelectionInfoPanelUI : MonoBehaviour
     {
@@ -162,7 +165,7 @@ namespace UI
             if (_selectedObject is BuildingProduction factory)
             {
                 TeamComponent team = factory.GetComponent<TeamComponent>();
-                int itemCount = factory.Items != null ? factory.Items.Count : 0;
+                int itemCount = factory.Items.Count;
                 SetText(
                     GetDisplayName(factory.name),
                     (team != null ? team.Team.ToString() : "Player") + " production",

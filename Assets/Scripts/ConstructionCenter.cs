@@ -1,7 +1,12 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
-
-namespace DefaultNamespace
+
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.Units;
+using Strategy.UI;
+namespace Strategy.Buildings
 {
     public class ConstructionCenter: MonoBehaviour
     {
@@ -16,6 +21,12 @@ namespace DefaultNamespace
 
         public Vector3 Position => transform.position;
         public float BuildRadius => _buildRadius;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            All.Clear();
+        }
         
         private void OnEnable()
         {
@@ -23,13 +34,13 @@ namespace DefaultNamespace
                 All.Add(this);
 
             HideBuildArea();
-            EventManager.OnConstructionCentersChanged?.Invoke();
+            EventManager.RaiseConstructionCentersChanged();
         }
 
         private void OnDisable()
         {
             All.Remove(this);
-            EventManager.OnConstructionCentersChanged?.Invoke();
+            EventManager.RaiseConstructionCentersChanged();
         }
         
         private void Awake()

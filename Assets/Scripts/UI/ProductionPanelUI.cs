@@ -1,12 +1,14 @@
 using System.Collections.Generic;
-using Data;
-using DefaultNamespace;
+using Strategy.Data;
+using Strategy.Core;
+using Strategy.Buildings;
 using TMPro;
-using UnitController;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UI
+using Strategy.UI;
+namespace Strategy.UI
 {
     public class ProductionPanelUI : MonoBehaviour
     {
@@ -25,6 +27,7 @@ namespace UI
         {
             EventManager.OnFactorySelected += OpenFactory;
             ResourceManager.OnResourceChanged += RefreshButtons;
+            BuildingProduction.FactoriesChanged += RefreshCurrentFactory;
             OpenFactory(GetInitialFactory());
         }
 
@@ -32,6 +35,14 @@ namespace UI
         {
             EventManager.OnFactorySelected -= OpenFactory;
             ResourceManager.OnResourceChanged -= RefreshButtons;
+            BuildingProduction.FactoriesChanged -= RefreshCurrentFactory;
+        }
+
+        private void RefreshCurrentFactory()
+        {
+            OpenFactory(_currentFactory != null && _currentFactory.isActiveAndEnabled
+                ? _currentFactory
+                : GetInitialFactory());
         }
 
         private void OpenFactory(BuildingProduction factory)
@@ -145,7 +156,7 @@ namespace UI
 
         private static int CountValidItems(BuildingProduction factory)
         {
-            if (factory == null || factory.Items == null)
+            if (factory == null)
                 return 0;
 
             int count = 0;
@@ -164,14 +175,10 @@ namespace UI
             if (SelectionManager.SelectedFactory != null && BelongsToTeam(SelectionManager.SelectedFactory))
                 return SelectionManager.SelectedFactory;
 
-            BuildingProduction[] factories = FindObjectsByType<BuildingProduction>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None);
-
-            for (int i = 0; i < factories.Length; i++)
+            foreach (BuildingProduction factory in BuildingProduction.All)
             {
-                if (factories[i] != null && factories[i].isActiveAndEnabled && BelongsToTeam(factories[i]))
-                    return factories[i];
+                if (factory != null && factory.isActiveAndEnabled && BelongsToTeam(factory))
+                    return factory;
             }
 
             return null;

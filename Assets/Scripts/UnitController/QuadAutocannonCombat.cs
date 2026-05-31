@@ -1,7 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-namespace UnitController
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.Units;
+using Strategy.UI;
+namespace Strategy.Units
 {
     public class QuadAutocannonCombat : UnitCombat
     {
@@ -32,7 +37,9 @@ namespace UnitController
             if (muzzle == null)
                 yield break;
 
-            GameObject bullet = BulletPool.Instance.GetBullet();
+            if (!BulletPool.Instance.TryGetBullet(out GameObject bullet))
+                yield break;
+
             Vector3 targetPoint = GetTargetPoint(target);
             Vector3 shotDirection = targetPoint - muzzle.position;
 

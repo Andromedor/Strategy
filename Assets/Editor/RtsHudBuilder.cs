@@ -1,8 +1,9 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
-using DefaultNamespace;
+using Strategy.Core;
+using Strategy.Buildings;
 using TMPro;
-using UI;
+using Strategy.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -11,6 +12,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
 
+using Strategy.Data;
+using Strategy.Units;
 public static class RtsHudBuilder
 {
     private const string MainScenePath = "Assets/Scenes/mainScene.unity";
@@ -690,8 +693,10 @@ public static class RtsHudBuilder
 
     private static void SetPanelEntry(SerializedProperty element, PanelType type, GameObject panel)
     {
-        SerializedProperty typeProperty = element.FindPropertyRelative("type");
-        SerializedProperty objectProperty = element.FindPropertyRelative("panelObject");
+        SerializedProperty typeProperty = element.FindPropertyRelative("_type") ??
+                                          element.FindPropertyRelative("type");
+        SerializedProperty objectProperty = element.FindPropertyRelative("_panelObject") ??
+                                            element.FindPropertyRelative("panelObject");
 
         if (typeProperty != null)
             typeProperty.enumValueIndex = (int)type;
@@ -732,8 +737,10 @@ public static class RtsHudBuilder
         for (int i = 0; i < panels.arraySize; i++)
         {
             SerializedProperty element = panels.GetArrayElementAtIndex(i);
-            SerializedProperty type = element.FindPropertyRelative("type");
-            SerializedProperty panelObject = element.FindPropertyRelative("panelObject");
+            SerializedProperty type = element.FindPropertyRelative("_type") ??
+                                      element.FindPropertyRelative("type");
+            SerializedProperty panelObject = element.FindPropertyRelative("_panelObject") ??
+                                             element.FindPropertyRelative("panelObject");
 
             if (type != null)
                 found.Add(type.enumValueIndex);

@@ -1,10 +1,10 @@
-﻿using System;
-using UnitController;
+using System;
+using Strategy.Units;
 using UnityEngine;
 
-namespace DefaultNamespace
+namespace Strategy.Core
 {
-    public class ResourceManager: MonoBehaviour
+    public class ResourceManager : MonoBehaviour
     {
         public static ResourceManager Instance { get; private set; }
 
@@ -19,9 +19,16 @@ namespace DefaultNamespace
         public int Resource => _resource;
         public int EnemyResource => _enemyResource;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            Instance = null;
+            OnResourceChanged = null;
+        }
+
         private void Awake()
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
@@ -33,6 +40,12 @@ namespace DefaultNamespace
             _enemyResource = _startEnemyResource;
 
             OnResourceChanged?.Invoke(_resource);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         public bool Spend(int amount)

@@ -1,35 +1,47 @@
 using UnityEngine;
 
-public class PlayerCameraInput : MonoBehaviour
+namespace Strategy.Camera
 {
-    private CameraAction m_moveCameraAction;
-   [HideInInspector] public Vector2 M_moveInput;
-   [HideInInspector] public Vector2 M_mouseDelta;
-   [HideInInspector] public float M_mouseScroll;
-   [HideInInspector] public float M_rotateInput;       
-    
-
-    private void Awake()
+    public class PlayerCameraInput : MonoBehaviour
     {
-        m_moveCameraAction = new CameraAction();
-    }
+        private CameraAction _cameraActions;
 
-    public void OnEnable()
-    {
-        m_moveCameraAction.Enable();
-    }
+        public Vector2 MoveInput { get; private set; }
+        public Vector2 MouseDelta { get; private set; }
+        public float MouseScroll { get; private set; }
+        public float RotateInput { get; private set; }
 
-    public void OnDisable()
-    {
-        m_moveCameraAction.Disable();
-    }
+        private void Awake()
+        {
+            _cameraActions = new CameraAction();
+        }
 
-    void Update()
-    {
-        M_moveInput = m_moveCameraAction.MoveCamera.Move.ReadValue<Vector2>();
-        M_mouseDelta = m_moveCameraAction.MoveCamera.RotateMouse.ReadValue<Vector2>();
-        M_rotateInput = m_moveCameraAction.MoveCamera.Rotate.ReadValue<float>();
-        M_mouseScroll = m_moveCameraAction.MoveCamera.Zoom.ReadValue<Vector2>().y;
+        private void OnEnable()
+        {
+            _cameraActions ??= new CameraAction();
+            _cameraActions.Enable();
+        }
+
+        private void OnDisable()
+        {
+            _cameraActions?.Disable();
+        }
+
+        private void OnDestroy()
+        {
+            _cameraActions?.Dispose();
+            _cameraActions = null;
+        }
+
+        private void Update()
+        {
+            if (_cameraActions == null)
+                return;
+
+            MoveInput = _cameraActions.MoveCamera.Move.ReadValue<Vector2>();
+            MouseDelta = _cameraActions.MoveCamera.RotateMouse.ReadValue<Vector2>();
+            RotateInput = _cameraActions.MoveCamera.Rotate.ReadValue<float>();
+            MouseScroll = _cameraActions.MoveCamera.Zoom.ReadValue<Vector2>().y;
+        }
     }
 }
-

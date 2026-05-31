@@ -1,8 +1,12 @@
 #if UNITY_EDITOR
-using UnitController;
+using Strategy.Units;
 using UnityEditor;
 using UnityEngine;
 
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.UI;
 public static class UnitAttackRangeIndicatorInstaller
 {
     private static readonly string[] TankUnitDataPaths =

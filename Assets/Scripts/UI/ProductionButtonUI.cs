@@ -1,11 +1,15 @@
 using System;
-using Data;
+using Strategy.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace UI
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Units;
+using Strategy.UI;
+namespace Strategy.UI
 {
     public class ProductionButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler
     {
@@ -26,6 +30,7 @@ namespace UI
 
         private ProductionItemData _item;
         private Action<ProductionItemData> _onClick;
+        private ProductionItemViewModel _model;
         private Image _background;
         private static RectTransform _tooltipRoot;
         private static TMP_Text _tooltipText;
@@ -51,26 +56,7 @@ namespace UI
                 return;
             }
 
-            if (_icon != null)
-            {
-                _icon.sprite = item.Icon;
-                _icon.enabled = item.Icon != null;
-            }
-
-            if (_fallbackText != null)
-            {
-                _fallbackText.text = "UNIT";
-                _fallbackText.gameObject.SetActive(item.Icon == null);
-            }
-
-            if (_nameText != null)
-                _nameText.text = FormatDisplayName(item.ItemName);
-
-            if (_costText != null)
-                _costText.text = "$" + FormatCost(item.Cost);
-
-            if (_timeText != null)
-                _timeText.text = FormatSeconds(item.ProductionTime);
+            Bind(ProductionItemViewModel.From(item, int.MaxValue));
 
             if (_button != null)
             {
@@ -84,12 +70,7 @@ namespace UI
             if (_button == null || _item == null)
                 return;
 
-            _button.interactable = _item.Cost <= playerResource;
-
-            if (_background != null)
-                _background.color = _button.interactable
-                    ? ButtonFillColor
-                    : DisabledFillColor;
+            BindAvailability(ProductionItemViewModel.From(_item, playerResource));
         }
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -115,6 +96,45 @@ namespace UI
         private void Click()
         {
             _onClick?.Invoke(_item);
+        }
+
+        private void Bind(ProductionItemViewModel model)
+        {
+            _model = model;
+
+            if (_icon != null)
+            {
+                _icon.sprite = model.Icon;
+                _icon.enabled = model.Icon != null;
+            }
+
+            if (_fallbackText != null)
+            {
+                _fallbackText.text = model.FallbackText;
+                _fallbackText.gameObject.SetActive(model.Icon == null);
+            }
+
+            if (_nameText != null)
+                _nameText.text = model.DisplayName;
+
+            if (_costText != null)
+                _costText.text = model.CostText;
+
+            if (_timeText != null)
+                _timeText.text = model.TimeText;
+
+            BindAvailability(model);
+        }
+
+        private void BindAvailability(ProductionItemViewModel model)
+        {
+            _model = model;
+
+            if (_button != null)
+                _button.interactable = model.IsAffordable;
+
+            if (_background != null)
+                _background.color = model.IsAffordable ? ButtonFillColor : DisabledFillColor;
         }
 
         private void CacheReferences()
@@ -299,7 +319,7 @@ namespace UI
             if (_tooltipRoot == null || _tooltipText == null)
                 return;
 
-            _tooltipText.text = BuildTooltipText(_item);
+            _tooltipText.text = _model.TooltipText;
             _tooltipText.ForceMeshUpdate();
 
             _tooltipRoot.sizeDelta = new Vector2(

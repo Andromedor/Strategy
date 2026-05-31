@@ -1,13 +1,15 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
-using Building_and_creat_Uniit;
-using Data;
-using UnitController;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.Units;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
+using Strategy.Core;
+using Strategy.UI;
 public static class SelfPropelledArtilleryPrefabBuilder
 {
     private const string ModelPath = "Assets/Models/SelfPropelledArtillery/SelfPropelledArtillery.fbx";
@@ -155,14 +157,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
         if (prefab == null)
             throw new System.InvalidOperationException($"Could not save prefab: {PrefabPath}");
 
-        unitData.Prefab = prefab;
-        EditorUtility.SetDirty(unitData);
+        ConfigureUnitData(unitData, prefab);
 
         ProductionItemData productionItem = LoadOrCreate<ProductionItemData>(ProductionItemPath);
-        productionItem.ItemName = "Artillery";
-        productionItem.UnitData = unitData;
-        productionItem.Cost = 420;
-        productionItem.ProductionTime = 12f;
+        productionItem.Configure("Artillery", unitData, 420, 12f);
         EditorUtility.SetDirty(productionItem);
 
         AddToFactoryConfig(productionItem);
@@ -295,21 +293,23 @@ public static class SelfPropelledArtilleryPrefabBuilder
         AssetDatabase.CreateFolder(parent, folderName);
     }
 
-    private static void ConfigureUnitData(UnitData data)
+    private static void ConfigureUnitData(UnitData data, GameObject prefab = null)
     {
-        data.MaxHealth = 135f;
-        data.Damage = 110f;
-        data.Speed = 28f;
-        data.AttackRange = 95f;
-        data.AttackDelay = 8.5f;
-        data.FormationSpacing = 6.2f;
-        data.TurretRotationSpeed = 35f;
-        data.GunPitchSpeed = 18f;
-        data.MinGunPitch = -70f;
-        data.MaxGunPitch = 8f;
-        data.AimAngleTolerance = 4f;
-        data.ReturnTurretDelay = 3f;
-        data.IdleTurretRotationSpeed = 24f;
+        data.Configure(
+            prefab != null ? prefab : data.Prefab,
+            135f,
+            110f,
+            28f,
+            95f,
+            8.5f,
+            6.2f,
+            35f,
+            18f,
+            -70f,
+            8f,
+            4f,
+            3f,
+            24f);
         EditorUtility.SetDirty(data);
     }
 
@@ -377,14 +377,8 @@ public static class SelfPropelledArtilleryPrefabBuilder
         if (config == null)
             return;
 
-        if (config.Items == null)
-            config.Items = new List<ProductionItemData>();
-
-        if (!config.Items.Contains(productionItem))
-        {
-            config.Items.Add(productionItem);
-            EditorUtility.SetDirty(config);
-        }
+        config.AddItem(productionItem);
+        EditorUtility.SetDirty(config);
     }
 
     private static Transform FindChildRecursive(Transform parent, string name)

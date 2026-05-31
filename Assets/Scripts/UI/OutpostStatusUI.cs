@@ -1,10 +1,13 @@
-using DefaultNamespace;
+using Strategy.Core;
+using Strategy.Buildings;
 using TMPro;
-using UnitController;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UI
+using Strategy.Data;
+using Strategy.UI;
+namespace Strategy.UI
 {
     public class OutpostStatusUI : MonoBehaviour
     {

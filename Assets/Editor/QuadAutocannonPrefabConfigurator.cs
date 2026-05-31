@@ -1,7 +1,7 @@
-using Data;
+using Strategy.Data;
 using System.Collections.Generic;
-using UnitController;
-using Building_and_creat_Uniit;
+using Strategy.Units;
+using Strategy.Buildings;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -9,6 +9,8 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 
+using Strategy.Core;
+using Strategy.UI;
 public static class QuadAutocannonPrefabConfigurator
 {
     private const string PrefabPath =
@@ -292,20 +294,21 @@ public static class QuadAutocannonPrefabConfigurator
         if (unitData == null)
             return;
 
-        unitData.Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-        unitData.MaxHealth = 72f;
-        unitData.Damage = 3f;
-        unitData.Speed = 58f;
-        unitData.AttackRange = 18f;
-        unitData.AttackDelay = 0.18f;
-        unitData.FormationSpacing = 3.2f;
-        unitData.TurretRotationSpeed = 560f;
-        unitData.GunPitchSpeed = 180f;
-        unitData.MinGunPitch = -7f;
-        unitData.MaxGunPitch = 18f;
-        unitData.AimAngleTolerance = 4.5f;
-        unitData.ReturnTurretDelay = 1.1f;
-        unitData.IdleTurretRotationSpeed = 160f;
+        unitData.Configure(
+            AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath),
+            72f,
+            3f,
+            58f,
+            18f,
+            0.18f,
+            3.2f,
+            560f,
+            180f,
+            -7f,
+            18f,
+            4.5f,
+            1.1f,
+            160f);
         EditorUtility.SetDirty(unitData);
     }
 
@@ -317,10 +320,11 @@ public static class QuadAutocannonPrefabConfigurator
         if (productionData == null)
             return;
 
-        productionData.ItemName = "Quad Autocannon";
-        productionData.UnitData = AssetDatabase.LoadAssetAtPath<UnitData>(UnitDataPath);
-        productionData.Cost = 30;
-        productionData.ProductionTime = 2f;
+        productionData.Configure(
+            "Quad Autocannon",
+            AssetDatabase.LoadAssetAtPath<UnitData>(UnitDataPath),
+            30,
+            2f);
         EditorUtility.SetDirty(productionData);
     }
 

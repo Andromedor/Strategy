@@ -123,3 +123,28 @@ Capturable map objectives that generate resources for their owner.
 - Attach `NavMeshVehicleMotor` + `WheeledVehicleAnimator`. Set `NavMeshAgent.updatePosition = false` and `updateRotation = false` — the motor manages position/rotation directly.
 - `AutocannonVisualEffects` handles per-muzzle particles and recoil.
 - Use `QuadAutocannonPrefabConfigurator` as an editor-script template.
+
+## Development Rules
+
+- Дотримуйся ООП, SOLID, KISS та DRY.
+- Надавай перевагу композиції над наслідуванням.
+- Використовуй наслідування лише коли існує очевидний зв'язок "is-a".
+- Не створюй God Object.
+- Не використовуй зайві Singleton.
+- UI не повинен містити gameplay логіку.
+- Використовуй ScriptableObject для конфігурацій.
+- Використовуй Object Pooling для часто створюваних об'єктів.
+- Не використовуй FindObjectOfType та GameObject.Find у runtime коді.
+- Для взаємодії незалежних систем використовуй EventManager та інтерфейси.
+
+## Workflow
+
+Перед написанням коду:
+
+1. Проаналізуй задачу.
+2. Запропонуй архітектуру.
+3. Перерахуйте необхідні класи.
+4. Поясни відповідальність кожного класу.
+5. Лише після цього генеруй код.
+
+Якщо для якісної архітектури потрібні додаткові класи, інтерфейси, ScriptableObject або сервіси — створюй їх самостійно.

@@ -1,8 +1,12 @@
-using UnitController;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Building_and_creat_Uniit
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.UI;
+namespace Strategy.Buildings
 {
     public class OutpostCaptureVisuals : MonoBehaviour
     {

@@ -1,302 +1,355 @@
-using System;
 using System.Collections.Generic;
+using Strategy.Core;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using Random = UnityEngine.Random;
 
-public class UnitCommandController : MonoBehaviour
+namespace Strategy.Units
 {
-    [SerializeField] private GameObject _cubePrefab;
-    [SerializeField] private LayerMask _enemyMask;
-    [SerializeField] private LayerMask _cubeMask;
-    [SerializeField] private LayerMask _selectedLayerMask;
-    [SerializeField] private List<GameObject> _selections;
-    [SerializeField] private float _formationSpacing = 4f;
-    [SerializeField] private float _navMeshSampleRadius = 3f;
-    [SerializeField] private float _navMeshFallbackSampleRadius = 8f;
-   
-    private Camera _camera;
-    private GameObject _currentSelection;
-
-    private Vector3 _startPoint;
-
-    private void Awake()
+    public class UnitCommandController : MonoBehaviour
     {
-        _camera = GetComponent<Camera>();
-    }
+        [SerializeField] private GameObject _cubePrefab;
+        [SerializeField] private LayerMask _enemyMask;
+        [SerializeField] private LayerMask _cubeMask;
+        [SerializeField] private LayerMask _selectedLayerMask;
+        [SerializeField] private List<GameObject> _selections = new();
+        [SerializeField] private float _formationSpacing = 4f;
+        [SerializeField] private float _navMeshSampleRadius = 3f;
+        [SerializeField] private float _navMeshFallbackSampleRadius = 8f;
+        [SerializeField] private float _selectionDragThreshold = 0.35f;
 
-    private void Update()
-    {
-        if (Mouse.current.rightButton.wasPressedThisFrame && _selections.Count > 0)
-            ControllerUnits();
-        
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-            StartSelection();
+        private UnityEngine.Camera _camera;
+        private GameObject _currentSelection;
+        private Vector3 _startPoint;
+        private bool _isSelectionPressActive;
 
-        if (Mouse.current.leftButton.isPressed && _currentSelection != null)
-            UpdateSelection();
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-            EndSelection();
-    }
-
-    private void ControllerUnits()
-    {
-        if (_selections == null || _selections.Count == 0)
-            return;
-
-        Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
-
-        if (Physics.Raycast(ray, out RaycastHit enemyHit, 1000f, _enemyMask))
+        private void Awake()
         {
-            CommandAttack(enemyHit.transform);
-            return;
+            _camera = GetComponent<UnityEngine.Camera>();
+            _selections ??= new List<GameObject>();
         }
 
-        if (Physics.Raycast(ray, out RaycastHit groundHit, 1000f, _cubeMask))
+        private void Update()
         {
-            CommandMove(groundHit.point);
+            if (Mouse.current == null)
+                return;
+
+            if (Mouse.current.rightButton.wasPressedThisFrame && _selections.Count > 0)
+                ControlUnits();
+
+            if (Mouse.current.leftButton.wasPressedThisFrame)
+                StartSelectionPress();
+
+            if (Mouse.current.leftButton.isPressed && _isSelectionPressActive)
+                UpdateSelectionPress();
+
+            if (Mouse.current.leftButton.wasReleasedThisFrame)
+                EndSelection();
         }
-    }
-    
-    private void CommandAttack(Transform enemy)
-    {
-        foreach (GameObject selection in _selections)
+
+        private void ControlUnits()
         {
-            if (selection == null)
-                continue;
+            if (_selections == null || _selections.Count == 0 || !TryCreateMouseRay(out Ray ray))
+                return;
 
-            UnitCombat attack = selection.GetComponent<UnitCombat>();
+            if (Physics.Raycast(ray, out RaycastHit enemyHit, 1000f, _enemyMask))
+            {
+                CommandAttack(enemyHit.transform);
+                return;
+            }
 
-            if (attack == null)
-                continue;
-
-            attack.SetManualAttackTarget(enemy);
-
-            EventManager.OnUnitAttackTargetChanged?.Invoke(selection, enemy);
+            if (Physics.Raycast(ray, out RaycastHit groundHit, 1000f, _cubeMask))
+                CommandMove(groundHit.point);
         }
-    }
-    
-    private void CommandMove(Vector3 targetPoint)
-    {
-        GameObject firstUnit = GetFirstValidSelection();
 
-        if (firstUnit == null)
-            return;
-
-        Vector3 dir = (targetPoint - firstUnit.transform.position).normalized;
-
-        if (dir.sqrMagnitude < 0.01f)
-            dir = firstUnit.transform.forward;
-
-        Quaternion rotation = Quaternion.LookRotation(dir);
-
-        int index = 0;
-
-        foreach (GameObject selection in _selections)
+        private void CommandAttack(Transform enemy)
         {
-            if (selection == null)
-                continue;
+            foreach (GameObject selection in _selections)
+            {
+                if (selection == null)
+                    continue;
 
-            NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
+                UnitCombat attack = selection.GetComponent<UnitCombat>();
 
-            if (agent == null)
-                continue;
+                if (attack == null)
+                    continue;
 
-            int formationIndex = index++;
-            Vector3 destination = formationIndex == 0
-                ? targetPoint
-                : GetChessFormationPosition(targetPoint, formationIndex, _formationSpacing, rotation);
-
-            if (!TryResolveNavMeshDestination(agent, destination, out destination))
-                continue;
-
-            if (!agent.SetDestination(destination))
-                continue;
-
-            EventManager.OnUnitMoveCommand?.Invoke(selection, destination);
+                attack.SetManualAttackTarget(enemy);
+                EventManager.RaiseUnitAttackTargetChanged(selection, enemy);
+            }
         }
-    }
 
-    private bool TryResolveNavMeshDestination(
-        NavMeshAgent agent,
-        Vector3 requestedDestination,
-        out Vector3 resolvedDestination)
-    {
-        resolvedDestination = requestedDestination;
+        private void CommandMove(Vector3 targetPoint)
+        {
+            GameObject firstUnit = GetFirstValidSelection();
 
-        if (agent == null || !agent.enabled || !TryEnsureAgentOnNavMesh(agent))
-            return false;
+            if (firstUnit == null)
+                return;
 
-        if (!TrySampleDestination(agent, requestedDestination, _navMeshSampleRadius, out NavMeshHit navHit) &&
-            !TrySampleDestination(agent, requestedDestination, _navMeshFallbackSampleRadius, out navHit))
-            return false;
+            Vector3 dir = (targetPoint - firstUnit.transform.position).normalized;
 
-        resolvedDestination = navHit.position;
+            if (dir.sqrMagnitude < 0.01f)
+                dir = firstUnit.transform.forward;
 
-        NavMeshPath path = new NavMeshPath();
+            Quaternion rotation = Quaternion.LookRotation(dir);
+            int index = 0;
 
-        if (!agent.CalculatePath(resolvedDestination, path))
-            return false;
+            foreach (GameObject selection in _selections)
+            {
+                if (selection == null)
+                    continue;
 
-        if (path.status == NavMeshPathStatus.PathComplete)
+                NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
+
+                if (agent == null)
+                    continue;
+
+                int formationIndex = index++;
+                Vector3 destination = formationIndex == 0
+                    ? targetPoint
+                    : GetChessFormationPosition(targetPoint, formationIndex, _formationSpacing, rotation);
+
+                if (!TryResolveNavMeshDestination(agent, destination, out destination))
+                    continue;
+
+                if (!agent.SetDestination(destination))
+                    continue;
+
+                EventManager.RaiseUnitMoveCommand(selection, destination);
+            }
+        }
+
+        private bool TryResolveNavMeshDestination(
+            NavMeshAgent agent,
+            Vector3 requestedDestination,
+            out Vector3 resolvedDestination)
+        {
+            resolvedDestination = requestedDestination;
+
+            if (agent == null || !agent.enabled || !TryEnsureAgentOnNavMesh(agent))
+                return false;
+
+            if (!TrySampleDestination(agent, requestedDestination, _navMeshSampleRadius, out NavMeshHit navHit) &&
+                !TrySampleDestination(agent, requestedDestination, _navMeshFallbackSampleRadius, out navHit))
+                return false;
+
+            resolvedDestination = navHit.position;
+            NavMeshPath path = new NavMeshPath();
+
+            if (!agent.CalculatePath(resolvedDestination, path))
+                return false;
+
+            if (path.status == NavMeshPathStatus.PathComplete)
+                return true;
+
+            if (path.status != NavMeshPathStatus.PathPartial ||
+                path.corners == null ||
+                path.corners.Length < 2)
+                return false;
+
+            Vector3 reachablePoint = path.corners[path.corners.Length - 1];
+            float minMoveDistance = Mathf.Max(0.25f, agent.stoppingDistance + 0.1f);
+
+            if ((reachablePoint - agent.transform.position).sqrMagnitude <= minMoveDistance * minMoveDistance)
+                return false;
+
+            resolvedDestination = reachablePoint;
             return true;
-
-        if (path.status != NavMeshPathStatus.PathPartial ||
-            path.corners == null ||
-            path.corners.Length < 2)
-            return false;
-
-        Vector3 reachablePoint = path.corners[path.corners.Length - 1];
-        float minMoveDistance = Mathf.Max(0.25f, agent.stoppingDistance + 0.1f);
-
-        if ((reachablePoint - agent.transform.position).sqrMagnitude <= minMoveDistance * minMoveDistance)
-            return false;
-
-        resolvedDestination = reachablePoint;
-        return true;
-    }
-
-    private static bool TrySampleDestination(
-        NavMeshAgent agent,
-        Vector3 destination,
-        float radius,
-        out NavMeshHit hit)
-    {
-        return NavMesh.SamplePosition(
-            destination,
-            out hit,
-            Mathf.Max(0.05f, radius),
-            agent.areaMask);
-    }
-
-    private bool TryEnsureAgentOnNavMesh(NavMeshAgent agent)
-    {
-        if (agent.isOnNavMesh)
-            return true;
-
-        if (!NavMesh.SamplePosition(
-                agent.transform.position,
-                out NavMeshHit hit,
-                _navMeshFallbackSampleRadius,
-                agent.areaMask))
-        {
-            return false;
         }
 
-        agent.transform.position = hit.position;
-        agent.Warp(hit.position);
-        return agent.isOnNavMesh;
-    }
-    
-    private Vector3 GetChessFormationPosition(
-        Vector3 center,
-        int index,
-        float spacing,
-        Quaternion rotation)
-    {
-        int formationIndex = index - 1;
-
-        int row = formationIndex / 2 + 1;
-        int side = formationIndex % 2 == 0 ? -1 : 1;
-
-        float x = side * spacing * 0.5f;
-
-        if (row % 2 == 0)
-            x += side * spacing * 0.5f;
-
-        float z = -row * spacing;
-
-        Vector3 localOffset = new Vector3(x, 0f, z);
-
-        return center + rotation * localOffset;
-    }
-    
-    private GameObject GetFirstValidSelection()
-    {
-        foreach (var obj in _selections)
+        private static bool TrySampleDestination(
+            NavMeshAgent agent,
+            Vector3 destination,
+            float radius,
+            out NavMeshHit hit)
         {
-            if (obj != null)
-                return obj;
-        }
-        return null;
-    }
-    
-    private void StartSelection()
-    {
-        if (!RaycastToGround(out var hitPoint)) return;
-        
-        foreach (GameObject selection in _selections)
-        {
-            if (selection == null) continue;
-            
-            EventManager.OnUnitDeselected?.Invoke(selection);
-        }
-        
-        _selections.Clear();
-
-        _startPoint = hitPoint;
-        _currentSelection = Instantiate(_cubePrefab, new Vector3(_startPoint.x, 1f, _startPoint.z),
-            Quaternion.identity, RuntimeObjectContainer.Get("Selection"));
-    }
-
-    private void UpdateSelection()
-    {
-        if (!RaycastToGround(out var currentPoint)) return;
-
-        float x = (_startPoint.x - currentPoint.x) * -1f;
-        float z = _startPoint.z - currentPoint.z;
-
-        if (x < 0 && z < 0)
-        {
-            _currentSelection.transform.localRotation = Quaternion.Euler(0, 180, 0);
-        }
-        else if (x < 0)
-        {
-            _currentSelection.transform.localRotation = Quaternion.Euler(0, 0, 180);
-        }
-        else if (z < 0)
-        {
-            _currentSelection.transform.localRotation = Quaternion.Euler(180, 0, 0);
-        }
-        else
-        {
-            _currentSelection.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            return NavMesh.SamplePosition(
+                destination,
+                out hit,
+                Mathf.Max(0.05f, radius),
+                agent.areaMask);
         }
 
-        _currentSelection.transform.localScale = new Vector3(MathF.Abs(x), 1f, MathF.Abs(z));
-    }
-
-    private void EndSelection()
-    {
-        if (_currentSelection == null) return;
-
-        RaycastHit[] hits = Physics.BoxCastAll(_currentSelection.transform.position,
-            _currentSelection.transform.localScale, Vector3.up, Quaternion.identity, 0, _selectedLayerMask);
-
-        foreach (RaycastHit hit in hits)
+        private bool TryEnsureAgentOnNavMesh(NavMeshAgent agent)
         {
-            if(hit.collider.CompareTag("Enemy")) continue;
-            
-            _selections.Add(hit.transform.gameObject);
-            EventManager.OnUnitSelected?.Invoke(hit.transform.gameObject);
+            if (agent.isOnNavMesh)
+                return true;
+
+            if (!NavMesh.SamplePosition(
+                    agent.transform.position,
+                    out NavMeshHit hit,
+                    _navMeshFallbackSampleRadius,
+                    agent.areaMask))
+            {
+                return false;
+            }
+
+            agent.Warp(hit.position);
+            return agent.isOnNavMesh;
         }
 
-        Destroy(_currentSelection);
-        _currentSelection = null;
-    }
-
-    private bool RaycastToGround(out Vector3 point)
-    {
-        Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
-        if (Physics.Raycast(ray, out RaycastHit hit, 1000, _cubeMask))
+        private static Vector3 GetChessFormationPosition(
+            Vector3 center,
+            int index,
+            float spacing,
+            Quaternion rotation)
         {
+            int formationIndex = index - 1;
+            int row = formationIndex / 2 + 1;
+            int side = formationIndex % 2 == 0 ? -1 : 1;
+            float x = side * spacing * 0.5f;
+
+            if (row % 2 == 0)
+                x += side * spacing * 0.5f;
+
+            float z = -row * spacing;
+
+            return center + rotation * new Vector3(x, 0f, z);
+        }
+
+        private GameObject GetFirstValidSelection()
+        {
+            foreach (GameObject obj in _selections)
+            {
+                if (obj != null)
+                    return obj;
+            }
+
+            return null;
+        }
+
+        private void StartSelectionPress()
+        {
+            if (IsPointerOverUi() || !RaycastToGround(out Vector3 hitPoint))
+                return;
+
+            DeselectAll();
+            _startPoint = hitPoint;
+            _isSelectionPressActive = true;
+        }
+
+        private void UpdateSelectionPress()
+        {
+            if (!RaycastToGround(out Vector3 currentPoint))
+                return;
+
+            if (_currentSelection == null)
+            {
+                Vector3 delta = currentPoint - _startPoint;
+                delta.y = 0f;
+
+                if (delta.sqrMagnitude < _selectionDragThreshold * _selectionDragThreshold)
+                    return;
+
+                BeginSelectionDrag();
+            }
+
+            UpdateSelectionVisual(currentPoint);
+        }
+
+        private void BeginSelectionDrag()
+        {
+            if (_cubePrefab == null)
+                return;
+
+            _currentSelection = Instantiate(
+                _cubePrefab,
+                new Vector3(_startPoint.x, 1f, _startPoint.z),
+                Quaternion.identity,
+                RuntimeObjectContainer.Get("Selection"));
+        }
+
+        private void UpdateSelectionVisual(Vector3 currentPoint)
+        {
+            if (_currentSelection == null)
+                return;
+
+            Vector3 center = (_startPoint + currentPoint) * 0.5f;
+            Vector3 size = new Vector3(
+                Mathf.Abs(currentPoint.x - _startPoint.x),
+                1f,
+                Mathf.Abs(currentPoint.z - _startPoint.z));
+
+            _currentSelection.transform.position = new Vector3(center.x, 1f, center.z);
+            _currentSelection.transform.rotation = Quaternion.identity;
+            _currentSelection.transform.localScale = size;
+        }
+
+        private void EndSelection()
+        {
+            _isSelectionPressActive = false;
+
+            if (_currentSelection == null)
+                return;
+
+            Vector3 halfExtents = _currentSelection.transform.localScale * 0.5f;
+            halfExtents.y = 1f;
+
+            Collider[] hits = Physics.OverlapBox(
+                _currentSelection.transform.position,
+                halfExtents,
+                Quaternion.identity,
+                _selectedLayerMask);
+
+            foreach (Collider hit in hits)
+            {
+                if (hit == null || hit.CompareTag("Enemy"))
+                    continue;
+
+                GameObject unit = hit.transform.gameObject;
+                if (_selections.Contains(unit))
+                    continue;
+
+                _selections.Add(unit);
+                EventManager.RaiseUnitSelected(unit);
+            }
+
+            Destroy(_currentSelection);
+            _currentSelection = null;
+        }
+
+        private void DeselectAll()
+        {
+            foreach (GameObject selection in _selections)
+            {
+                if (selection != null)
+                    EventManager.RaiseUnitDeselected(selection);
+            }
+
+            _selections.Clear();
+        }
+
+        private bool RaycastToGround(out Vector3 point)
+        {
+            point = Vector3.zero;
+
+            if (!TryCreateMouseRay(out Ray ray))
+                return false;
+
+            if (!Physics.Raycast(ray, out RaycastHit hit, 1000f, _cubeMask))
+                return false;
+
             point = hit.point;
             return true;
         }
 
-        point = Vector3.zero;
-        return false;
+        private bool TryCreateMouseRay(out Ray ray)
+        {
+            if (_camera == null)
+                _camera = GetComponent<UnityEngine.Camera>();
+
+            if (_camera == null || Mouse.current == null)
+            {
+                ray = default;
+                return false;
+            }
+
+            ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            return true;
+        }
+
+        private static bool IsPointerOverUi() =>
+            EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
     }
 }

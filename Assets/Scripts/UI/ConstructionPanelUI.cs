@@ -1,11 +1,14 @@
 using System.Collections.Generic;
-using DefaultNamespace;
+using Strategy.Core;
+using Strategy.Buildings;
 using TMPro;
-using UnitController;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UI
+using Strategy.Data;
+using Strategy.UI;
+namespace Strategy.UI
 {
     public class ConstructionPanelUI : MonoBehaviour
     {
@@ -111,7 +114,7 @@ namespace UI
 
             CreateText(buttonObject.transform, "Name", GetDisplayName(building), 16f, FontStyles.Bold,
                 TextAlignmentOptions.Center, new Vector2(0f, -60f), new Vector2(106f, 30f), true);
-            CreateText(buttonObject.transform, "Cost", "$" + Mathf.Max(0, building.economy), 14f, FontStyles.Normal,
+            CreateText(buttonObject.transform, "Cost", "$" + Mathf.Max(0, building.EconomyCost), 14f, FontStyles.Normal,
                 TextAlignmentOptions.Left, new Vector2(9f, 8f), new Vector2(48f, 21f), false);
             CreateText(buttonObject.transform, "Time", FormatSeconds(building.BuildTime), 14f, FontStyles.Normal,
                 TextAlignmentOptions.Right, new Vector2(-9f, 8f), new Vector2(50f, 20f), false);
@@ -310,16 +313,6 @@ namespace UI
             foreach (ConstructionCenter center in ConstructionCenter.All)
             {
                 if (center != null && center.isActiveAndEnabled && BelongsToTeam(center))
-                    return true;
-            }
-
-            ConstructionCenter[] centers = FindObjectsByType<ConstructionCenter>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None);
-
-            for (int i = 0; i < centers.Length; i++)
-            {
-                if (centers[i] != null && centers[i].isActiveAndEnabled && BelongsToTeam(centers[i]))
                     return true;
             }
 

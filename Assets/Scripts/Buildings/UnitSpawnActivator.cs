@@ -1,9 +1,13 @@
-﻿using System.Collections;
-using UnitController;
+using System.Collections;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.AI;
-
-namespace Building_and_creat_Uniit
+
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.UI;
+namespace Strategy.Buildings
 {
     public class UnitSpawnActivator : MonoBehaviour
     {

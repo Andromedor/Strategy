@@ -1,29 +1,41 @@
+using Strategy.UI;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-[CreateAssetMenu(fileName = "BuildingData", menuName = "RTS/BuildingData")]
-public class BuildingData : ScriptableObject
+namespace Strategy.Data
 {
-    [Header("Info")]
-    public string BuildingName;
-    // Назва будівлі.
+    [CreateAssetMenu(fileName = "BuildingData", menuName = "RTS/BuildingData")]
+    public class BuildingData : ScriptableObject
+    {
+        [Header("Info")]
+        [SerializeField, FormerlySerializedAs("BuildingName")] private string _buildingName;
+        [SerializeField, FormerlySerializedAs("Icon")] private Sprite _icon;
 
-    public Sprite Icon;
-    // Іконка для UI.
-    
-    [Header("Prefab")]
-    public GameObject  prefab;
-    
-    [Header("Economy")]
-    public int economy;
-    
-    [Header("Construction")]
-    public float BuildTime;
-    public float MaxHealth;
-    
-    [Header("Placement")]
-    public Vector3 CheckBoxSize;
-    public Vector3 CheckBoxOffset;
-    
-    [Header("UI")]
-    public PanelType PanelType;
+        [Header("Prefab")]
+        [SerializeField, FormerlySerializedAs("prefab")] private GameObject _prefab;
+
+        [Header("Economy")]
+        [SerializeField, FormerlySerializedAs("economy")] private int _economyCost;
+
+        [Header("Construction")]
+        [SerializeField, FormerlySerializedAs("BuildTime")] private float _buildTime;
+        [SerializeField, FormerlySerializedAs("MaxHealth")] private float _maxHealth;
+
+        [Header("Placement")]
+        [SerializeField, FormerlySerializedAs("CheckBoxSize")] private Vector3 _checkBoxSize;
+        [SerializeField, FormerlySerializedAs("CheckBoxOffset")] private Vector3 _checkBoxOffset;
+
+        [Header("UI")]
+        [SerializeField, FormerlySerializedAs("PanelType")] private PanelType _panelType;
+
+        public string BuildingName => _buildingName;
+        public Sprite Icon => _icon;
+        public GameObject Prefab => _prefab;
+        public int EconomyCost => _economyCost;
+        public float BuildTime => _buildTime;
+        public float MaxHealth => _maxHealth;
+        public Vector3 CheckBoxSize => _checkBoxSize;
+        public Vector3 CheckBoxOffset => _checkBoxOffset;
+        public PanelType PanelType => _panelType;
+    }
 }

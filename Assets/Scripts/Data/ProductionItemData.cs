@@ -1,26 +1,37 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace Data
+namespace Strategy.Data
 {
     [CreateAssetMenu(menuName = "RTS/Production Item")]
-    public class ProductionItemData: ScriptableObject
+    public class ProductionItemData : ScriptableObject
     {
         [Header("Info")]
-        public string ItemName;
-        // Назва юніта/апгрейду.
-
-        public Sprite Icon;
-        // Іконка кнопки.
+        [SerializeField, FormerlySerializedAs("ItemName")] private string _itemName;
+        [SerializeField, FormerlySerializedAs("Icon")] private Sprite _icon;
 
         [Header("Production")]
-        public UnitData UnitData;
-        // Якого юніта створюємо.
+        [SerializeField, FormerlySerializedAs("UnitData")] private UnitData _unitData;
+        [SerializeField, FormerlySerializedAs("Cost")] private int _cost;
+        [SerializeField, FormerlySerializedAs("BuildTime")]
+        [FormerlySerializedAs("ProductionTime")]
+        private float _productionTime;
 
-        public int Cost;
-        // Вартість виробництва.
+        public string ItemName => _itemName;
+        public Sprite Icon => _icon;
+        public UnitData UnitData => _unitData;
+        public int Cost => _cost;
+        public float ProductionTime => _productionTime;
 
-        [FormerlySerializedAs("BuildTime")] public float ProductionTime;
-        // Час виробництва.
+        public void Configure(string itemName, UnitData unitData, int cost, float productionTime, Sprite icon = null)
+        {
+            _itemName = itemName;
+            _unitData = unitData;
+            _cost = cost;
+            _productionTime = productionTime;
+
+            if (icon != null)
+                _icon = icon;
+        }
     }
 }

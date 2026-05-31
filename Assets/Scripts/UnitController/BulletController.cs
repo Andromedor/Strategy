@@ -1,7 +1,7 @@
-using Building_and_creat_Uniit;
+using Strategy.Buildings;
 using UnityEngine;
 
-namespace UnitController
+namespace Strategy.Units
 {
     public class BulletController : MonoBehaviour
     {
@@ -15,7 +15,13 @@ namespace UnitController
             FlyBullet();
         }
 
-        public void Initialize (float damage, float speed, Transform target, GameObject owner)
+        private void OnDisable()
+        {
+            _target = null;
+            _owner = null;
+        }
+
+        public void Initialize(float damage, float speed, Transform target, GameObject owner)
         {
             _damage = damage;
             _speed = speed;
@@ -27,7 +33,7 @@ namespace UnitController
         {
             if (_target == null || !_target.gameObject.activeInHierarchy)
             {
-                BulletPool.Instance.ReturnBullet(gameObject);
+                ReturnToPool();
                 return;
             }
 
@@ -39,7 +45,7 @@ namespace UnitController
         {
             if (_owner == null)
             {
-                BulletPool.Instance.ReturnBullet(gameObject);
+                ReturnToPool();
                 return;
             }
 
@@ -51,14 +57,22 @@ namespace UnitController
 
             if (ownerTeam != null && targetTeam != null && ownerTeam.Team == targetTeam.Team)
                 return;
-            
+
             IDamageable damageable = other.GetComponentInParent<IDamageable>();
 
             if (damageable == null)
                 return;
 
             damageable.TakeDamage(_damage);
-            BulletPool.Instance.ReturnBullet(gameObject);
+            ReturnToPool();
+        }
+
+        private void ReturnToPool()
+        {
+            if (BulletPool.Instance != null)
+                BulletPool.Instance.ReturnBullet(gameObject);
+            else
+                gameObject.SetActive(false);
         }
     }
 }

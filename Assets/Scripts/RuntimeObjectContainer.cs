@@ -1,41 +1,49 @@
 using UnityEngine;
-
-public static class RuntimeObjectContainer
+
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Data;
+using Strategy.Units;
+using Strategy.UI;
+namespace Strategy.Core
 {
-    private const string RootName = "Runtime Objects";
-
-    private static Transform _root;
-
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetCache()
+    public static class RuntimeObjectContainer
     {
-        _root = null;
-    }
+        private const string RootName = "Runtime Objects";
 
-    public static Transform Get(string containerName)
-    {
-        Transform root = GetRoot();
-        Transform container = root.Find(containerName);
+        private static Transform _root;
 
-        if (container != null)
-            return container;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCache()
+        {
+            _root = null;
+        }
 
-        GameObject containerObject = new GameObject(containerName);
-        containerObject.transform.SetParent(root, false);
-        return containerObject.transform;
-    }
+        public static Transform Get(string containerName)
+        {
+            Transform root = GetRoot();
+            Transform container = root.Find(containerName);
 
-    private static Transform GetRoot()
-    {
-        if (_root != null)
+            if (container != null)
+                return container;
+
+            GameObject containerObject = new GameObject(containerName);
+            containerObject.transform.SetParent(root, false);
+            return containerObject.transform;
+        }
+
+        private static Transform GetRoot()
+        {
+            if (_root != null)
+                return _root;
+
+            GameObject rootObject = GameObject.Find(RootName);
+
+            if (rootObject == null)
+                rootObject = new GameObject(RootName);
+
+            _root = rootObject.transform;
             return _root;
-
-        GameObject rootObject = GameObject.Find(RootName);
-
-        if (rootObject == null)
-            rootObject = new GameObject(RootName);
-
-        _root = rootObject.transform;
-        return _root;
+        }
     }
 }

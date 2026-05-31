@@ -1,9 +1,10 @@
-using DefaultNamespace;
-using UnitController;
+using Strategy.Buildings;
+using Strategy.Core;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UI
+namespace Strategy.UI
 {
     [RequireComponent(typeof(Button))]
     public class HudPanelButton : MonoBehaviour
@@ -13,8 +14,6 @@ namespace UI
         [SerializeField] private bool _requiresFactory;
         [SerializeField] private TeamType _team = TeamType.Player;
         [SerializeField] private Button _button;
-
-        private float _nextRefreshTime;
 
         private void Awake()
         {
@@ -28,6 +27,7 @@ namespace UI
                 _button.onClick.AddListener(OpenPanel);
 
             EventManager.OnConstructionCentersChanged += Refresh;
+            BuildingProduction.FactoriesChanged += Refresh;
             Refresh();
         }
 
@@ -37,20 +37,12 @@ namespace UI
                 _button.onClick.RemoveListener(OpenPanel);
 
             EventManager.OnConstructionCentersChanged -= Refresh;
-        }
-
-        private void Update()
-        {
-            if (Time.unscaledTime < _nextRefreshTime)
-                return;
-
-            _nextRefreshTime = Time.unscaledTime + 0.35f;
-            Refresh();
+            BuildingProduction.FactoriesChanged -= Refresh;
         }
 
         private void OpenPanel()
         {
-            EventManager.OnOpenPanel?.Invoke(_targetPanel);
+            EventManager.RaiseOpenPanel(_targetPanel);
         }
 
         private void Refresh()
@@ -71,28 +63,14 @@ namespace UI
                     return true;
             }
 
-            ConstructionCenter[] centers = FindObjectsByType<ConstructionCenter>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None);
-
-            for (int i = 0; i < centers.Length; i++)
-            {
-                if (centers[i] != null && centers[i].isActiveAndEnabled && BelongsToTeam(centers[i]))
-                    return true;
-            }
-
             return false;
         }
 
         private bool HasPlayerFactory()
         {
-            BuildingProduction[] factories = FindObjectsByType<BuildingProduction>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None);
-
-            for (int i = 0; i < factories.Length; i++)
+            foreach (BuildingProduction factory in BuildingProduction.All)
             {
-                if (factories[i] != null && factories[i].isActiveAndEnabled && BelongsToTeam(factories[i]))
+                if (factory != null && factory.isActiveAndEnabled && BelongsToTeam(factory))
                     return true;
             }
 

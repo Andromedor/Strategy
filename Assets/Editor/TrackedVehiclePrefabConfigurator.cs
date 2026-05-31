@@ -1,11 +1,14 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
-using Building_and_creat_Uniit;
-using UnitController;
+using Strategy.Buildings;
+using Strategy.Units;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
+using Strategy.Core;
+using Strategy.Data;
+using Strategy.UI;
 public static class TrackedVehiclePrefabConfigurator
 {
     private const string TankPrefabPath =

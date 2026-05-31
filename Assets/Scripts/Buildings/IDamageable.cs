@@ -3,10 +3,10 @@ using Strategy.Buildings;
 using Strategy.Data;
 using Strategy.Units;
 using Strategy.UI;
-namespace Strategy.Units
+namespace Strategy.Buildings
 {
-    public interface ITeam
+    public interface IDamageable
     {
-        TeamType Team { get; }
+        void TakeDamage(float damage);
     }
 }

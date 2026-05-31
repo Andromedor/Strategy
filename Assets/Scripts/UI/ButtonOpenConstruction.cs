@@ -1,10 +1,12 @@
-﻿using DefaultNamespace;
+using Strategy.Buildings;
+using Strategy.Core;
 using UnityEngine;
 using UnityEngine.UI;
-    
-namespace UI
+
+namespace Strategy.UI
 {
-    public class ButtonOpenConstruction: MonoBehaviour
+    [RequireComponent(typeof(Button))]
+    public class ButtonOpenConstruction : MonoBehaviour
     {
         [SerializeField] private Button _button;
 
@@ -16,26 +18,30 @@ namespace UI
 
         private void OnEnable()
         {
-            _button.onClick.AddListener(OpenConstruction);
-            EventManager.OnConstructionCentersChanged += Refresh;
+            if (_button != null)
+                _button.onClick.AddListener(OpenConstruction);
 
+            EventManager.OnConstructionCentersChanged += Refresh;
             Refresh();
         }
 
         private void OnDisable()
         {
-            _button.onClick.RemoveListener(OpenConstruction);
+            if (_button != null)
+                _button.onClick.RemoveListener(OpenConstruction);
+
             EventManager.OnConstructionCentersChanged -= Refresh;
         }
 
         private void OpenConstruction()
         {
-            EventManager.OnOpenPanel?.Invoke(PanelType.Construction);
+            EventManager.RaiseOpenPanel(PanelType.Construction);
         }
-        
+
         private void Refresh()
         {
-            _button.interactable = ConstructionCenter.All.Count > 0;
+            if (_button != null)
+                _button.interactable = ConstructionCenter.All.Count > 0;
         }
     }
 }

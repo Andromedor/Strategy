@@ -1,9 +1,12 @@
 using System.Collections.Generic;
-using DefaultNamespace;
-using UnitController;
+using Strategy.Core;
+using Strategy.Buildings;
+using Strategy.Units;
 using UnityEngine;
 
-namespace Building_and_creat_Uniit
+using Strategy.Data;
+using Strategy.UI;
+namespace Strategy.Buildings
 {
     public class OutpostCaptureZone : MonoBehaviour
     {

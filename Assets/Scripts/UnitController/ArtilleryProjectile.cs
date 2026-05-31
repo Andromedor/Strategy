@@ -1,8 +1,12 @@
 using System.Collections.Generic;
-using Building_and_creat_Uniit;
+using Strategy.Buildings;
 using UnityEngine;
 
-namespace UnitController
+using Strategy.Core;
+using Strategy.Data;
+using Strategy.Units;
+using Strategy.UI;
+namespace Strategy.Units
 {
     public class ArtilleryProjectile : MonoBehaviour
     {
@@ -25,6 +29,7 @@ namespace UnitController
 
         private static Shader _cachedShader;
         private static Mesh _cachedParticleMesh;
+        private static readonly Dictionary<int, Material> CachedMaterials = new();
 
         /// <summary>
         /// Створює ігровий об'єкт-снаряд (сфера-примітив) із матеріалом і компонентом снаряда.
@@ -324,7 +329,7 @@ namespace UnitController
             ParticleSystemRenderer renderer = particleSystem.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Mesh;
             renderer.mesh = GetParticleMesh();
-            renderer.material = CreateMaterial(colorA, 0.35f);
+            renderer.sharedMaterial = CreateMaterial(colorA, 0.35f);
 
             return particleSystem;
         }
@@ -350,6 +355,11 @@ namespace UnitController
         /// </summary>
         private static Material CreateMaterial(Color color, float smoothness)
         {
+            int key = GetMaterialKey(color, smoothness);
+
+            if (CachedMaterials.TryGetValue(key, out Material cachedMaterial) && cachedMaterial != null)
+                return cachedMaterial;
+
             if (_cachedShader == null)
             {
                 _cachedShader =
@@ -370,7 +380,23 @@ namespace UnitController
             if (material.HasProperty("_Smoothness"))
                 material.SetFloat("_Smoothness", smoothness);
 
+            CachedMaterials[key] = material;
             return material;
+        }
+
+        private static int GetMaterialKey(Color color, float smoothness)
+        {
+            Color32 color32 = color;
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + color32.r;
+                hash = hash * 31 + color32.g;
+                hash = hash * 31 + color32.b;
+                hash = hash * 31 + color32.a;
+                hash = hash * 31 + Mathf.RoundToInt(smoothness * 1000f);
+                return hash;
+            }
         }
     }
 
