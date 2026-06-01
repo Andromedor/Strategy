@@ -6,9 +6,9 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Artillery-specific range indicator. Inherits all circle-drawing behaviour from
-    /// UnitAttackRangeIndicator without modification; exists as a distinct type so artillery
-    /// units can be given a different color or line style via Inspector overrides if needed.
+    /// Індикатор дальності, специфічний для артилерії. Успадковує всю поведінку малювання кола від
+    /// UnitAttackRangeIndicator без змін; існує як окремий тип, щоб артилерійні юніти могли отримати
+    /// інший колір або стиль лінії через налаштування Інспектора за потреби.
     /// </summary>
     public class ArtilleryRangeIndicator : UnitAttackRangeIndicator
     {

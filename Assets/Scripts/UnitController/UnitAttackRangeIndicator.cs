@@ -9,9 +9,9 @@ using Strategy.UI;
 namespace Strategy.Units
 {
     /// <summary>
-    /// Draws a circular LineRenderer around the unit showing its attack range. The circle is shown
-    /// automatically when the unit is selected (if _showWhileSelected is true) and can optionally
-    /// be toggled on/off with a configurable key while selected. Subclassed by ArtilleryRangeIndicator.
+    /// Малює круговий LineRenderer навколо юніта, що показує дальність атаки. Коло відображається
+    /// автоматично, коли юніт вибраний (якщо _showWhileSelected = true), і може необов'язково
+    /// перемикатися клавішею при виборі. Успадковується ArtilleryRangeIndicator.
     /// </summary>
     public class UnitAttackRangeIndicator : MonoBehaviour
     {
@@ -77,8 +77,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Each late update, redraws the circle only when the radius or position has changed
-        /// by more than epsilon, avoiding per-frame mesh rebuilds when stationary.
+        /// При кожному LateUpdate перемальовує коло лише тоді, коли радіус або позиція змінилися
+        /// більше ніж на епсилон, уникаючи перебудови меша щокадру при нерухомому юніті.
         /// </summary>
         private void LateUpdate()
         {
@@ -95,7 +95,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Responds to the global unit-selected event; shows the range circle for this unit.
+        /// Реагує на глобальну подію вибору юніта; показує коло дальності для цього юніта.
         /// </summary>
         private void OnUnitSelected(GameObject unit)
         {
@@ -107,7 +107,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Responds to the global unit-deselected event; hides the range circle for this unit.
+        /// Реагує на глобальну подію скасування вибору юніта; приховує коло дальності для цього юніта.
         /// </summary>
         private void OnUnitDeselected(GameObject unit)
         {
@@ -120,7 +120,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Instantiates the LineRenderer child object and its runtime material for the range circle.
+        /// Створює дочірній об'єкт LineRenderer та runtime-матеріал для кола дальності.
         /// </summary>
         private void CreateLine()
         {
@@ -146,7 +146,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Creates a runtime unlit material for the LineRenderer using the best available shader.
+        /// Створює runtime unlit-матеріал для LineRenderer, використовуючи найкращий доступний шейдер.
         /// </summary>
         private Material CreateLineMaterial()
         {
@@ -168,8 +168,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Determines whether the circle should be visible based on selection state, _showWhileSelected,
-        /// and key-toggle state; then calls Show or Hide.
+        /// Визначає, чи має бути коло видимим на основі стану вибору, _showWhileSelected
+        /// та стану перемикача клавіші; потім викликає Show або Hide.
         /// </summary>
         private void ApplyVisibility()
         {
@@ -186,7 +186,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Enables the LineRenderer and forces an immediate circle redraw at the current position and range.
+        /// Вмикає LineRenderer та примусово виконує негайне перемалювання кола у поточній позиції та дальності.
         /// </summary>
         private void Show()
         {
@@ -199,7 +199,7 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Disables the LineRenderer so the circle is no longer rendered.
+        /// Вимикає LineRenderer, щоб коло більше не відображалось.
         /// </summary>
         private void Hide()
         {
@@ -210,8 +210,8 @@ namespace Strategy.Units
         }
 
         /// <summary>
-        /// Recomputes all LineRenderer positions for a circle of the given radius centred at center,
-        /// elevated by _heightOffset, and caches radius and position for dirty-checking.
+        /// Перераховує всі позиції LineRenderer для кола заданого радіуса з центром у center,
+        /// піднятим на _heightOffset, та кешує радіус і позицію для перевірки змін.
         /// </summary>
         private void UpdateCircle(Vector3 center, float radius)
         {
