@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Strategy.Units;
 using UnityEngine;
+using UnityEngine.AI;
 
 using Strategy.Core;
 using Strategy.Buildings;
@@ -20,6 +21,8 @@ namespace Strategy.Units
       [SerializeField] private Material _attackLineMaterial; // Червона стрілка для команд атаки ворога.
 
       [Header("Visual Settings")]
+      [SerializeField, Min(0f)] private float _arrivalDistancePadding = 0.35f;
+      [SerializeField, Min(0f)] private float _arrivalVelocityThreshold = 0.2f;
       [SerializeField] private float _lineWidth  = 0.15f;   // Товщина лінії у світових одиницях.
       [SerializeField] private float _heightOffset = 0.2f;   // Висота над землею для обох кінців лінії.
 
@@ -28,6 +31,7 @@ namespace Strategy.Units
       private readonly Dictionary<GameObject, Transform> _attackTargets = new(); // Останній трансформ цілі атаки для кожного юніта.
       private readonly List<GameObject> _unitsToRemove = new();  // Тимчасовий список для безпечного видалення знищених юнітів у циклі оновлення.
       private readonly List<GameObject> _activeLineUnits = new();
+      private readonly List<GameObject> _moveTargetUnits = new();
 
 
       private void OnEnable()
@@ -48,6 +52,7 @@ namespace Strategy.Units
 
       private void Update()
       {
+        ClearArrivedMoveTargets();
         UpdateLines();
       }
 
@@ -146,6 +151,12 @@ namespace Strategy.Units
           }
           else if (_moveTargets.TryGetValue(unit, out Vector3 moveTarget))  // Оновлення зеленої лінії переміщення.
           {
+            if (HasMoveCommandArrived(unit, moveTarget))
+            {
+              ClearMoveTarget(unit);
+              continue;
+            }
+
             UpdateLine(unit, line, moveTarget);
           }
         }
@@ -181,9 +192,50 @@ namespace Strategy.Units
 
         if (_moveTargets.TryGetValue(unit, out Vector3 moveTarget))
         {
+          if (HasMoveCommandArrived(unit, moveTarget))
+          {
+            ClearMoveTarget(unit);
+            return;
+          }
+
           LineRenderer line = GetOrCreateLine(unit);
           line.material = _moveLineMaterial;
           UpdateLine(unit, line, moveTarget);
+        }
+      }
+
+      private void ClearMoveTarget(GameObject unit)
+      {
+        if (unit == null)
+          return;
+
+        _moveTargets.Remove(unit);
+        HideLineOnly(unit);
+      }
+
+      /// <summary>
+      /// Очищає кеш руху навіть без активної лінії: юніт міг доїхати, поки був не вибраний, і стрілка не має повернутися при повторному виборі.
+      /// </summary>
+      private void ClearArrivedMoveTargets()
+      {
+        _moveTargetUnits.Clear();
+
+        foreach (GameObject unit in _moveTargets.Keys)
+          _moveTargetUnits.Add(unit);
+
+        foreach (GameObject unit in _moveTargetUnits)
+        {
+          if (unit == null)
+          {
+            ClearUnit(unit);
+            continue;
+          }
+
+          if (_moveTargets.TryGetValue(unit, out Vector3 moveTarget) &&
+              HasMoveCommandArrived(unit, moveTarget))
+          {
+            ClearMoveTarget(unit);
+          }
         }
       }
 
@@ -244,6 +296,38 @@ namespace Strategy.Units
 
         line.SetPosition(0, start);
         line.SetPosition(1, end);
+      }
+
+      /// <summary>
+      /// Визначає прибуття з урахуванням stoppingDistance агента, бо техніка не завжди має стояти точно в targetPosition.
+      /// </summary>
+      private bool HasMoveCommandArrived(GameObject unit, Vector3 targetPosition)
+      {
+        if (unit == null)
+          return true;
+
+        NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
+
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh || agent.pathPending)
+          return false;
+
+        float arrivalDistance = Mathf.Max(0.05f, agent.stoppingDistance + _arrivalDistancePadding);
+        float arrivalDistanceSqr = arrivalDistance * arrivalDistance;
+        Vector3 targetOffset = targetPosition - unit.transform.position;
+        targetOffset.y = 0f;
+
+        if (targetOffset.sqrMagnitude <= arrivalDistanceSqr)
+          return true;
+
+        if (!agent.hasPath)
+          return false;
+
+        Vector3 velocity = agent.velocity;
+        velocity.y = 0f;
+        float velocityThresholdSqr = _arrivalVelocityThreshold * _arrivalVelocityThreshold;
+
+        return agent.remainingDistance <= arrivalDistance &&
+               velocity.sqrMagnitude <= velocityThresholdSqr;
       }
 
       /// <summary>

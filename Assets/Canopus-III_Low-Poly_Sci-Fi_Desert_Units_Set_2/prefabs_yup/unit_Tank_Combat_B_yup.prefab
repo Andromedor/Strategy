@@ -368,6 +368,8 @@ MonoBehaviour:
   _exitDistance: 0.25
   _navMeshSnapRadius: 6
   _navMeshFallbackSnapRadius: 14
+  _trafficCorridorPadding: 0.85
+  _trafficYieldWaitTimeout: 3
 --- !u!114 &5679036690234447122
 MonoBehaviour:
   m_ObjectHideFlags: 0

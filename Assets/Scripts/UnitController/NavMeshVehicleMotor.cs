@@ -36,6 +36,7 @@ namespace Strategy.Units
         protected float _currentSpeed;
         protected float _currentSteerAngle;
         protected bool _waitingForAlignment;
+        private UnitTrafficCoordinator _trafficCoordinator;
 
         public float CurrentSpeed => _currentSpeed;
         public float CurrentSteerAngle => _currentSteerAngle;
@@ -51,6 +52,7 @@ namespace Strategy.Units
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
 
+            _trafficCoordinator = UnitTrafficCoordinator.Ensure(gameObject);
             ApplyAgentTuning();
         }
 
@@ -58,6 +60,9 @@ namespace Strategy.Units
         {
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
+
+            if (_trafficCoordinator == null)
+                _trafficCoordinator = UnitTrafficCoordinator.Ensure(gameObject);
 
             _lastPosition = transform.position;
             _currentVelocity = Vector3.zero;

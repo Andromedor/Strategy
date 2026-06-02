@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Strategy.Buildings;
 using Strategy.Core;
 using UnityEngine;
 using UnityEngine.AI;
@@ -22,8 +23,14 @@ namespace Strategy.Units
         [SerializeField] private float _formationSpacing = 4f;
         [SerializeField] private float _navMeshSampleRadius = 3f;
         [SerializeField] private float _navMeshFallbackSampleRadius = 8f;
+        [SerializeField, Min(0f)] private float _destinationClearancePadding = 0.75f;
+        [SerializeField, Min(1)] private int _destinationSearchRings = 4;
+        [SerializeField, Min(4)] private int _destinationCandidatesPerRing = 8;
         [SerializeField] private float _selectionDragThreshold = 0.35f;
+        [SerializeField] private LayerMask _destinationBlockerMask;
 
+        private readonly Collider[] _destinationOverlapBuffer = new Collider[32];
+        private readonly List<Vector3> _reservedMoveDestinations = new();
         private UnityEngine.Camera _camera;
         private GameObject _currentSelection;
         private Vector3 _startPoint;
@@ -33,6 +40,9 @@ namespace Strategy.Units
         {
             _camera = GetComponent<UnityEngine.Camera>();
             _selections ??= new List<GameObject>();
+
+            if (_destinationBlockerMask.value == 0)
+                _destinationBlockerMask = LayerMask.GetMask("PlayerUnit", "EnemyUnit");
         }
 
         private void Update()
@@ -104,22 +114,34 @@ namespace Strategy.Units
                 dir = firstUnit.transform.forward;
 
             Quaternion rotation = Quaternion.LookRotation(dir);
+            float formationSpacing = ResolveFormationSpacing();
             int index = 0;
+            _reservedMoveDestinations.Clear();
 
             foreach (GameObject selection in _selections)
             {
                 if (selection == null)
                     continue;
 
-                NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
-
-                if (agent == null)
-                    continue;
-
                 int formationIndex = index++;
                 Vector3 destination = formationIndex == 0
                     ? targetPoint
-                    : GetChessFormationPosition(targetPoint, formationIndex, _formationSpacing, rotation);
+                    : GetChessFormationPosition(targetPoint, formationIndex, formationSpacing, rotation);
+
+                NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
+                UnitSpawnActivator spawnActivator = selection.GetComponent<UnitSpawnActivator>();
+
+                if (spawnActivator != null && spawnActivator.IsSpawning)
+                {
+                    Vector3 queuedDestination = ResolveQueuedSpawnMoveDestination(agent, destination);
+                    spawnActivator.QueueMoveAfterSpawn(queuedDestination);
+                    ReserveMoveDestination(agent, queuedDestination);
+                    EventManager.RaiseUnitMoveCommand(selection, queuedDestination);
+                    continue;
+                }
+
+                if (agent == null)
+                    continue;
 
                 if (!TryResolveNavMeshDestination(agent, destination, out destination))
                     continue;
@@ -127,6 +149,7 @@ namespace Strategy.Units
                 if (!agent.SetDestination(destination))
                     continue;
 
+                ReserveMoveDestination(agent, destination);
                 EventManager.RaiseUnitMoveCommand(selection, destination);
             }
         }
@@ -145,11 +168,77 @@ namespace Strategy.Units
             if (agent == null || !agent.enabled || !TryEnsureAgentOnNavMesh(agent))
                 return false;
 
-            if (!TrySampleDestination(agent, requestedDestination, _navMeshSampleRadius, out NavMeshHit navHit) &&
-                !TrySampleDestination(agent, requestedDestination, _navMeshFallbackSampleRadius, out navHit))
-                return false;
+            return TryFindReachableMoveDestination(agent, requestedDestination, out resolvedDestination);
+        }
 
-            resolvedDestination = navHit.position;
+        private Vector3 ResolveQueuedSpawnMoveDestination(NavMeshAgent agent, Vector3 requestedDestination)
+        {
+            if (agent == null)
+                return requestedDestination;
+
+            if (TryFindOpenMoveDestination(agent, requestedDestination, out Vector3 destination))
+                return destination;
+
+            return requestedDestination;
+        }
+
+        private bool TryFindReachableMoveDestination(
+            NavMeshAgent agent,
+            Vector3 requestedDestination,
+            out Vector3 resolvedDestination)
+        {
+            foreach (Vector3 candidate in GetDestinationCandidates(agent, requestedDestination))
+            {
+                if (!TrySampleDestination(agent, candidate, _navMeshSampleRadius, out NavMeshHit navHit) &&
+                    !TrySampleDestination(agent, candidate, _navMeshFallbackSampleRadius, out navHit))
+                {
+                    continue;
+                }
+
+                float clearanceRadius = ResolveDestinationClearanceRadius(agent);
+
+                if (IsDestinationBlocked(agent, navHit.position, clearanceRadius))
+                    continue;
+
+                if (TryCalculateReachableDestination(agent, navHit.position, clearanceRadius, out resolvedDestination))
+                    return true;
+            }
+
+            resolvedDestination = requestedDestination;
+            return false;
+        }
+
+        private bool TryFindOpenMoveDestination(
+            NavMeshAgent agent,
+            Vector3 requestedDestination,
+            out Vector3 resolvedDestination)
+        {
+            foreach (Vector3 candidate in GetDestinationCandidates(agent, requestedDestination))
+            {
+                if (!TrySampleDestination(agent, candidate, _navMeshSampleRadius, out NavMeshHit navHit) &&
+                    !TrySampleDestination(agent, candidate, _navMeshFallbackSampleRadius, out navHit))
+                {
+                    continue;
+                }
+
+                if (IsDestinationBlocked(agent, navHit.position, ResolveDestinationClearanceRadius(agent)))
+                    continue;
+
+                resolvedDestination = navHit.position;
+                return true;
+            }
+
+            resolvedDestination = requestedDestination;
+            return false;
+        }
+
+        private bool TryCalculateReachableDestination(
+            NavMeshAgent agent,
+            Vector3 requestedDestination,
+            float clearanceRadius,
+            out Vector3 resolvedDestination)
+        {
+            resolvedDestination = requestedDestination;
             NavMeshPath path = new NavMeshPath();
 
             if (!agent.CalculatePath(resolvedDestination, path))
@@ -169,8 +258,127 @@ namespace Strategy.Units
             if ((reachablePoint - agent.transform.position).sqrMagnitude <= minMoveDistance * minMoveDistance)
                 return false;
 
+            if (IsDestinationBlocked(agent, reachablePoint, clearanceRadius))
+                return false;
+
             resolvedDestination = reachablePoint;
             return true;
+        }
+
+        private IEnumerable<Vector3> GetDestinationCandidates(NavMeshAgent agent, Vector3 center)
+        {
+            yield return center;
+
+            int rings = Mathf.Max(1, _destinationSearchRings);
+            int candidatesPerRing = Mathf.Max(4, _destinationCandidatesPerRing);
+            float spacing = ResolveDestinationSpacing(agent);
+
+            for (int ring = 1; ring <= rings; ring++)
+            {
+                float radius = spacing * ring;
+                float ringOffset = ring % 2 == 0 ? 0f : 0.5f;
+
+                for (int i = 0; i < candidatesPerRing; i++)
+                {
+                    float angle = ((i + ringOffset) / candidatesPerRing) * Mathf.PI * 2f;
+                    yield return center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                }
+            }
+        }
+
+        private bool IsDestinationBlocked(NavMeshAgent agent, Vector3 destination, float clearanceRadius)
+        {
+            float reservedDistance = clearanceRadius * 2f;
+            float reservedDistanceSqr = reservedDistance * reservedDistance;
+
+            foreach (Vector3 reservedDestination in _reservedMoveDestinations)
+            {
+                Vector3 offset = destination - reservedDestination;
+                offset.y = 0f;
+
+                if (offset.sqrMagnitude <= reservedDistanceSqr)
+                    return true;
+            }
+
+            if (_destinationBlockerMask.value == 0)
+                return UnitDestinationReservations.IsReservedByOther(
+                    agent != null ? agent.gameObject : null,
+                    destination,
+                    clearanceRadius);
+
+            if (UnitDestinationReservations.IsReservedByOther(
+                    agent != null ? agent.gameObject : null,
+                    destination,
+                    clearanceRadius))
+            {
+                return true;
+            }
+
+            int hitCount = Physics.OverlapSphereNonAlloc(
+                destination + Vector3.up * 0.5f,
+                clearanceRadius,
+                _destinationOverlapBuffer,
+                _destinationBlockerMask,
+                QueryTriggerInteraction.Ignore);
+
+            Transform ownRoot = agent != null ? agent.transform.root : null;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider hit = _destinationOverlapBuffer[i];
+
+                if (hit == null || !hit.enabled)
+                    continue;
+
+                if (ownRoot != null && hit.transform.root == ownRoot)
+                    continue;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ReserveMoveDestination(NavMeshAgent agent, Vector3 destination)
+        {
+            if (agent == null)
+                return;
+
+            _reservedMoveDestinations.Add(destination);
+        }
+
+        private float ResolveFormationSpacing()
+        {
+            float spacing = Mathf.Max(0.1f, _formationSpacing);
+
+            foreach (GameObject selection in _selections)
+            {
+                if (selection == null)
+                    continue;
+
+                NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
+
+                if (agent == null)
+                    continue;
+
+                spacing = Mathf.Max(spacing, ResolveDestinationSpacing(agent));
+            }
+
+            return spacing;
+        }
+
+        private float ResolveDestinationSpacing(NavMeshAgent agent)
+        {
+            if (agent == null)
+                return Mathf.Max(0.1f, _formationSpacing);
+
+            return Mathf.Max(_formationSpacing, agent.radius * 2f + _destinationClearancePadding);
+        }
+
+        private float ResolveDestinationClearanceRadius(NavMeshAgent agent)
+        {
+            float radius = agent != null ? agent.radius : _formationSpacing * 0.5f;
+            return Mathf.Max(0.1f, radius + _destinationClearancePadding);
         }
 
         /// <summary>Обгортає NavMesh.SamplePosition, обмежений areaMask агента, із затиснутим мінімальним радіусом.</summary>
