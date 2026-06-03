@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 206e8dc0e61644efb36a07539a3d2c70, type: 3}
   m_Name: SelfPropelledArtilleryProduction
   m_EditorClassIdentifier: Assembly-CSharp::Data.ProductionItemData
-  ItemName: Artillery
-  Icon: {fileID: 0}
-  UnitData: {fileID: 11400000, guid: 641cc8a7c3ee4a849b57bbf8b1748b45, type: 2}
-  Cost: 420
-  ProductionTime: 12
+  _itemName: Artillery
+  _icon: {fileID: 21300000, guid: 7195a8617eed35b4095f5867800c735c, type: 3}
+  _unitData: {fileID: 11400000, guid: 641cc8a7c3ee4a849b57bbf8b1748b45, type: 2}
+  _cost: 420
+  _productionTime: 12

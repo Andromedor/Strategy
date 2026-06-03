@@ -16,8 +16,10 @@ namespace Strategy.Core
         public static event Action<PanelType> OnOpenPanel;
         public static event Action<GameObject> OnUnitSelected;
         public static event Action<GameObject> OnUnitDeselected;
+        public static event Action<GameObject> OnUnitDestroyed;
         public static event Action<GameObject, Vector3> OnUnitMoveCommand;
         public static event Action<GameObject, Transform> OnUnitAttackTargetChanged;
+        public static event Action<int, int, Sprite, string> OnControlGroupUpdated;
         public static event Action<BuildingProduction> OnFactorySelected;
         public static event Action<ConstructionCenter> OnConstructionCenterSelected;
         public static event Action OnConstructionClosed;
@@ -30,8 +32,10 @@ namespace Strategy.Core
             OnOpenPanel = null;
             OnUnitSelected = null;
             OnUnitDeselected = null;
+            OnUnitDestroyed = null;
             OnUnitMoveCommand = null;
             OnUnitAttackTargetChanged = null;
+            OnControlGroupUpdated = null;
             OnFactorySelected = null;
             OnConstructionCenterSelected = null;
             OnConstructionClosed = null;
@@ -51,6 +55,10 @@ namespace Strategy.Core
         public static void RaiseUnitDeselected(GameObject unit) =>
             OnUnitDeselected?.Invoke(unit);
 
+        /// <summary>Сповіщає системи, що юніт знищений і має бути прибраний із довгоживучих списків на кшталт control groups.</summary>
+        public static void RaiseUnitDestroyed(GameObject unit) =>
+            OnUnitDestroyed?.Invoke(unit);
+
         /// <summary>Розсилає наказ переміщення юніта до вказаної точки у світових координатах.</summary>
         public static void RaiseUnitMoveCommand(GameObject unit, Vector3 destination) =>
             OnUnitMoveCommand?.Invoke(unit, destination);
@@ -58,6 +66,13 @@ namespace Strategy.Core
         /// <summary>Розсилає повідомлення, що юніту задано ручну ціль атаки.</summary>
         public static void RaiseUnitAttackTargetChanged(GameObject unit, Transform target) =>
             OnUnitAttackTargetChanged?.Invoke(unit, target);
+
+        /// <summary>Оновлює HUD-індикатор control group: номер групи та кількість живих юнітів у ній.</summary>
+        public static void RaiseControlGroupUpdated(int groupNumber, int unitCount) =>
+            RaiseControlGroupUpdated(groupNumber, unitCount, null, string.Empty);
+
+        public static void RaiseControlGroupUpdated(int groupNumber, int unitCount, Sprite icon, string fallbackText) =>
+            OnControlGroupUpdated?.Invoke(groupNumber, unitCount, icon, fallbackText);
 
         /// <summary>Сповіщає HUD, що обрано будівлю-завод.</summary>
         public static void RaiseFactorySelected(BuildingProduction factory) =>

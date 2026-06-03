@@ -340,7 +340,10 @@ public static class QuadAutocannonPrefabConfigurator
             18f,
             4.5f,
             1.1f,
-            160f);
+            160f,
+            "Quad Autocannon",
+            null,
+            "QA");
         EditorUtility.SetDirty(unitData);
     }
 

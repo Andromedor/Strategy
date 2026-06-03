@@ -12,6 +12,9 @@ namespace Strategy.Data
     {
         [Header("Production")]
         [SerializeField, FormerlySerializedAs("Prefab")] private GameObject _prefab;
+        [SerializeField, FormerlySerializedAs("DisplayName")] private string _displayName;
+        [SerializeField, FormerlySerializedAs("SelectionIcon")] private Sprite _selectionIcon;
+        [SerializeField, FormerlySerializedAs("SelectionFallbackText")] private string _selectionFallbackText;
 
         [Header("Combat")]
         [SerializeField, FormerlySerializedAs("MaxHealth")] private float _maxHealth = 100f;
@@ -33,6 +36,9 @@ namespace Strategy.Data
         [SerializeField, FormerlySerializedAs("IdleTurretRotationSpeed")] private float _idleTurretRotationSpeed = 90f;
 
         public GameObject Prefab => _prefab;
+        public string DisplayName => _displayName;
+        public Sprite SelectionIcon => _selectionIcon;
+        public string SelectionFallbackText => _selectionFallbackText;
         public float MaxHealth => _maxHealth;
         public float Damage => _damage;
         public float Speed => _speed;
@@ -65,7 +71,10 @@ namespace Strategy.Data
             float maxGunPitch,
             float aimAngleTolerance,
             float returnTurretDelay,
-            float idleTurretRotationSpeed)
+            float idleTurretRotationSpeed,
+            string displayName = null,
+            Sprite selectionIcon = null,
+            string selectionFallbackText = null)
         {
             _prefab = prefab;
             _maxHealth = maxHealth;
@@ -81,6 +90,15 @@ namespace Strategy.Data
             _aimAngleTolerance = aimAngleTolerance;
             _returnTurretDelay = returnTurretDelay;
             _idleTurretRotationSpeed = idleTurretRotationSpeed;
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+                _displayName = displayName;
+
+            if (selectionIcon != null)
+                _selectionIcon = selectionIcon;
+
+            if (!string.IsNullOrWhiteSpace(selectionFallbackText))
+                _selectionFallbackText = selectionFallbackText;
         }
     }
 }

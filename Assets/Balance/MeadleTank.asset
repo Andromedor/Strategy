@@ -12,17 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e48060335b59034cb6b3718be1e9fc1, type: 3}
   m_Name: MeadleTank
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  Prefab: {fileID: 2218461069028294333, guid: b9d308d9f071bbc46be660ddc91ca2ee, type: 3}
-  MaxHealth: 100
-  Damage: 20
-  Speed: 10
-  AttackRange: 30
-  AttackDelay: 3
-  FormationSpacing: 4
-  TurretRotationSpeed: 720
-  GunPitchSpeed: 90
-  MinGunPitch: -5
-  MaxGunPitch: 20
-  AimAngleTolerance: 3
-  ReturnTurretDelay: 2
-  IdleTurretRotationSpeed: 90
+  _prefab: {fileID: 2218461069028294333, guid: b9d308d9f071bbc46be660ddc91ca2ee, type: 3}
+  _displayName: Medium Tank
+  _selectionIcon: {fileID: 0}
+  _selectionFallbackText: MT
+  _maxHealth: 100
+  _damage: 20
+  _speed: 10
+  _attackRange: 30
+  _attackDelay: 3
+  _formationSpacing: 4
+  _turretRotationSpeed: 720
+  _gunPitchSpeed: 90
+  _minGunPitch: -5
+  _maxGunPitch: 20
+  _aimAngleTolerance: 3
+  _returnTurretDelay: 2
+  _idleTurretRotationSpeed: 90

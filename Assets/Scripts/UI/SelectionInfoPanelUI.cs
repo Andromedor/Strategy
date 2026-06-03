@@ -21,9 +21,15 @@ namespace Strategy.UI
         [SerializeField] private TMP_Text _statsText;
         [SerializeField] private Transform _compactListRoot;
         [SerializeField] private TMP_Text _compactListTextPrefab;
+        [SerializeField] private Transform _unitCardRoot;
+        [SerializeField] private SelectionUnitCardUI _unitCardPrefab;
+        [SerializeField, Min(1)] private int _maxVisibleUnitCards = 8;
 
         private readonly List<GameObject> _selectedUnits = new();
         private readonly List<TMP_Text> _compactRows = new();
+        private readonly List<SelectionUnitCardUI> _unitCards = new();
+        private readonly List<SelectionUnitGroup> _unitGroups = new();
+        private readonly List<SelectionUnitCardViewModel> _visibleCardModels = new();
         private Object _selectedObject;
         private float _nextRefreshTime;
 
@@ -34,7 +40,7 @@ namespace Strategy.UI
             EventManager.OnFactorySelected += OnFactorySelected;
             EventManager.OnConstructionCenterSelected += OnConstructionCenterSelected;
             EventManager.OnOutpostSelected += OnOutpostSelected;
-            EventManager.OnConstructionClosed += ShowIdle;
+            EventManager.OnConstructionClosed += OnConstructionClosed;
             ShowIdle();
         }
 
@@ -45,7 +51,7 @@ namespace Strategy.UI
             EventManager.OnFactorySelected -= OnFactorySelected;
             EventManager.OnConstructionCenterSelected -= OnConstructionCenterSelected;
             EventManager.OnOutpostSelected -= OnOutpostSelected;
-            EventManager.OnConstructionClosed -= ShowIdle;
+            EventManager.OnConstructionClosed -= OnConstructionClosed;
         }
 
         private void Update()
@@ -111,13 +117,32 @@ namespace Strategy.UI
             RefreshObject();
         }
 
+        /// <summary>
+        /// Закриття будівельної панелі не повинно скидати відображення юнітів:
+        /// SelectionManager будівель також отримує mouse release після drag-select юнітів.
+        /// </summary>
+        private void OnConstructionClosed()
+        {
+            _selectedObject = null;
+
+            if (_selectedUnits.Count > 0)
+            {
+                RefreshUnits();
+                return;
+            }
+
+            ShowIdle();
+        }
+
         /// <summary>Скидає панель до стандартного тексту-заповнювача "немає вибору".</summary>
         private void ShowIdle()
         {
             ClearUnits();
             _selectedObject = null;
+            SetInfoTextVisible(true);
             SetText("No selection", "Select units or buildings", "Orders and object data will appear here.");
             SetCompactRows(null);
+            SetUnitCards(null);
         }
 
         /// <summary>
@@ -134,45 +159,10 @@ namespace Strategy.UI
                 return;
             }
 
-            if (_selectedUnits.Count == 1)
-            {
-                GameObject unit = _selectedUnits[0];
-                UnitCombat combat = unit.GetComponent<UnitCombat>();
-                TeamComponent team = unit.GetComponent<TeamComponent>();
-                string unitName = GetDisplayName(unit.name);
-                string teamText = team != null ? team.Team.ToString() : "Unknown team";
-
-                if (combat == null || combat.UnitData == null)
-                {
-                    SetText(unitName, teamText, "No combat data");
-                    SetCompactRows(null);
-                    return;
-                }
-
-                UnitData data = combat.UnitData;
-                SetText(
-                    unitName,
-                    teamText + " Unit",
-                    $"HP {FormatNumber(combat.CurrentHealth)} / {FormatNumber(combat.MaxHealth)}\n" +
-                    $"Damage {FormatNumber(data.Damage)}   Range {FormatNumber(data.AttackRange)}\n" +
-                    $"Attack {FormatNumber(data.AttackDelay)}s   Speed {FormatNumber(data.Speed)}");
-                SetCompactRows(null);
-                return;
-            }
-
-            SetText(
-                _selectedUnits.Count + " units selected",
-                "Group selection",
-                "Right-click terrain to move. Right-click enemy to attack.");
-
-            List<string> rows = new List<string>();
-            for (int i = 0; i < _selectedUnits.Count && i < 8; i++)
-                rows.Add(GetDisplayName(_selectedUnits[i].name));
-
-            if (_selectedUnits.Count > 8)
-                rows.Add("+" + (_selectedUnits.Count - 8) + " more");
-
-            SetCompactRows(rows);
+            SetInfoTextVisible(false);
+            SetText(string.Empty, string.Empty, string.Empty);
+            SetCompactRows(null);
+            SetUnitCards(BuildUnitCardModels());
         }
 
         /// <summary>
@@ -183,6 +173,7 @@ namespace Strategy.UI
         {
             if (_selectedObject is BuildingProduction factory)
             {
+                SetInfoTextVisible(true);
                 TeamComponent team = factory.GetComponent<TeamComponent>();
                 int itemCount = factory.Items.Count;
                 SetText(
@@ -190,22 +181,26 @@ namespace Strategy.UI
                     (team != null ? team.Team.ToString() : "Player") + " production",
                     $"Queue available\nUnits: {itemCount}\nUse the Units tab to train vehicles.");
                 SetCompactRows(null);
+                SetUnitCards(null);
                 return;
             }
 
             if (_selectedObject is ConstructionCenter center)
             {
+                SetInfoTextVisible(true);
                 TeamComponent team = center.GetComponent<TeamComponent>();
                 SetText(
                     GetDisplayName(center.name),
                     (team != null ? team.Team.ToString() : "Player") + " construction center",
                     $"Build radius {FormatNumber(center.BuildRadius)}\nUse the Build tab to place structures.");
                 SetCompactRows(null);
+                SetUnitCards(null);
                 return;
             }
 
             if (_selectedObject is Outpost outpost)
             {
+                SetInfoTextVisible(true);
                 string owner = outpost.Owner.HasValue ? outpost.Owner.Value.ToString() : "Neutral";
                 string state = outpost.IsUpgraded ? "Upgraded" : "Standard";
                 SetText(
@@ -214,6 +209,7 @@ namespace Strategy.UI
                     $"{state}\nIncome {FormatNumber(outpost.CurrentResourcePerMinute)}/min\n" +
                     $"Capture {FormatNumber(outpost.CaptureProgress * 100f)}%");
                 SetCompactRows(null);
+                SetUnitCards(null);
                 return;
             }
 
@@ -225,6 +221,7 @@ namespace Strategy.UI
         {
             _selectedUnits.Clear();
             SetCompactRows(null);
+            SetUnitCards(null);
         }
 
         /// <summary>Видаляє нульові (знищені) записи зі списку вибраних юнітів.</summary>
@@ -248,6 +245,18 @@ namespace Strategy.UI
 
             if (_statsText != null)
                 _statsText.text = stats;
+        }
+
+        private void SetInfoTextVisible(bool visible)
+        {
+            if (_titleText != null)
+                _titleText.gameObject.SetActive(visible);
+
+            if (_subtitleText != null)
+                _subtitleText.gameObject.SetActive(visible);
+
+            if (_statsText != null)
+                _statsText.gameObject.SetActive(visible);
         }
 
         /// <summary>
@@ -279,6 +288,148 @@ namespace Strategy.UI
             }
         }
 
+        private List<SelectionUnitCardViewModel> BuildUnitCardModels()
+        {
+            _unitGroups.Clear();
+
+            for (int i = 0; i < _selectedUnits.Count; i++)
+            {
+                GameObject unit = _selectedUnits[i];
+
+                if (unit == null)
+                    continue;
+
+                UnitCombat combat = unit.GetComponent<UnitCombat>();
+                UnitData data = combat != null ? combat.UnitData : null;
+                string key = data != null ? data.GetInstanceID().ToString() : GetDisplayName(unit.name);
+                int groupIndex = FindGroupIndex(key);
+
+                if (groupIndex >= 0)
+                {
+                    _unitGroups[groupIndex].Count++;
+                    continue;
+                }
+
+                string displayName = ResolveUnitDisplayName(data, unit);
+                _unitGroups.Add(new SelectionUnitGroup(
+                    key,
+                    displayName,
+                    data != null ? data.SelectionIcon : null,
+                    ResolveFallbackText(data, displayName),
+                    1));
+            }
+
+            _visibleCardModels.Clear();
+            int maxCards = Mathf.Max(1, _maxVisibleUnitCards);
+            int regularCards = _unitGroups.Count <= maxCards ? _unitGroups.Count : maxCards - 1;
+
+            for (int i = 0; i < regularCards; i++)
+            {
+                SelectionUnitGroup group = _unitGroups[i];
+                _visibleCardModels.Add(new SelectionUnitCardViewModel(
+                    group.DisplayName,
+                    group.Icon,
+                    group.FallbackText,
+                    group.Count));
+            }
+
+            if (_unitGroups.Count > maxCards)
+            {
+                int hiddenCount = 0;
+
+                for (int i = regularCards; i < _unitGroups.Count; i++)
+                    hiddenCount += _unitGroups[i].Count;
+
+                _visibleCardModels.Add(new SelectionUnitCardViewModel("More", null, "+", hiddenCount));
+            }
+
+            return _visibleCardModels;
+        }
+
+        private int FindGroupIndex(string key)
+        {
+            for (int i = 0; i < _unitGroups.Count; i++)
+            {
+                if (_unitGroups[i].Key == key)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private void SetUnitCards(List<SelectionUnitCardViewModel> models)
+        {
+            if (_unitCardRoot == null || _unitCardPrefab == null)
+                return;
+
+            int desiredCount = models != null ? models.Count : 0;
+            _unitCardRoot.gameObject.SetActive(desiredCount > 0);
+
+            while (_unitCards.Count < desiredCount)
+            {
+                SelectionUnitCardUI card = Instantiate(_unitCardPrefab, _unitCardRoot);
+                _unitCards.Add(card);
+            }
+
+            for (int i = 0; i < _unitCards.Count; i++)
+            {
+                SelectionUnitCardUI card = _unitCards[i];
+
+                if (card == null)
+                    continue;
+
+                bool active = i < desiredCount;
+                card.gameObject.SetActive(active);
+
+                if (active)
+                    card.SetData(models[i]);
+            }
+        }
+
+        private static string ResolveUnitDisplayName(UnitData data, GameObject unit)
+        {
+            if (data != null)
+            {
+                if (!string.IsNullOrWhiteSpace(data.DisplayName))
+                    return data.DisplayName;
+
+                if (!string.IsNullOrWhiteSpace(data.name))
+                    return GetDisplayName(data.name);
+            }
+
+            return unit != null ? GetDisplayName(unit.name) : "Unknown";
+        }
+
+        private static string ResolveFallbackText(UnitData data, string displayName)
+        {
+            if (data != null && !string.IsNullOrWhiteSpace(data.SelectionFallbackText))
+                return data.SelectionFallbackText;
+
+            return BuildInitials(displayName);
+        }
+
+        private static string BuildInitials(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+                return "UNIT";
+
+            string[] words = displayName.Split(' ');
+            string result = string.Empty;
+
+            for (int i = 0; i < words.Length && result.Length < 3; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(words[i]))
+                    result += char.ToUpperInvariant(words[i][0]);
+            }
+
+            if (!string.IsNullOrWhiteSpace(result))
+                return result;
+
+            return displayName.Length <= 3
+                ? displayName.ToUpperInvariant()
+                : displayName.Substring(0, 3).ToUpperInvariant();
+        }
+
         /// <summary>Видаляє суфікси Unity та внутрішні угоди про іменування з назви GameObject для відображення.</summary>
         private static string GetDisplayName(string objectName)
         {
@@ -300,6 +451,24 @@ namespace Strategy.UI
             return Mathf.Approximately(value, Mathf.Round(value))
                 ? Mathf.RoundToInt(value).ToString()
                 : value.ToString("0.##");
+        }
+
+        private sealed class SelectionUnitGroup
+        {
+            public SelectionUnitGroup(string key, string displayName, Sprite icon, string fallbackText, int count)
+            {
+                Key = key;
+                DisplayName = displayName;
+                Icon = icon;
+                FallbackText = fallbackText;
+                Count = count;
+            }
+
+            public string Key { get; }
+            public string DisplayName { get; }
+            public Sprite Icon { get; }
+            public string FallbackText { get; }
+            public int Count { get; set; }
         }
     }
 }

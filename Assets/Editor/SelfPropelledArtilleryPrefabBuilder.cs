@@ -354,7 +354,10 @@ public static class SelfPropelledArtilleryPrefabBuilder
             8f,
             4f,
             3f,
-            24f);
+            24f,
+            "Self-Propelled Artillery",
+            null,
+            "ART");
         EditorUtility.SetDirty(data);
     }
 

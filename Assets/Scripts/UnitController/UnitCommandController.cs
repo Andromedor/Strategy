@@ -36,6 +36,15 @@ namespace Strategy.Units
         private Vector3 _startPoint;
         private bool _isSelectionPressActive;
 
+        public int SelectedUnitCount
+        {
+            get
+            {
+                RemoveDeadSelections();
+                return _selections.Count;
+            }
+        }
+
         private void Awake()
         {
             _camera = GetComponent<UnityEngine.Camera>();
@@ -63,9 +72,44 @@ namespace Strategy.Units
                 EndSelection();
         }
 
+        /// <summary>Копіює поточний живий вибір у наданий список, не відкриваючи внутрішню колекцію для змін ззовні.</summary>
+        public void CopySelectedUnits(List<GameObject> target)
+        {
+            if (target == null)
+                return;
+
+            target.Clear();
+            RemoveDeadSelections();
+
+            for (int i = 0; i < _selections.Count; i++)
+                target.Add(_selections[i]);
+        }
+
+        /// <summary>Знімає поточне виділення через ті самі події, які використовує звичайний gameplay-ввід.</summary>
+        public void ClearSelection()
+        {
+            DeselectAll();
+        }
+
+        /// <summary>
+        /// Перевиділяє набір юнітів із зовнішньої системи, наприклад control group, зберігаючи єдиний подієвий шлях selection-стану.
+        /// </summary>
+        public void SelectUnits(IEnumerable<GameObject> units)
+        {
+            DeselectAll();
+
+            if (units == null)
+                return;
+
+            foreach (GameObject unit in units)
+                TryAddSelection(unit);
+        }
+
         /// <summary>Кидає промінь від позиції правого кліку до шарів ворогів та землі, направляючи до відповідного обробника — атаки або переміщення.</summary>
         private void ControlUnits()
         {
+            RemoveDeadSelections();
+
             if (_selections == null || _selections.Count == 0 || !TryCreateMouseRay(out Ray ray))
                 return;
 
@@ -528,12 +572,7 @@ namespace Strategy.Units
                 if (hit == null || hit.CompareTag("Enemy"))
                     continue;
 
-                GameObject unit = hit.transform.gameObject;
-                if (_selections.Contains(unit))
-                    continue;
-
-                _selections.Add(unit);
-                EventManager.RaiseUnitSelected(unit);
+                TryAddSelection(hit.transform.gameObject);
             }
 
             Destroy(_currentSelection);
@@ -550,6 +589,25 @@ namespace Strategy.Units
             }
 
             _selections.Clear();
+        }
+
+        private bool TryAddSelection(GameObject unit)
+        {
+            if (unit == null || unit.CompareTag("Enemy") || _selections.Contains(unit))
+                return false;
+
+            _selections.Add(unit);
+            EventManager.RaiseUnitSelected(unit);
+            return true;
+        }
+
+        private void RemoveDeadSelections()
+        {
+            for (int i = _selections.Count - 1; i >= 0; i--)
+            {
+                if (_selections[i] == null)
+                    _selections.RemoveAt(i);
+            }
         }
 
         /// <summary>Кидає промінь із камери через курсор миші до маски шару землі/куба; повертає точку попадання.</summary>

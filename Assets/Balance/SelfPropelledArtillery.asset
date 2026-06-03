@@ -12,17 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e48060335b59034cb6b3718be1e9fc1, type: 3}
   m_Name: SelfPropelledArtillery
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  Prefab: {fileID: 1062518315741475719, guid: 8d5e0617c6ea51844ae50be718de31de, type: 3}
-  MaxHealth: 135
-  Damage: 110
-  Speed: 28
-  AttackRange: 95
-  AttackDelay: 8.5
-  FormationSpacing: 6.2
-  TurretRotationSpeed: 35
-  GunPitchSpeed: 18
-  MinGunPitch: -70
-  MaxGunPitch: 8
-  AimAngleTolerance: 4
-  ReturnTurretDelay: 3
-  IdleTurretRotationSpeed: 24
+  _prefab: {fileID: 1062518315741475719, guid: 8d5e0617c6ea51844ae50be718de31de, type: 3}
+  _displayName: Self-Propelled Artillery
+  _selectionIcon: {fileID: 21300000, guid: 7195a8617eed35b4095f5867800c735c, type: 3}
+  _selectionFallbackText: ART
+  _maxHealth: 135
+  _damage: 110
+  _speed: 28
+  _attackRange: 95
+  _attackDelay: 8.5
+  _formationSpacing: 6.2
+  _turretRotationSpeed: 35
+  _gunPitchSpeed: 18
+  _minGunPitch: -70
+  _maxGunPitch: 8
+  _aimAngleTolerance: 4
+  _returnTurretDelay: 3
+  _idleTurretRotationSpeed: 24

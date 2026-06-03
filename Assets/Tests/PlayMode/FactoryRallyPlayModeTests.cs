@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using Unity.AI.Navigation;
@@ -20,7 +21,10 @@ namespace Strategy.Tests
         private const string UnitDestinationReservationsTypeName = "Strategy.Units.UnitDestinationReservations, Assembly-CSharp";
         private const string UnitTrafficCoordinatorTypeName = "Strategy.Units.UnitTrafficCoordinator, Assembly-CSharp";
         private const string UnitCommandArrowManagerTypeName = "Strategy.Units.UnitCommandArrowManager, Assembly-CSharp";
+        private const string UnitCommandControllerTypeName = "Strategy.Units.UnitCommandController, Assembly-CSharp";
+        private const string UnitControlGroupControllerTypeName = "Strategy.Units.UnitControlGroupController, Assembly-CSharp";
         private const string UnitSelectionStateTypeName = "Strategy.Units.UnitSelectionState, Assembly-CSharp";
+        private const string SelectionInfoPanelUiTypeName = "Strategy.UI.SelectionInfoPanelUI, Assembly-CSharp";
         private const string EventManagerTypeName = "Strategy.Core.EventManager, Assembly-CSharp";
 
         private readonly Type _buildingProductionType = Type.GetType(BuildingProductionTypeName);
@@ -28,7 +32,10 @@ namespace Strategy.Tests
         private readonly Type _unitDestinationReservationsType = Type.GetType(UnitDestinationReservationsTypeName);
         private readonly Type _unitTrafficCoordinatorType = Type.GetType(UnitTrafficCoordinatorTypeName);
         private readonly Type _unitCommandArrowManagerType = Type.GetType(UnitCommandArrowManagerTypeName);
+        private readonly Type _unitCommandControllerType = Type.GetType(UnitCommandControllerTypeName);
+        private readonly Type _unitControlGroupControllerType = Type.GetType(UnitControlGroupControllerTypeName);
         private readonly Type _unitSelectionStateType = Type.GetType(UnitSelectionStateTypeName);
+        private readonly Type _selectionInfoPanelUiType = Type.GetType(SelectionInfoPanelUiTypeName);
         private readonly Type _eventManagerType = Type.GetType(EventManagerTypeName);
 
         private GameObject _navMeshRoot;
@@ -42,7 +49,10 @@ namespace Strategy.Tests
             Assert.NotNull(_unitDestinationReservationsType);
             Assert.NotNull(_unitTrafficCoordinatorType);
             Assert.NotNull(_unitCommandArrowManagerType);
+            Assert.NotNull(_unitCommandControllerType);
+            Assert.NotNull(_unitControlGroupControllerType);
             Assert.NotNull(_unitSelectionStateType);
+            Assert.NotNull(_selectionInfoPanelUiType);
             Assert.NotNull(_eventManagerType);
 
             _navMeshRoot = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -261,6 +271,104 @@ namespace Strategy.Tests
             UnityEngine.Object.Destroy(unit);
         }
 
+        [UnityTest]
+        public IEnumerator ControlGroupRecallRestoresSavedSelectionAndPrunesDestroyedUnits()
+        {
+            GameObject cameraObject = new GameObject("Control Group Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            Component controlGroups = cameraObject.AddComponent(_unitControlGroupControllerType);
+            GameObject firstUnit = CreateUnit(new Vector3(0f, 0f, 0f));
+            GameObject secondUnit = CreateUnit(new Vector3(5f, 0f, 0f));
+            List<GameObject> selected = new List<GameObject>();
+
+            InvokeVoid(selectionController, "SelectUnits", new List<GameObject> { firstUnit, secondUnit });
+            InvokeVoid(controlGroups, "SaveGroup", 1);
+            InvokeVoid(selectionController, "ClearSelection");
+
+            InvokeVoid(selectionController, "CopySelectedUnits", selected);
+            Assert.Zero(selected.Count);
+
+            InvokeVoid(controlGroups, "RecallGroup", 1);
+            InvokeVoid(selectionController, "CopySelectedUnits", selected);
+            Assert.AreEqual(2, selected.Count);
+            Assert.Contains(firstUnit, selected);
+            Assert.Contains(secondUnit, selected);
+
+            InvokeStaticVoid(_eventManagerType, "RaiseUnitDestroyed", firstUnit);
+            UnityEngine.Object.Destroy(firstUnit);
+            yield return null;
+
+            InvokeVoid(selectionController, "ClearSelection");
+            InvokeVoid(controlGroups, "RecallGroup", 1);
+            InvokeVoid(selectionController, "CopySelectedUnits", selected);
+            Assert.AreEqual(1, selected.Count);
+            Assert.AreSame(secondUnit, selected[0]);
+
+            UnityEngine.Object.Destroy(secondUnit);
+            UnityEngine.Object.Destroy(cameraObject);
+        }
+
+        [UnityTest]
+        public IEnumerator ControlGroupHotkeyFlowRestoresSelectionAfterDeselect()
+        {
+            GameObject cameraObject = new GameObject("Control Group Hotkey Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            Component controlGroups = cameraObject.AddComponent(_unitControlGroupControllerType);
+            GameObject firstUnit = CreateUnit(new Vector3(0f, 0f, 0f));
+            GameObject secondUnit = CreateUnit(new Vector3(5f, 0f, 0f));
+            List<GameObject> selected = new List<GameObject>();
+
+            InvokeVoid(selectionController, "SelectUnits", new List<GameObject> { firstUnit, secondUnit });
+            InvokeVoid(controlGroups, "ProcessGroupKey", 1, true);
+            InvokeVoid(selectionController, "ClearSelection");
+
+            InvokeVoid(selectionController, "CopySelectedUnits", selected);
+            Assert.Zero(selected.Count);
+
+            InvokeVoid(controlGroups, "ProcessGroupKey", 1, false);
+            InvokeVoid(selectionController, "CopySelectedUnits", selected);
+
+            Assert.AreEqual(2, selected.Count);
+            Assert.Contains(firstUnit, selected);
+            Assert.Contains(secondUnit, selected);
+
+            UnityEngine.Object.Destroy(firstUnit);
+            UnityEngine.Object.Destroy(secondUnit);
+            UnityEngine.Object.Destroy(cameraObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SelectionInfoKeepsUnitsWhenBuildingSelectionClosesOnSameMouseRelease()
+        {
+            GameObject panelObject = new GameObject("Selection Info Regression Panel");
+            Component panel = panelObject.AddComponent(_selectionInfoPanelUiType);
+            GameObject firstUnit = CreateUnit(new Vector3(0f, 0f, 0f));
+            GameObject secondUnit = CreateUnit(new Vector3(5f, 0f, 0f));
+
+            yield return null;
+
+            InvokeStaticVoid(_eventManagerType, "RaiseUnitSelected", firstUnit);
+            InvokeStaticVoid(_eventManagerType, "RaiseUnitSelected", secondUnit);
+
+            IList selectedUnits = (IList)GetFieldValue(panel, "_selectedUnits");
+            Assert.AreEqual(2, selectedUnits.Count);
+
+            InvokeStaticVoid(_eventManagerType, "RaiseConstructionClosed");
+            selectedUnits = (IList)GetFieldValue(panel, "_selectedUnits");
+
+            Assert.AreEqual(2, selectedUnits.Count);
+            Assert.Contains(firstUnit, selectedUnits);
+            Assert.Contains(secondUnit, selectedUnits);
+
+            UnityEngine.Object.Destroy(firstUnit);
+            UnityEngine.Object.Destroy(secondUnit);
+            UnityEngine.Object.Destroy(panelObject);
+            yield return null;
+        }
+
         private Component CreateFactory(Vector3 spawnPosition, Vector3 rallyPosition)
         {
             _factoryObject = new GameObject("Factory");
@@ -338,6 +446,15 @@ namespace Strategy.Tests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(field);
             field.SetValue(target, value);
+        }
+
+        private static object GetFieldValue(Component target, string fieldName)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return field.GetValue(target);
         }
 
         private static void InvokeStaticVoid(Type targetType, string methodName, params object[] args)

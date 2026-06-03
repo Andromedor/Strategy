@@ -12,17 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e48060335b59034cb6b3718be1e9fc1, type: 3}
   m_Name: LightTank
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  Prefab: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
-  MaxHealth: 72
-  Damage: 3
-  Speed: 58
-  AttackRange: 18
-  AttackDelay: 0.18
-  FormationSpacing: 3.2
-  TurretRotationSpeed: 560
-  GunPitchSpeed: 180
-  MinGunPitch: -7
-  MaxGunPitch: 18
-  AimAngleTolerance: 4.5
-  ReturnTurretDelay: 1.1
-  IdleTurretRotationSpeed: 160
+  _prefab: {fileID: 4641279379937375252, guid: 2bc18102f88700340a2e009095cb292a, type: 3}
+  _displayName: Quad Autocannon
+  _selectionIcon: {fileID: 0}
+  _selectionFallbackText: QA
+  _maxHealth: 72
+  _damage: 3
+  _speed: 58
+  _attackRange: 18
+  _attackDelay: 0.18
+  _formationSpacing: 3.2
+  _turretRotationSpeed: 560
+  _gunPitchSpeed: 180
+  _minGunPitch: -7
+  _maxGunPitch: 18
+  _aimAngleTolerance: 4.5
+  _returnTurretDelay: 1.1
+  _idleTurretRotationSpeed: 160

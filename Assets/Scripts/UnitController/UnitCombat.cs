@@ -128,6 +128,7 @@ namespace Strategy.Units
         /// </summary>
         private void Die()
         {
+            EventManager.RaiseUnitDestroyed(gameObject);
             EventManager.RaiseUnitDeselected(gameObject);
             Destroy(gameObject);
         }

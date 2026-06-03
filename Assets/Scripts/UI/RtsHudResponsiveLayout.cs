@@ -18,6 +18,7 @@ namespace Strategy.UI
         [SerializeField] private RectTransform _bottomHud;
         [SerializeField] private RectTransform _minimapSlot;
         [SerializeField] private RectTransform _selectionInfoPanel;
+        [SerializeField] private RectTransform _controlGroupBar;
         [SerializeField] private RectTransform _commandDeck;
 
         private Vector2 _lastSize;
@@ -81,19 +82,30 @@ namespace Strategy.UI
             float padding = 12f;
             float frameExtra = 40f;
             float framePadding = padding + frameExtra;
-            float contentHeight = baseBottomHeight - padding * 2f;
+            float controlGroupHeight = 48f;
+            float controlGroupGap = 8f;
+            float sideContentHeight = baseBottomHeight - padding * 2f;
+            float selectionContentHeight = Mathf.Max(96f, sideContentHeight - controlGroupHeight - controlGroupGap);
             float bottomHeight = baseBottomHeight + frameExtra * 2f;
 
             SetStretchBottom(_bottomHud, bottomHeight);
 
-            SetLeftPanel(_minimapSlot, minimapWidth, contentHeight, framePadding);
-            SetRightPanel(_commandDeck, commandWidth, contentHeight, framePadding);
+            SetLeftPanel(_minimapSlot, minimapWidth, sideContentHeight, framePadding);
+            SetRightPanel(_commandDeck, commandWidth, sideContentHeight, framePadding);
             SetCenterPanel(
                 _selectionInfoPanel,
                 minimapWidth + framePadding + padding,
                 commandWidth + framePadding + padding,
-                contentHeight,
+                selectionContentHeight,
                 framePadding);
+            SetCenterBandAboveContent(
+                _controlGroupBar,
+                minimapWidth + framePadding + padding,
+                commandWidth + framePadding + padding,
+                selectionContentHeight,
+                framePadding,
+                controlGroupHeight,
+                controlGroupGap);
         }
 
         /// <summary>
@@ -102,23 +114,36 @@ namespace Strategy.UI
         /// </summary>
         private void ApplyNarrow(Vector2 size)
         {
-            float baseBottomHeight = Mathf.Clamp(size.y * 0.46f, 330f, 410f);
+            float baseBottomHeight = Mathf.Clamp(size.y * 0.5f, 370f, 450f);
             float minimapWidth = Mathf.Clamp(size.x * 0.34f, 128f, 164f);
             float minimapHeight = 108f;
-            float commandHeight = Mathf.Clamp(baseBottomHeight * 0.56f, 188f, 230f);
+            float commandHeight = Mathf.Clamp(baseBottomHeight * 0.5f, 172f, 220f);
             float padding = 10f;
             float frameExtra = 34f;
             float framePadding = padding + frameExtra;
-            float infoHeight = baseBottomHeight - commandHeight - padding * 2f;
+            float controlGroupHeight = 48f;
+            float controlGroupGap = 8f;
+            float minInfoHeight = 118f;
+            float infoHeight = baseBottomHeight - commandHeight - padding * 2f - controlGroupHeight - controlGroupGap;
+            if (infoHeight < minInfoHeight)
+            {
+                commandHeight = Mathf.Max(150f, commandHeight - (minInfoHeight - infoHeight));
+                infoHeight = minInfoHeight;
+            }
             float bottomHeight = baseBottomHeight + frameExtra * 2f;
 
             SetStretchBottom(_bottomHud, bottomHeight);
 
             SetTopLeftInside(_minimapSlot, new Vector2(minimapWidth, minimapHeight), framePadding);
             SetTopStretchInside(
-                _selectionInfoPanel,
+                _controlGroupBar,
                 minimapWidth + framePadding + padding,
                 framePadding,
+                controlGroupHeight);
+            SetTopStretchInside(
+                _selectionInfoPanel,
+                minimapWidth + framePadding + padding,
+                framePadding + controlGroupHeight + controlGroupGap,
                 infoHeight);
             SetBottomStretchInside(_commandDeck, commandHeight, framePadding);
         }
@@ -183,6 +208,26 @@ namespace Strategy.UI
             rect.sizeDelta = new Vector2(-(left + right), height);
         }
 
+        /// <summary>Розміщує вузьку смугу над центральною нижньою панеллю, використовуючи ті самі горизонтальні межі.</summary>
+        private static void SetCenterBandAboveContent(
+            RectTransform rect,
+            float left,
+            float right,
+            float contentHeight,
+            float padding,
+            float height,
+            float gap)
+        {
+            if (rect == null)
+                return;
+
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(1f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = new Vector2((left - right) * 0.5f, padding + contentHeight + gap);
+            rect.sizeDelta = new Vector2(-(left + right), height);
+        }
+
         /// <summary>Прив'язує RectTransform до верхнього лівого кута всередині батьківського об'єкта із заданим внутрішнім відступом.</summary>
         private static void SetTopLeftInside(RectTransform rect, Vector2 size, float padding)
         {
@@ -198,7 +243,7 @@ namespace Strategy.UI
 
         /// <summary>
         /// Розтягує RectTransform до верху батьківського об'єкта зі зміщенням <paramref name="left"/> пікселів
-        /// ліворуч та симетричним обрізанням праворуч, із мінімальною висотою 86 пікс.
+        /// ліворуч та симетричним обрізанням праворуч.
         /// </summary>
         private static void SetTopStretchInside(RectTransform rect, float left, float padding, float height)
         {
@@ -209,7 +254,7 @@ namespace Strategy.UI
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
             rect.anchoredPosition = new Vector2(left * 0.5f, -padding);
-            rect.sizeDelta = new Vector2(-(left + padding), Mathf.Max(86f, height));
+            rect.sizeDelta = new Vector2(-(left + padding), Mathf.Max(1f, height));
         }
 
         /// <summary>Розтягує RectTransform на повну ширину знизу батьківського об'єкта з рівномірними бічними відступами.</summary>

@@ -27,6 +27,13 @@ public static class RtsHudBuilder
     private const string HeavyFactoryDataPath = "Assets/Balance/HeavyFactory.asset";
     private const string TopResourcesPrefabPath = "Assets/Prefabs/UI/TopResources.prefab";
     private const string ProductionButtonPrefabPath = "Assets/Prefabs/UI/ProductionButtonPrefab.prefab";
+    private const string SelectionUnitCardPrefabPath = "Assets/Prefabs/UI/SelectionUnitCard.prefab";
+    private const float SelectionSlotSize = 76f;
+    private const float SelectionSlotSpacing = 8f;
+    private const float ControlGroupSlotWidth = 58f;
+    private const float ControlGroupSlotHeight = 48f;
+    private const float ControlGroupSlotSpacing = 6f;
+    private const int MaxSelectionUnitCards = 8;
     private const string SfWindowPath = "Assets/Unity UI Samples/Textures and Sprites/SF UI/SF Window.psd";
     private const string SfGenericPath = "Assets/Unity UI Samples/Textures and Sprites/SF UI/SF Generic.psd";
     private const string SfButtonPath = "Assets/Unity UI Samples/Textures and Sprites/SF UI/SF Button.psd";
@@ -56,10 +63,12 @@ public static class RtsHudBuilder
         EnsureEventSystem();
         ClearCanvas(canvas);
         RemoveLegacyResourceStatus();
+        UnitSelectionMetadataInstaller.Install();
 
         Sprite windowSprite = LoadSprite(SfWindowPath);
         Sprite genericSprite = LoadSprite(SfGenericPath);
         Sprite buttonSprite = LoadSprite(SfButtonPath);
+        SelectionUnitCardUI selectionUnitCardPrefab = EnsureSelectionUnitCardPrefab(genericSprite);
 
         RectTransform canvasRect = canvas.transform as RectTransform;
         RectTransform hudRoot = CreateRect("RtsHudRoot", canvas.transform, Vector2.zero, Vector2.one);
@@ -77,7 +86,10 @@ public static class RtsHudBuilder
         Stretch(mapHint.rectTransform, new Vector2(8f, 20f), new Vector2(-8f, -76f));
 
         RectTransform infoPanel = CreatePanel("SelectionInfoPanel", bottomHud, genericSprite, PanelColor);
-        BuildSelectionInfo(infoPanel);
+        BuildSelectionInfo(infoPanel, selectionUnitCardPrefab);
+
+        RectTransform controlGroupBar = CreateRect("ControlGroupBar", bottomHud, Vector2.zero, Vector2.one);
+        BuildControlGroupBar(controlGroupBar, buttonSprite);
 
         RectTransform commandDeck = CreatePanel("CommandDeck", bottomHud, genericSprite, PanelColor);
         CommandPanels commandPanels = BuildCommandDeck(commandDeck, buttonSprite);
@@ -92,8 +104,11 @@ public static class RtsHudBuilder
         SetObject(layout, "_bottomHud", bottomHud);
         SetObject(layout, "_minimapSlot", minimap);
         SetObject(layout, "_selectionInfoPanel", infoPanel);
+        SetObject(layout, "_controlGroupBar", controlGroupBar);
         SetObject(layout, "_commandDeck", commandDeck);
         layout.ApplyLayout();
+
+        EnsureUnitControlGroupController();
 
         EditorUtility.SetDirty(canvas);
         EditorSceneManager.MarkSceneDirty(scene);
@@ -138,16 +153,24 @@ public static class RtsHudBuilder
         ValidateObject("BottomHud", errors);
         ValidateObject("MinimapSlot", errors);
         ValidateObject("SelectionInfoPanel", errors);
+        ValidateObject("ControlGroupBar", errors);
         ValidateObject("CommandDeck", errors);
         ValidateResourceHud(errors);
         ValidateBottomHudFrame(errors);
         ValidateProductionButtonPrefab(errors);
+        ValidateSelectionUnitCardPrefab(errors);
 
         if (Object.FindFirstObjectByType<RtsHudResponsiveLayout>() == null)
             errors.Add("RtsHudResponsiveLayout is missing.");
 
         if (Object.FindFirstObjectByType<SelectionInfoPanelUI>() == null)
             errors.Add("SelectionInfoPanelUI is missing.");
+
+        if (Object.FindFirstObjectByType<ControlGroupBarUI>() == null)
+            errors.Add("ControlGroupBarUI is missing.");
+
+        if (Object.FindFirstObjectByType<UnitControlGroupController>() == null)
+            errors.Add("UnitControlGroupController is missing.");
 
         if (Object.FindFirstObjectByType<ConstructionPanelUI>(FindObjectsInactive.Include) == null)
             errors.Add("ConstructionPanelUI is missing.");
@@ -228,6 +251,25 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
+    /// Додає UnitControlGroupController на той самий об'єкт, що й UnitCommandController, щоб hotkeys
+    /// працювали через пряме serialized-посилання на selection-контролер.
+    /// </summary>
+    private static void EnsureUnitControlGroupController()
+    {
+        UnitCommandController selectionController = Object.FindFirstObjectByType<UnitCommandController>();
+
+        if (selectionController == null)
+            return;
+
+        UnitControlGroupController controlGroups =
+            selectionController.GetComponent<UnitControlGroupController>() ??
+            selectionController.gameObject.AddComponent<UnitControlGroupController>();
+
+        SetObject(controlGroups, "_selectionController", selectionController);
+        EditorUtility.SetDirty(controlGroups);
+    }
+
+    /// <summary>
     /// Знищує всіх прямих нащадків canvas, щоб HUD можна було відтворити з нуля.
     /// </summary>
     private static void ClearCanvas(Canvas canvas)
@@ -286,10 +328,101 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Заповнює SelectionInfoPanel заголовком, підзаголовком, текстом статистики та компактним
-    /// списком юнітів, після чого прикріплює SelectionInfoPanelUI та підключає всі серіалізовані посилання.
+    /// Створює або оновлює prefab картки вибраного типу юнітів. 8 таких карток по 76px зі spacing 8px
+    /// займають 632px, що вміщується у правій смузі SelectionInfoPanel у цільовому широкому HUD.
     /// </summary>
-    private static void BuildSelectionInfo(RectTransform parent)
+    private static SelectionUnitCardUI EnsureSelectionUnitCardPrefab(Sprite genericSprite)
+    {
+        GameObject rootObject = new GameObject(
+            "SelectionUnitCard",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(LayoutElement));
+
+        RectTransform root = (RectTransform)rootObject.transform;
+        root.sizeDelta = new Vector2(SelectionSlotSize, SelectionSlotSize);
+
+        Image background = rootObject.GetComponent<Image>();
+        background.color = new Color(0.018f, 0.027f, 0.036f, 0.94f);
+        background.sprite = genericSprite;
+        background.type = genericSprite != null ? Image.Type.Sliced : Image.Type.Simple;
+        background.raycastTarget = false;
+
+        LayoutElement layout = rootObject.GetComponent<LayoutElement>();
+        layout.minWidth = SelectionSlotSize;
+        layout.preferredWidth = SelectionSlotSize;
+        layout.minHeight = SelectionSlotSize;
+        layout.preferredHeight = SelectionSlotSize;
+
+        Outline outline = rootObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0.68f, 0.92f, 1f, 0.8f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        AddBorder(root, new Color(0.92f, 1f, 1f, 0.72f), 2f);
+
+        RectTransform frameBackground = CreatePanel("FrameBackground", root, null, new Color(0.07f, 0.12f, 0.15f, 0.96f));
+        Stretch(frameBackground, new Vector2(5f, 5f), new Vector2(-5f, -5f));
+        AddBorder(frameBackground, new Color(0.24f, 0.52f, 0.68f, 0.82f), 1.5f);
+
+        RectTransform iconFrame = CreatePanel("IconFrame", frameBackground, null, new Color(0.03f, 0.05f, 0.07f, 0.92f));
+        Stretch(iconFrame, new Vector2(5f, 5f), new Vector2(-5f, -5f));
+
+        GameObject iconObject = new GameObject(
+            "Icon",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        iconObject.transform.SetParent(iconFrame, false);
+        RectTransform iconRect = (RectTransform)iconObject.transform;
+        Stretch(iconRect, new Vector2(4f, 4f), new Vector2(-4f, -4f));
+        Image icon = iconObject.GetComponent<Image>();
+        icon.enabled = false;
+        icon.preserveAspect = true;
+        icon.raycastTarget = false;
+
+        TMP_Text fallback = CreateText("Fallback", iconFrame, "UNIT", 18f, FontStyles.Bold, TextAlignmentOptions.Center);
+        Stretch(fallback.rectTransform, new Vector2(4f, 4f), new Vector2(-4f, -4f));
+        fallback.color = Color.white;
+
+        TMP_Text name = CreateText("Name", root, "Unit", 10f, FontStyles.Bold, TextAlignmentOptions.Center);
+        SetAnchor(name.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f),
+            new Vector2(0f, 2f), new Vector2(-8f, 16f));
+        name.color = Color.white;
+        name.gameObject.SetActive(false);
+
+        RectTransform countBadge = CreatePanel("CountBadge", root, null, new Color(0.01f, 0.42f, 0.72f, 0.98f));
+        SetAnchor(countBadge, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f),
+            new Vector2(-5f, 5f), new Vector2(28f, 24f));
+        AddBorder(countBadge, new Color(0.82f, 0.96f, 1f, 0.86f), 1f);
+
+        TMP_Text count = CreateText("Count", countBadge, "1", 15f, FontStyles.Bold, TextAlignmentOptions.Center);
+        Stretch(count.rectTransform, Vector2.zero, Vector2.zero);
+        count.color = Color.white;
+
+        SelectionUnitCardUI card = rootObject.AddComponent<SelectionUnitCardUI>();
+        SetObject(card, "_iconImage", icon);
+        SetObject(card, "_fallbackText", fallback);
+        SetObject(card, "_countText", count);
+        SetObject(card, "_nameText", name);
+
+        GameObject saved = PrefabUtility.SaveAsPrefabAsset(rootObject, SelectionUnitCardPrefabPath);
+        Object.DestroyImmediate(rootObject);
+
+        SelectionUnitCardUI savedCard = saved != null
+            ? saved.GetComponent<SelectionUnitCardUI>()
+            : AssetDatabase.LoadAssetAtPath<SelectionUnitCardUI>(SelectionUnitCardPrefabPath);
+
+        if (savedCard == null)
+            throw new System.InvalidOperationException("SelectionUnitCard prefab could not be created.");
+
+        return savedCard;
+    }
+
+    /// <summary>
+    /// Заповнює SelectionInfoPanel заголовком, текстом статистики та grid-контейнером selection-карток,
+    /// після чого прикріплює SelectionInfoPanelUI та підключає всі серіалізовані посилання.
+    /// </summary>
+    private static void BuildSelectionInfo(RectTransform parent, SelectionUnitCardUI cardPrefab)
     {
         TMP_Text title = CreateText("SelectionTitle", parent, "No selection", 28f, FontStyles.Bold, TextAlignmentOptions.TopLeft);
         SetAnchor(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f),
@@ -302,30 +435,151 @@ public static class RtsHudBuilder
 
         TMP_Text stats = CreateText("SelectionStats", parent, "Orders and object data will appear here.", 18f, FontStyles.Normal,
             TextAlignmentOptions.TopLeft);
-        SetAnchor(stats.rectTransform, new Vector2(0f, 0f), new Vector2(0.62f, 1f), new Vector2(0f, 0f),
+        SetAnchor(stats.rectTransform, new Vector2(0f, 0f), new Vector2(0.34f, 1f), new Vector2(0f, 0f),
             new Vector2(16f, 14f), new Vector2(-20f, -74f));
 
-        RectTransform listRoot = CreateRect("SelectionCompactList", parent, new Vector2(0.62f, 0f), Vector2.one);
-        listRoot.offsetMin = new Vector2(8f, 12f);
-        listRoot.offsetMax = new Vector2(-14f, -74f);
-        VerticalLayoutGroup listLayout = listRoot.gameObject.AddComponent<VerticalLayoutGroup>();
-        listLayout.spacing = 2f;
-        listLayout.childControlHeight = false;
-        listLayout.childControlWidth = true;
-        listLayout.childForceExpandHeight = false;
-        listLayout.childForceExpandWidth = true;
+        RectTransform cardRoot = CreateRect("SelectedUnitCards", parent, Vector2.zero, Vector2.one);
+        cardRoot.offsetMin = new Vector2(14f, 14f);
+        cardRoot.offsetMax = new Vector2(-14f, -14f);
+        cardRoot.gameObject.SetActive(false);
+        GridLayoutGroup cardGrid = cardRoot.gameObject.AddComponent<GridLayoutGroup>();
+        cardGrid.cellSize = new Vector2(SelectionSlotSize, SelectionSlotSize);
+        cardGrid.spacing = new Vector2(SelectionSlotSpacing, SelectionSlotSpacing);
+        cardGrid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        cardGrid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        cardGrid.childAlignment = TextAnchor.UpperLeft;
+        cardGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        cardGrid.constraintCount = MaxSelectionUnitCards;
 
-        TMP_Text rowPrefab = CreateText("CompactRowPrefab", listRoot, "Unit", 14f, FontStyles.Normal, TextAlignmentOptions.Left);
+        RectTransform legacyListRoot = CreateRect("SelectionCompactList", parent, new Vector2(1f, 1f), Vector2.one);
+        legacyListRoot.gameObject.SetActive(false);
+        TMP_Text rowPrefab = CreateText("CompactRowPrefab", legacyListRoot, "Unit", 14f, FontStyles.Normal, TextAlignmentOptions.Left);
         rowPrefab.gameObject.SetActive(false);
-        LayoutElement rowLayout = rowPrefab.gameObject.AddComponent<LayoutElement>();
-        rowLayout.preferredHeight = 22f;
 
         SelectionInfoPanelUI selectionInfo = parent.gameObject.AddComponent<SelectionInfoPanelUI>();
         SetObject(selectionInfo, "_titleText", title);
         SetObject(selectionInfo, "_subtitleText", subtitle);
         SetObject(selectionInfo, "_statsText", stats);
-        SetObject(selectionInfo, "_compactListRoot", listRoot);
+        SetObject(selectionInfo, "_compactListRoot", legacyListRoot);
         SetObject(selectionInfo, "_compactListTextPrefab", rowPrefab);
+        SetObject(selectionInfo, "_unitCardRoot", cardRoot);
+        SetObject(selectionInfo, "_unitCardPrefab", cardPrefab);
+        SetInteger(selectionInfo, "_maxVisibleUnitCards", MaxSelectionUnitCards);
+    }
+
+    /// <summary>
+    /// Створює HUD-смугу control groups 1-9 над SelectionInfoPanel. Кожен слот показує номер клавіші
+    /// та кількість живих юнітів, збережених під цією клавішею.
+    /// </summary>
+    private static void BuildControlGroupBar(RectTransform parent, Sprite slotSprite)
+    {
+        HorizontalLayoutGroup layout = parent.gameObject.AddComponent<HorizontalLayoutGroup>();
+        layout.spacing = ControlGroupSlotSpacing;
+        layout.childAlignment = TextAnchor.MiddleLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+
+        ControlGroupSlotUI[] slots = new ControlGroupSlotUI[9];
+
+        for (int i = 0; i < slots.Length; i++)
+            slots[i] = CreateControlGroupSlot(parent, i + 1, slotSprite);
+
+        ControlGroupBarUI bar = parent.gameObject.AddComponent<ControlGroupBarUI>();
+        SetObjectArray(bar, "_slots", slots);
+    }
+
+    private static ControlGroupSlotUI CreateControlGroupSlot(RectTransform parent, int groupNumber, Sprite slotSprite)
+    {
+        RectTransform slot = CreatePanel("ControlGroup_" + groupNumber, parent, slotSprite, new Color(0.018f, 0.027f, 0.036f, 0.95f));
+        slot.sizeDelta = new Vector2(ControlGroupSlotWidth, ControlGroupSlotHeight);
+
+        Image slotImage = slot.GetComponent<Image>();
+        if (slotImage != null)
+            slotImage.raycastTarget = false;
+
+        LayoutElement layout = slot.gameObject.AddComponent<LayoutElement>();
+        layout.minWidth = ControlGroupSlotWidth;
+        layout.preferredWidth = ControlGroupSlotWidth;
+        layout.minHeight = ControlGroupSlotHeight;
+        layout.preferredHeight = ControlGroupSlotHeight;
+
+        Outline outline = slot.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0.95f, 1f, 1f, 0.85f);
+        outline.effectDistance = new Vector2(1f, -1f);
+        AddBorder(slot, new Color(0.9f, 1f, 1f, 0.8f), 1.5f);
+
+        RectTransform activeFrame = CreatePanel("ActiveFrame", slot, null, new Color(0f, 0f, 0f, 0f));
+        Stretch(activeFrame, new Vector2(2f, 2f), new Vector2(-2f, -2f));
+        AddBorder(activeFrame, new Color(0.05f, 0.75f, 1f, 0.98f), 2f);
+
+        RectTransform iconFrame = CreatePanel("IconFrame", slot, null, new Color(0.03f, 0.05f, 0.07f, 0.96f));
+        SetAnchor(
+            iconFrame,
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0f, 5f),
+            new Vector2(32f, 22f));
+        AddBorder(iconFrame, new Color(0.16f, 0.42f, 0.58f, 0.86f), 1f);
+
+        GameObject iconObject = new GameObject(
+            "Icon",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        iconObject.transform.SetParent(iconFrame, false);
+        RectTransform iconRect = (RectTransform)iconObject.transform;
+        Stretch(iconRect, new Vector2(3f, 3f), new Vector2(-3f, -3f));
+        Image icon = iconObject.GetComponent<Image>();
+        icon.enabled = false;
+        icon.preserveAspect = true;
+        icon.raycastTarget = false;
+
+        TMP_Text fallback = CreateText("Fallback", iconFrame, "UNIT", 10f, FontStyles.Bold, TextAlignmentOptions.Center);
+        Stretch(fallback.rectTransform, new Vector2(2f, 2f), new Vector2(-2f, -2f));
+        fallback.color = new Color(0.86f, 0.97f, 1f, 1f);
+        fallback.gameObject.SetActive(false);
+
+        RectTransform keyBadge = CreatePanel("KeyBadge", slot, null, new Color(0.01f, 0.05f, 0.08f, 0.98f));
+        SetAnchor(
+            keyBadge,
+            new Vector2(0f, 0f),
+            new Vector2(0f, 0f),
+            new Vector2(0f, 0f),
+            new Vector2(4f, 4f),
+            new Vector2(20f, 17f));
+        AddBorder(keyBadge, new Color(0.9f, 1f, 1f, 0.78f), 1f);
+
+        TMP_Text number = CreateText("Number", keyBadge, groupNumber.ToString(), 14f, FontStyles.Bold, TextAlignmentOptions.Center);
+        Stretch(number.rectTransform, Vector2.zero, Vector2.zero);
+        number.color = Color.white;
+
+        RectTransform countBadge = CreatePanel("CountBadge", slot, null, new Color(0.02f, 0.46f, 0.85f, 1f));
+        SetAnchor(
+            countBadge,
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(-4f, 4f),
+            new Vector2(30f, 18f));
+        AddBorder(countBadge, new Color(0.88f, 0.98f, 1f, 0.94f), 1f);
+
+        TMP_Text count = CreateText("Count", countBadge, string.Empty, 14f, FontStyles.Bold, TextAlignmentOptions.Center);
+        Stretch(count.rectTransform, Vector2.zero, Vector2.zero);
+        count.color = Color.white;
+        count.gameObject.SetActive(false);
+
+        ControlGroupSlotUI slotUi = slot.gameObject.AddComponent<ControlGroupSlotUI>();
+        SetObject(slotUi, "_numberText", number);
+        SetObject(slotUi, "_countText", count);
+        SetObject(slotUi, "_iconImage", icon);
+        SetObject(slotUi, "_fallbackText", fallback);
+        SetObject(slotUi, "_background", slot.GetComponent<Image>());
+        SetObject(slotUi, "_activeFrame", activeFrame.GetComponent<Image>());
+        slot.gameObject.SetActive(false);
+        return slotUi;
     }
 
     /// <summary>
@@ -810,6 +1064,7 @@ public static class RtsHudBuilder
 
         ValidateChildInsideBottom(bottom, "MinimapSlot", errors);
         ValidateChildInsideBottom(bottom, "SelectionInfoPanel", errors);
+        ValidateChildInsideBottom(bottom, "ControlGroupBar", errors, 1f);
         ValidateChildInsideBottom(bottom, "CommandDeck", errors);
     }
 
@@ -817,7 +1072,7 @@ public static class RtsHudBuilder
     /// Використовує кути у світовому просторі для перевірки, що <paramref name="childName"/> повністю
     /// міститься всередині <paramref name="bottom"/> з відступом не менше 8 одиниць.
     /// </summary>
-    private static void ValidateChildInsideBottom(RectTransform bottom, string childName, List<string> errors)
+    private static void ValidateChildInsideBottom(RectTransform bottom, string childName, List<string> errors, float margin = 8f)
     {
         GameObject childObject = GameObject.Find(childName);
         RectTransform child = childObject != null ? childObject.GetComponent<RectTransform>() : null;
@@ -829,7 +1084,6 @@ public static class RtsHudBuilder
         bottom.GetWorldCorners(bottomCorners);
         child.GetWorldCorners(childCorners);
 
-        const float margin = 8f;
         bool contained =
             childCorners[0].x >= bottomCorners[0].x + margin &&
             childCorners[0].y >= bottomCorners[0].y + margin &&
@@ -878,6 +1132,31 @@ public static class RtsHudBuilder
 
         if (background != null && iconProperty.objectReferenceValue == background)
             errors.Add("ProductionButtonPrefab _icon must not reference the root background image.");
+    }
+
+    /// <summary>
+    /// Перевіряє prefab selection-картки на наявність кореневого Image/LayoutElement та всіх UI-посилань.
+    /// </summary>
+    private static void ValidateSelectionUnitCardPrefab(List<string> errors)
+    {
+        SelectionUnitCardUI prefab = AssetDatabase.LoadAssetAtPath<SelectionUnitCardUI>(SelectionUnitCardPrefabPath);
+        if (prefab == null)
+        {
+            errors.Add("SelectionUnitCard prefab should have SelectionUnitCardUI.");
+            return;
+        }
+
+        if (prefab.GetComponent<Image>() == null)
+            errors.Add("SelectionUnitCard prefab should have Image background.");
+
+        if (prefab.GetComponent<LayoutElement>() == null)
+            errors.Add("SelectionUnitCard prefab should have LayoutElement.");
+
+        SerializedObject serialized = new SerializedObject(prefab);
+        ValidateObjectReference(serialized, "_iconImage", errors, "SelectionUnitCard should reference Icon image.");
+        ValidateObjectReference(serialized, "_fallbackText", errors, "SelectionUnitCard should reference Fallback text.");
+        ValidateObjectReference(serialized, "_countText", errors, "SelectionUnitCard should reference Count text.");
+        ValidateObjectReference(serialized, "_nameText", errors, "SelectionUnitCard should reference Name text.");
     }
 
     /// <summary>
@@ -1078,6 +1357,29 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
+    /// Встановлює серіалізований масив Object у <paramref name="target"/> за назвою властивості.
+    /// </summary>
+    private static void SetObjectArray(Object target, string propertyName, Object[] values)
+    {
+        SerializedObject serialized = new SerializedObject(target);
+        SerializedProperty property = serialized.FindProperty(propertyName);
+
+        if (property == null || !property.isArray)
+            return;
+
+        property.arraySize = values != null ? values.Length : 0;
+
+        if (values != null)
+        {
+            for (int i = 0; i < values.Length; i++)
+                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+        }
+
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(target);
+    }
+
+    /// <summary>
     /// Встановлює серіалізовану властивість-enum (int) у <paramref name="target"/> та негайно застосовує.
     /// </summary>
     private static void SetInt(Object target, string propertyName, int value)
@@ -1087,6 +1389,20 @@ public static class RtsHudBuilder
 
         if (property != null)
             property.enumValueIndex = value;
+
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    /// <summary>
+    /// Встановлює серіалізовану властивість типу int у <paramref name="target"/> та негайно застосовує.
+    /// </summary>
+    private static void SetInteger(Object target, string propertyName, int value)
+    {
+        SerializedObject serialized = new SerializedObject(target);
+        SerializedProperty property = serialized.FindProperty(propertyName);
+
+        if (property != null)
+            property.intValue = value;
 
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
