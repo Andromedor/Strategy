@@ -25,7 +25,8 @@ public static class RtsHudBuilder
 {
     private const string MainScenePath = "Assets/Scenes/mainScene.unity";
     private const string HeavyFactoryDataPath = "Assets/Balance/HeavyFactory.asset";
-    private const string ProductionButtonPrefabPath = "Assets/Prefabs/ProductionButtonPrefab.prefab";
+    private const string TopResourcesPrefabPath = "Assets/Prefabs/UI/TopResources.prefab";
+    private const string ProductionButtonPrefabPath = "Assets/Prefabs/UI/ProductionButtonPrefab.prefab";
     private const string SfWindowPath = "Assets/Unity UI Samples/Textures and Sprites/SF UI/SF Window.psd";
     private const string SfGenericPath = "Assets/Unity UI Samples/Textures and Sprites/SF UI/SF Generic.psd";
     private const string SfButtonPath = "Assets/Unity UI Samples/Textures and Sprites/SF UI/SF Button.psd";
@@ -34,7 +35,6 @@ public static class RtsHudBuilder
 
     private static readonly Color PanelColor = Color.white;
     private static readonly Color PanelColorStrong = Color.white;
-    private static readonly Color AccentColor = new Color(0.03f, 0.38f, 0.75f, 1f);
     private static readonly Color TextColor = new Color(0.04f, 0.075f, 0.11f, 1f);
     private static readonly Color MutedTextColor = new Color(0.22f, 0.34f, 0.44f, 1f);
     private static readonly Color ButtonColor = new Color(0f, 0.55f, 1f, 1f);
@@ -60,24 +60,13 @@ public static class RtsHudBuilder
         Sprite windowSprite = LoadSprite(SfWindowPath);
         Sprite genericSprite = LoadSprite(SfGenericPath);
         Sprite buttonSprite = LoadSprite(SfButtonPath);
-        RepairProductionButtonPrefab(buttonSprite);
 
         RectTransform canvasRect = canvas.transform as RectTransform;
         RectTransform hudRoot = CreateRect("RtsHudRoot", canvas.transform, Vector2.zero, Vector2.one);
         hudRoot.offsetMin = Vector2.zero;
         hudRoot.offsetMax = Vector2.zero;
 
-        RectTransform topResources = CreatePanel("TopResources", hudRoot, windowSprite, PanelColorStrong);
-        TMP_Text resourceText = CreateText("ResourceText", topResources, "RESOURCES", 28f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
-        resourceText.richText = true;
-        resourceText.fontSizeMin = 18f;
-        resourceText.fontSizeMax = 28f;
-        resourceText.overflowMode = TextOverflowModes.Ellipsis;
-        Stretch(resourceText.rectTransform, new Vector2(24f, 10f), new Vector2(-22f, -10f));
-        OutpostStatusUI statusUI = topResources.gameObject.AddComponent<OutpostStatusUI>();
-        SetObject(statusUI, "_canvas", canvas);
-        SetObject(statusUI, "_statusText", resourceText);
-        SetObject(statusUI, "_fontAsset", _uiFontAsset);
+        InstantiateTopResourcesPrefab(hudRoot);
 
         RectTransform bottomHud = CreatePanel("BottomHud", hudRoot, windowSprite, PanelColorStrong);
 
@@ -104,7 +93,6 @@ public static class RtsHudBuilder
         SetObject(layout, "_minimapSlot", minimap);
         SetObject(layout, "_selectionInfoPanel", infoPanel);
         SetObject(layout, "_commandDeck", commandDeck);
-        SetObject(layout, "_topResources", topResources);
         layout.ApplyLayout();
 
         EditorUtility.SetDirty(canvas);
@@ -274,203 +262,27 @@ public static class RtsHudBuilder
     }
 
     /// <summary>
-    /// Завантажує ProductionButtonPrefab та повторно застосовує розміри, Image, Button, Outline,
-    /// макет дочірніх тексту/іконки та призначення полів ProductionButtonUI, щоб префаб відповідав
-    /// поточному стилю HUD навіть якщо він змінився.
+    /// Додає до HUD готовий TopResources prefab. Візуальна структура, кольори,
+    /// відступи та serialized references редагуються в Unity Inspector.
     /// </summary>
-    private static void RepairProductionButtonPrefab(Sprite buttonSprite)
+    private static RectTransform InstantiateTopResourcesPrefab(Transform parent)
     {
-        GameObject root = PrefabUtility.LoadPrefabContents(ProductionButtonPrefabPath);
-        if (root == null)
-            return;
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TopResourcesPrefabPath);
+        if (prefab == null)
+            throw new System.InvalidOperationException("TopResources prefab is missing at " + TopResourcesPrefabPath + ".");
 
-        try
-        {
-            RectTransform rect = root.GetComponent<RectTransform>();
-            if (rect != null)
-            {
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.sizeDelta = new Vector2(116f, 108f);
-            }
+        GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+        if (instance == null)
+            throw new System.InvalidOperationException("TopResources prefab could not be instantiated.");
 
-            Image background = EnsureComponent<Image>(root);
-            background.color = ButtonColor;
-            background.sprite = null;
-            background.type = Image.Type.Simple;
-            background.raycastTarget = true;
+        instance.name = "TopResources";
+        instance.transform.SetParent(parent, false);
 
-            Outline outline = EnsureComponent<Outline>(root);
-            outline.effectColor = new Color(1f, 1f, 1f, 0.88f);
-            outline.effectDistance = new Vector2(2f, -2f);
-
-            Button button = EnsureComponent<Button>(root);
-            button.targetGraphic = background;
-            ColorBlock colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(0.78f, 0.86f, 1f, 1f);
-            colors.pressedColor = Color.white;
-            colors.selectedColor = new Color(0.78f, 0.86f, 1f, 1f);
-            colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.78f);
-            button.colors = colors;
-
-            Image icon = EnsureChildImage(root.transform, "Icon");
-            ConfigureChildRect(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(54f, 34f));
-            icon.sprite = null;
-            icon.enabled = false;
-            icon.preserveAspect = true;
-            icon.raycastTarget = false;
-            icon.color = Color.white;
-
-            TMP_Text fallback = EnsureChildText(root.transform, "FallbackIcon", null);
-            ConfigureChildRect(fallback.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(82f, 32f));
-            ConfigurePrefabText(fallback, "UNIT", 20f, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
-
-            TMP_Text name = EnsureChildText(root.transform, "NameText", "Text (TMP)");
-            ConfigureChildRect(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(106f, 30f));
-            ConfigurePrefabText(name, "Unit", 16f, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
-
-            TMP_Text cost = EnsureChildText(root.transform, "CostText", null);
-            ConfigureChildRect(cost.rectTransform, Vector2.zero, Vector2.zero,
-                Vector2.zero, new Vector2(9f, 8f), new Vector2(48f, 21f));
-            ConfigurePrefabText(cost, "$0", 14f, FontStyles.Normal, TextAlignmentOptions.Left, Color.white);
-
-            TMP_Text time = EnsureChildText(root.transform, "TimeText", null);
-            ConfigureChildRect(time.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(1f, 0f), new Vector2(-9f, 8f), new Vector2(50f, 21f));
-            ConfigurePrefabText(time, "0s", 14f, FontStyles.Normal, TextAlignmentOptions.Right, Color.white);
-
-            ProductionButtonUI productionButton = EnsureComponent<ProductionButtonUI>(root);
-            SetObject(productionButton, "_icon", icon);
-            SetObject(productionButton, "_fallbackText", fallback);
-            SetObject(productionButton, "_nameText", name);
-            SetObject(productionButton, "_costText", cost);
-            SetObject(productionButton, "_timeText", time);
-            SetObject(productionButton, "_button", button);
-            SetObject(productionButton, "_fontAsset", _uiFontAsset);
-            SetObject(productionButton, "_buttonSprite", buttonSprite);
-
-            EditorUtility.SetDirty(root);
-            PrefabUtility.SaveAsPrefabAsset(root, ProductionButtonPrefabPath);
-        }
-        finally
-        {
-            PrefabUtility.UnloadPrefabContents(root);
-        }
-    }
-
-    /// <summary>
-    /// Повертає наявний компонент типу T на <paramref name="target"/> або додає новий, якщо його немає.
-    /// </summary>
-    private static T EnsureComponent<T>(GameObject target) where T : Component
-    {
-        T component = target.GetComponent<T>();
-        return component != null ? component : target.AddComponent<T>();
-    }
-
-    /// <summary>
-    /// Знаходить або створює дочірній GameObject з компонентом Image під <paramref name="parent"/>.
-    /// </summary>
-    private static Image EnsureChildImage(Transform parent, string objectName)
-    {
-        Transform child = parent.Find(objectName);
-        if (child == null)
-        {
-            GameObject childObject = new GameObject(
-                objectName,
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-            childObject.transform.SetParent(parent, false);
-            return childObject.GetComponent<Image>();
-        }
-
-        Image image = child.GetComponent<Image>();
-        return image != null ? image : child.gameObject.AddComponent<Image>();
-    }
-
-    /// <summary>
-    /// Знаходить або створює дочірній GameObject з компонентом TMP_Text під <paramref name="parent"/>.
-    /// Перейменовує застарілий дочірній об'єкт, якщо знайдено; створює новий, якщо жодного імені немає.
-    /// </summary>
-    private static TMP_Text EnsureChildText(Transform parent, string objectName, string legacyName)
-    {
-        Transform child = parent.Find(objectName);
-        if (child == null && !string.IsNullOrEmpty(legacyName))
-        {
-            child = parent.Find(legacyName);
-            if (child != null)
-                child.name = objectName;
-        }
-
-        if (child == null)
-        {
-            GameObject childObject = new GameObject(
-                objectName,
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(TextMeshProUGUI));
-            childObject.transform.SetParent(parent, false);
-            return childObject.GetComponent<TMP_Text>();
-        }
-
-        TMP_Text text = child.GetComponent<TMP_Text>();
-        return text != null ? text : child.gameObject.AddComponent<TextMeshProUGUI>();
-    }
-
-    /// <summary>
-    /// Застосовує якір, pivot, позицію та розмір до RectTransform за один виклик.
-    /// </summary>
-    private static void ConfigureChildRect(
-        RectTransform rect,
-        Vector2 anchorMin,
-        Vector2 anchorMax,
-        Vector2 pivot,
-        Vector2 anchoredPosition,
-        Vector2 sizeDelta)
-    {
+        RectTransform rect = instance.GetComponent<RectTransform>();
         if (rect == null)
-            return;
+            throw new System.InvalidOperationException("TopResources prefab should have RectTransform.");
 
-        rect.anchorMin = anchorMin;
-        rect.anchorMax = anchorMax;
-        rect.pivot = pivot;
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = sizeDelta;
-    }
-
-    /// <summary>
-    /// Налаштовує елемент TMP_Text всередині префабу з шрифтом, розміром, авто-масштабуванням,
-    /// стилем, вирівнюванням та кольором; пропускає призначення шрифту, якщо <see cref="_uiFontAsset"/> є null.
-    /// </summary>
-    private static void ConfigurePrefabText(
-        TMP_Text text,
-        string value,
-        float fontSize,
-        FontStyles style,
-        TextAlignmentOptions alignment,
-        Color color)
-    {
-        if (text == null)
-            return;
-
-        if (_uiFontAsset != null)
-            text.font = _uiFontAsset;
-
-        text.text = value;
-        text.fontSize = fontSize;
-        text.enableAutoSizing = true;
-        text.fontSizeMin = fontSize <= 14f ? 12f : 14f;
-        text.fontSizeMax = fontSize;
-        text.fontStyle = style;
-        text.alignment = alignment;
-        text.color = color;
-        text.raycastTarget = false;
-        text.overflowMode = TextOverflowModes.Ellipsis;
+        return rect;
     }
 
     /// <summary>
@@ -869,38 +681,110 @@ public static class RtsHudBuilder
     /// </summary>
     private static void ValidateResourceHud(List<string> errors)
     {
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(TopResourcesPrefabPath) == null)
+            errors.Add("TopResources prefab should exist at " + TopResourcesPrefabPath + ".");
+
         GameObject topResources = GameObject.Find("TopResources");
         if (topResources == null)
             return;
 
-        TMP_Text resourceText = topResources.GetComponentInChildren<TMP_Text>(true);
-        if (resourceText == null)
-            errors.Add("TopResources should contain resource TMP text.");
-        else if (resourceText.fontSizeMax < 28f || resourceText.fontSizeMin < 18f)
-            errors.Add("TopResources text should be large enough for readable resource stats.");
+        string prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(topResources);
+        if (prefabPath != TopResourcesPrefabPath)
+            errors.Add("TopResources scene object should be an instance of " + TopResourcesPrefabPath + ".");
+
+        HorizontalLayoutGroup resourceLayout = topResources.GetComponent<HorizontalLayoutGroup>();
+        if (resourceLayout == null)
+        {
+            errors.Add("TopResources prefab should use HorizontalLayoutGroup configured in Unity.");
+        }
+        else
+        {
+            if (resourceLayout.padding.left != resourceLayout.padding.right)
+                errors.Add("TopResources horizontal padding should be symmetrical.");
+
+            ValidateTopResourcesMinimumWidth(topResources.transform, resourceLayout, errors);
+        }
 
         RectTransform resourceRect = topResources.GetComponent<RectTransform>();
-        if (resourceRect == null || resourceRect.sizeDelta.x < 1000f || resourceRect.sizeDelta.y < 80f)
-            errors.Add("TopResources background should be large enough for one-line resource stats.");
+        if (resourceRect == null)
+        {
+            errors.Add("TopResources should have RectTransform.");
+        }
+        else
+        {
+            if (resourceRect.anchorMin != new Vector2(0f, 1f) ||
+                resourceRect.anchorMax != new Vector2(0f, 1f) ||
+                resourceRect.pivot != new Vector2(0f, 1f))
+            {
+                errors.Add("TopResources should be anchored to the upper-left corner.");
+            }
+
+            if (resourceRect.sizeDelta.x < 560f || resourceRect.sizeDelta.x > 720f || resourceRect.sizeDelta.y > 64f)
+                errors.Add("TopResources background should be compact and avoid empty space.");
+        }
 
         OutpostStatusUI[] statuses = Object.FindObjectsByType<OutpostStatusUI>(
             FindObjectsInactive.Include,
             FindObjectsSortMode.None);
 
         int topStatusCount = 0;
+        OutpostStatusUI topStatus = null;
         for (int i = 0; i < statuses.Length; i++)
         {
             if (statuses[i] == null)
                 continue;
 
             if (statuses[i].gameObject.name == "TopResources")
+            {
                 topStatusCount++;
+                topStatus = statuses[i];
+            }
             else
                 errors.Add("Legacy OutpostStatusUI should be removed from " + statuses[i].gameObject.name + ".");
         }
 
         if (topStatusCount != 1)
             errors.Add("There should be exactly one OutpostStatusUI on TopResources.");
+
+        if (topStatus != null)
+        {
+            SerializedObject serialized = new SerializedObject(topStatus);
+            ValidateObjectReference(serialized, "_zonesValueText", errors, "TopResources should reference ZonesValue.");
+            ValidateObjectReference(serialized, "_moneyValueText", errors, "TopResources should reference MoneyValue.");
+            ValidateObjectReference(serialized, "_incomeValueText", errors, "TopResources should reference IncomeValue.");
+        }
+    }
+
+    /// <summary>Перевіряє prefab-налаштування LayoutElement без зміни UI-структури.</summary>
+    private static void ValidateTopResourcesMinimumWidth(
+        Transform parent,
+        HorizontalLayoutGroup layout,
+        List<string> errors)
+    {
+        const float narrowViewportWidth = 320f;
+        const float narrowOuterMargin = 20f;
+        float availableWidth = narrowViewportWidth - narrowOuterMargin;
+        float width = layout.padding.left + layout.padding.right;
+        int visibleChildCount = 0;
+
+        foreach (Transform child in parent)
+        {
+            if (!child.gameObject.activeSelf)
+                continue;
+
+            LayoutElement element = child.GetComponent<LayoutElement>();
+            if (element == null || element.ignoreLayout)
+                continue;
+
+            width += Mathf.Max(0f, element.minWidth);
+            visibleChildCount++;
+        }
+
+        if (visibleChildCount > 1)
+            width += layout.spacing * (visibleChildCount - 1);
+
+        if (width > availableWidth)
+            errors.Add("TopResources prefab minimum layout width should fit a 320px-wide viewport.");
     }
 
     /// <summary>

@@ -19,7 +19,6 @@ namespace Strategy.UI
         [SerializeField] private RectTransform _minimapSlot;
         [SerializeField] private RectTransform _selectionInfoPanel;
         [SerializeField] private RectTransform _commandDeck;
-        [SerializeField] private RectTransform _topResources;
 
         private Vector2 _lastSize;
 
@@ -84,10 +83,8 @@ namespace Strategy.UI
             float framePadding = padding + frameExtra;
             float contentHeight = baseBottomHeight - padding * 2f;
             float bottomHeight = baseBottomHeight + frameExtra * 2f;
-            float resourceWidth = Mathf.Min(1100f, size.x - 28f);
 
             SetStretchBottom(_bottomHud, bottomHeight);
-            SetTopRight(_topResources, new Vector2(resourceWidth, 86f), new Vector2(-14f, -14f));
 
             SetLeftPanel(_minimapSlot, minimapWidth, contentHeight, framePadding);
             SetRightPanel(_commandDeck, commandWidth, contentHeight, framePadding);
@@ -114,10 +111,8 @@ namespace Strategy.UI
             float framePadding = padding + frameExtra;
             float infoHeight = baseBottomHeight - commandHeight - padding * 2f;
             float bottomHeight = baseBottomHeight + frameExtra * 2f;
-            float resourceWidth = Mathf.Min(900f, size.x - 20f);
 
             SetStretchBottom(_bottomHud, bottomHeight);
-            SetTopRight(_topResources, new Vector2(resourceWidth, 82f), new Vector2(-10f, -10f));
 
             SetTopLeftInside(_minimapSlot, new Vector2(minimapWidth, minimapHeight), framePadding);
             SetTopStretchInside(
@@ -139,19 +134,6 @@ namespace Strategy.UI
             rect.pivot = new Vector2(0.5f, 0f);
             rect.anchoredPosition = Vector2.zero;
             rect.sizeDelta = new Vector2(0f, height);
-        }
-
-        /// <summary>Прив'язує RectTransform до верхнього правого кута батьківського об'єкта із заданим зміщенням та розміром.</summary>
-        private static void SetTopRight(RectTransform rect, Vector2 size, Vector2 position)
-        {
-            if (rect == null)
-                return;
-
-            rect.anchorMin = new Vector2(1f, 1f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.pivot = new Vector2(1f, 1f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
         }
 
         /// <summary>Прив'язує RectTransform до нижнього лівого кута батьківського об'єкта із заданим розміром та відступом.</summary>
