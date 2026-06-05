@@ -1122,6 +1122,10 @@ public static class RtsHudBuilder
         ValidateObjectReference(serialized, "_costText", errors, "ProductionButtonPrefab should reference CostText.");
         ValidateObjectReference(serialized, "_timeText", errors, "ProductionButtonPrefab should reference TimeText.");
         ValidateObjectReference(serialized, "_fallbackText", errors, "ProductionButtonPrefab should reference FallbackIcon text.");
+        ValidateObjectReference(serialized, "_queueBadgeRoot", errors, "ProductionButtonPrefab should reference QueueBadge root.");
+        ValidateObjectReference(serialized, "_queueCountText", errors, "ProductionButtonPrefab should reference QueueCountText.");
+        ValidateObjectReference(serialized, "_progressRoot", errors, "ProductionButtonPrefab should reference ProgressRoot.");
+        ValidateObjectReference(serialized, "_progressFill", errors, "ProductionButtonPrefab should reference ProgressFill.");
 
         SerializedProperty iconProperty = serialized.FindProperty("_icon");
         if (iconProperty == null || iconProperty.objectReferenceValue == null)
@@ -1132,6 +1136,21 @@ public static class RtsHudBuilder
 
         if (background != null && iconProperty.objectReferenceValue == background)
             errors.Add("ProductionButtonPrefab _icon must not reference the root background image.");
+
+        SerializedProperty progressFillProperty = serialized.FindProperty("_progressFill");
+        Image progressFill = progressFillProperty != null
+            ? progressFillProperty.objectReferenceValue as Image
+            : null;
+
+        if (progressFill != null && progressFill.type != Image.Type.Simple)
+            errors.Add("ProductionButtonPrefab ProgressFill should use Image.Type.Simple because progress is driven by RectTransform width.");
+
+        if (progressFill != null)
+        {
+            RectTransform progressRect = progressFill.rectTransform;
+            if (progressRect.anchorMin != Vector2.zero || progressRect.anchorMax.x > 0.001f)
+                errors.Add("ProductionButtonPrefab ProgressFill should start with zero width anchored from the left.");
+        }
     }
 
     /// <summary>

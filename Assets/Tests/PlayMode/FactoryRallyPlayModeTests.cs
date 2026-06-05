@@ -7,6 +7,7 @@ using Unity.AI.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace Strategy.Tests
 {
@@ -29,8 +30,15 @@ namespace Strategy.Tests
         private const string ProductionItemDataTypeName = "Strategy.Data.ProductionItemData, Assembly-CSharp";
         private const string UnitDataTypeName = "Strategy.Data.UnitData, Assembly-CSharp";
         private const string FactoryProductionDistributorTypeName = "Strategy.Buildings.FactoryProductionDistributor, Assembly-CSharp";
+        private const string FactoryProductionRuntimeStateTypeName = "Strategy.Buildings.FactoryProductionRuntimeState, Assembly-CSharp";
+        private const string FactoryProductionStatusPresenterTypeName = "Strategy.Buildings.FactoryProductionStatusPresenter, Assembly-CSharp";
+        private const string BuildingSelectionStateTypeName = "Strategy.Buildings.BuildingSelectionState, Assembly-CSharp";
+        private const string ProductionButtonRuntimeStateTypeName = "Strategy.UI.ProductionButtonRuntimeState, Assembly-CSharp";
+        private const string ProductionButtonStateAggregatorTypeName = "Strategy.UI.ProductionButtonStateAggregator, Assembly-CSharp";
+        private const string ProductionButtonUiTypeName = "Strategy.UI.ProductionButtonUI, Assembly-CSharp";
         private const string SelectionInfoPanelUiTypeName = "Strategy.UI.SelectionInfoPanelUI, Assembly-CSharp";
         private const string EventManagerTypeName = "Strategy.Core.EventManager, Assembly-CSharp";
+        private const string TextMeshProUiTypeName = "TMPro.TextMeshProUGUI, Unity.TextMeshPro";
 
         private readonly Type _buildingProductionType = Type.GetType(BuildingProductionTypeName);
         private readonly Type _unitSpawnActivatorType = Type.GetType(UnitSpawnActivatorTypeName);
@@ -45,6 +53,13 @@ namespace Strategy.Tests
         private readonly Type _productionItemDataType = Type.GetType(ProductionItemDataTypeName);
         private readonly Type _unitDataType = Type.GetType(UnitDataTypeName);
         private readonly Type _factoryProductionDistributorType = Type.GetType(FactoryProductionDistributorTypeName);
+        private readonly Type _factoryProductionRuntimeStateType = Type.GetType(FactoryProductionRuntimeStateTypeName);
+        private readonly Type _factoryProductionStatusPresenterType = Type.GetType(FactoryProductionStatusPresenterTypeName);
+        private readonly Type _buildingSelectionStateType = Type.GetType(BuildingSelectionStateTypeName);
+        private readonly Type _productionButtonRuntimeStateType = Type.GetType(ProductionButtonRuntimeStateTypeName);
+        private readonly Type _productionButtonStateAggregatorType = Type.GetType(ProductionButtonStateAggregatorTypeName);
+        private readonly Type _productionButtonUiType = Type.GetType(ProductionButtonUiTypeName);
+        private readonly Type _textMeshProUiType = Type.GetType(TextMeshProUiTypeName);
         private readonly Type _selectionInfoPanelUiType = Type.GetType(SelectionInfoPanelUiTypeName);
         private readonly Type _eventManagerType = Type.GetType(EventManagerTypeName);
 
@@ -67,6 +82,13 @@ namespace Strategy.Tests
             Assert.NotNull(_productionItemDataType);
             Assert.NotNull(_unitDataType);
             Assert.NotNull(_factoryProductionDistributorType);
+            Assert.NotNull(_factoryProductionRuntimeStateType);
+            Assert.NotNull(_factoryProductionStatusPresenterType);
+            Assert.NotNull(_buildingSelectionStateType);
+            Assert.NotNull(_productionButtonRuntimeStateType);
+            Assert.NotNull(_productionButtonStateAggregatorType);
+            Assert.NotNull(_productionButtonUiType);
+            Assert.NotNull(_textMeshProUiType);
             Assert.NotNull(_selectionInfoPanelUiType);
             Assert.NotNull(_eventManagerType);
 
@@ -596,6 +618,196 @@ namespace Strategy.Tests
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator BuildingProductionRuntimeStateTracksProgressAndClearsAfterSpawn()
+        {
+            ScriptableObject config = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject item = CreateProductionItem("Progress Tank", 0.3f, out GameObject unitPrefab);
+            InvokeVoid(config, "AddItem", item);
+            Component factory = CreateProductionFactory("Progress Factory", config);
+
+            Assert.IsTrue(InvokeBool(factory, "AddToQueue", item));
+            yield return null;
+
+            Assert.IsTrue(TryGetCurrentProductionState(factory, out object firstState));
+            float firstProgress = GetPropertyValue<float>(firstState, "Progress");
+            float firstRemaining = GetPropertyValue<float>(firstState, "RemainingSeconds");
+            Assert.Greater(firstRemaining, 0f);
+            Assert.Less(firstProgress, 1f);
+
+            yield return new WaitForSeconds(0.12f);
+
+            Assert.IsTrue(TryGetCurrentProductionState(factory, out object secondState));
+            Assert.Greater(GetPropertyValue<float>(secondState, "Progress"), firstProgress);
+            Assert.Less(GetPropertyValue<float>(secondState, "RemainingSeconds"), firstRemaining);
+
+            yield return new WaitForSeconds(0.35f);
+            yield return null;
+
+            Assert.IsFalse(TryGetCurrentProductionState(factory, out _));
+
+            DestroyRuntimeObjects();
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(GetPropertyValue<UnityEngine.Object>(item, "UnitData"));
+            UnityEngine.Object.Destroy(item);
+            UnityEngine.Object.Destroy(config);
+        }
+
+        [UnityTest]
+        public IEnumerator CountPendingWorkForCountsCurrentAndEquivalentQueuedItems()
+        {
+            ScriptableObject config = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject item = CreateProductionItem("Queued Tank", 100f, out GameObject unitPrefab);
+            ScriptableObject sharedUnitData = GetPropertyValue<ScriptableObject>(item, "UnitData");
+            ScriptableObject equivalentItem = CreateProductionItemForUnitData("Queued Tank Copy", sharedUnitData, 100f);
+            InvokeVoid(config, "AddItem", item);
+            Component factory = CreateProductionFactory("Queue Factory", config);
+
+            Assert.IsTrue(InvokeBool(factory, "AddToQueue", item));
+            Assert.IsTrue(InvokeBool(factory, "AddToQueue", item));
+
+            Assert.AreEqual(2, InvokeInt(factory, "CountPendingWorkFor", item));
+            Assert.AreEqual(2, InvokeInt(factory, "CountPendingWorkFor", equivalentItem));
+
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(sharedUnitData);
+            UnityEngine.Object.Destroy(item);
+            UnityEngine.Object.Destroy(equivalentItem);
+            UnityEngine.Object.Destroy(config);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator ProductionButtonAggregatorSumsCountsAndUsesFastestActiveFactory()
+        {
+            ScriptableObject config = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject item = CreateProductionItem("Aggregate Tank", 0.8f, out GameObject unitPrefab);
+            InvokeVoid(config, "AddItem", item);
+            Component first = CreateProductionFactory("Fast Factory", config);
+            Component second = CreateProductionFactory("Slow Factory", config);
+            Array factories = Array.CreateInstance(_buildingProductionType, 2);
+            factories.SetValue(first, 0);
+            factories.SetValue(second, 1);
+
+            Assert.IsTrue(InvokeBool(first, "AddToQueue", item));
+            yield return new WaitForSeconds(0.18f);
+            Assert.IsTrue(InvokeBool(second, "AddToQueue", item));
+            yield return null;
+
+            object aggregateState = InvokeAggregatorBuild(factories, item);
+            Assert.AreEqual(2, GetPropertyValue<int>(aggregateState, "PendingCount"));
+            Assert.IsTrue(GetPropertyValue<bool>(aggregateState, "HasActiveProgress"));
+
+            Assert.IsTrue(TryGetActiveProductionFor(first, item, out object firstState));
+            Assert.IsTrue(TryGetActiveProductionFor(second, item, out object secondState));
+            float fastestRemaining = GetPropertyValue<float>(firstState, "RemainingSeconds");
+            float slowestRemaining = GetPropertyValue<float>(secondState, "RemainingSeconds");
+
+            Assert.Less(fastestRemaining, slowestRemaining);
+            Assert.AreEqual(
+                fastestRemaining,
+                GetPropertyValue<float>(aggregateState, "RemainingSeconds"),
+                0.08f);
+
+            UnityEngine.Object.Destroy(first.gameObject);
+            UnityEngine.Object.Destroy(second.gameObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(GetPropertyValue<UnityEngine.Object>(item, "UnitData"));
+            UnityEngine.Object.Destroy(item);
+            UnityEngine.Object.Destroy(config);
+        }
+
+        [UnityTest]
+        public IEnumerator ProductionButtonUiShowsQueueBadgeAndActiveProgress()
+        {
+            ScriptableObject item = CreateProductionItem("Button Tank", 5f, out GameObject unitPrefab);
+            GameObject buttonObject = CreateProductionButtonObject(out Component button, out GameObject badgeRoot, out Component badgeText, out GameObject progressRoot, out Image progressFill);
+
+            InvokeVoid(button, "Initialize", item, null);
+            object activeState = Activator.CreateInstance(
+                _productionButtonRuntimeStateType,
+                3,
+                true,
+                0.35f,
+                1.2f);
+
+            InvokeVoid(button, "SetProductionState", activeState);
+
+            Assert.IsTrue(badgeRoot.activeSelf);
+            Assert.AreEqual("3", GetStringProperty(badgeText, "text"));
+            Assert.IsTrue(progressRoot.activeSelf);
+            Assert.AreEqual(0.35f, progressFill.fillAmount, 0.01f);
+            Assert.AreEqual(0.35f, progressFill.rectTransform.anchorMax.x, 0.01f);
+            Assert.AreEqual("2s", GetStringProperty((Component)GetFieldValue(button, "_timeText"), "text"));
+
+            object queuedOnlyState = Activator.CreateInstance(
+                _productionButtonRuntimeStateType,
+                2,
+                false,
+                0f,
+                0f);
+            InvokeVoid(button, "SetProductionState", queuedOnlyState);
+
+            Assert.IsTrue(badgeRoot.activeSelf);
+            Assert.AreEqual("2", GetStringProperty(badgeText, "text"));
+            Assert.IsFalse(progressRoot.activeSelf);
+            Assert.AreEqual(0f, progressFill.fillAmount, 0.01f);
+            Assert.AreEqual(0f, progressFill.rectTransform.anchorMax.x, 0.01f);
+
+            UnityEngine.Object.Destroy(buttonObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(GetPropertyValue<UnityEngine.Object>(item, "UnitData"));
+            UnityEngine.Object.Destroy(item);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator FactoryProductionStatusPresenterShowsBarOnlyForSelectedProducingFactory()
+        {
+            GameObject cameraObject = new GameObject("Main Camera");
+            cameraObject.tag = "MainCamera";
+            cameraObject.AddComponent<UnityEngine.Camera>();
+
+            ScriptableObject config = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject item = CreateProductionItem("World Bar Tank", 1f, out GameObject unitPrefab);
+            InvokeVoid(config, "AddItem", item);
+            Component factory = CreateProductionFactory("World Bar Factory", config);
+            factory.gameObject.AddComponent(_buildingSelectionStateType);
+            Component presenter = factory.gameObject.AddComponent(_factoryProductionStatusPresenterType);
+            GameObject statusBar = CreateFactoryStatusBarObject(factory.transform, out Image fill);
+            RectTransform trackRect = statusBar.transform.Find("Track").GetComponent<RectTransform>();
+            SetField(presenter, "_statusBarRoot", statusBar);
+            SetField(presenter, "_trackRect", trackRect);
+            SetField(presenter, "_fillRect", fill.rectTransform);
+            SetField(presenter, "_fillImage", fill);
+
+            InvokeStaticVoid(_eventManagerType, "RaiseBuildingSelected", factory.gameObject);
+            yield return null;
+            Assert.IsFalse(statusBar.activeSelf);
+
+            Assert.IsTrue(InvokeBool(factory, "AddToQueue", item));
+            yield return null;
+
+            Assert.IsTrue(statusBar.activeSelf);
+            Assert.Greater(fill.fillAmount, 0f);
+            Assert.Greater(fill.rectTransform.anchorMax.x, 0f);
+            Assert.Less(Quaternion.Angle(Quaternion.Euler(new Vector3(-90f, 0f, 0f)), statusBar.transform.localRotation), 0.1f);
+
+            InvokeStaticVoid(_eventManagerType, "RaiseBuildingDeselected", factory.gameObject);
+            yield return null;
+
+            Assert.IsFalse(statusBar.activeSelf);
+
+            UnityEngine.Object.Destroy(cameraObject);
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(GetPropertyValue<UnityEngine.Object>(item, "UnitData"));
+            UnityEngine.Object.Destroy(item);
+            UnityEngine.Object.Destroy(config);
+        }
+
         private Component CreateFactory(Vector3 spawnPosition, Vector3 rallyPosition)
         {
             _factoryObject = new GameObject("Factory");
@@ -708,6 +920,142 @@ namespace Strategy.Tests
             Assert.AreEqual(thirdCount, GetPropertyValue<int>(factories.GetValue(2), "PendingWorkCount"));
         }
 
+        private bool TryGetCurrentProductionState(Component factory, out object state)
+        {
+            state = null;
+            MethodInfo method = _buildingProductionType.GetMethod(
+                "TryGetCurrentProduction",
+                BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(method);
+
+            object[] args = { null };
+            bool result = (bool)method.Invoke(factory, args);
+            state = args[0];
+            return result;
+        }
+
+        private bool TryGetActiveProductionFor(Component factory, ScriptableObject item, out object state)
+        {
+            state = null;
+            MethodInfo method = _buildingProductionType.GetMethod(
+                "TryGetActiveProductionFor",
+                BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(method);
+
+            object[] args = { item, null };
+            bool result = (bool)method.Invoke(factory, args);
+            state = args[1];
+            return result;
+        }
+
+        private object InvokeAggregatorBuild(Array factories, ScriptableObject item)
+        {
+            MethodInfo method = _productionButtonStateAggregatorType.GetMethod(
+                "Build",
+                BindingFlags.Static | BindingFlags.Public);
+            Assert.NotNull(method);
+            return method.Invoke(null, new object[] { factories, item });
+        }
+
+        private GameObject CreateProductionButtonObject(
+            out Component button,
+            out GameObject badgeRoot,
+            out Component badgeText,
+            out GameObject progressRoot,
+            out Image progressFill)
+        {
+            GameObject root = new GameObject(
+                "Production Button",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Button));
+            button = root.AddComponent(_productionButtonUiType);
+
+            badgeRoot = new GameObject(
+                "QueueBadge",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            badgeRoot.transform.SetParent(root.transform, false);
+
+            GameObject badgeTextObject = new GameObject(
+                "QueueCountText",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                _textMeshProUiType);
+            badgeTextObject.transform.SetParent(badgeRoot.transform, false);
+            badgeText = badgeTextObject.GetComponent(_textMeshProUiType);
+
+            progressRoot = new GameObject(
+                "ProgressRoot",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            progressRoot.transform.SetParent(root.transform, false);
+
+            GameObject progressFillObject = new GameObject(
+                "ProgressFill",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            progressFillObject.transform.SetParent(progressRoot.transform, false);
+            progressFill = progressFillObject.GetComponent<Image>();
+            progressFill.type = Image.Type.Filled;
+            progressFill.fillMethod = Image.FillMethod.Horizontal;
+            return root;
+        }
+
+        private static GameObject CreateFactoryStatusBarObject(Transform parent, out Image fillImage)
+        {
+            GameObject root = new GameObject(
+                "FactoryProductionStatusBar",
+                typeof(RectTransform),
+                typeof(Canvas));
+            root.transform.SetParent(parent, false);
+            Canvas canvas = root.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+
+            RectTransform rootRect = (RectTransform)root.transform;
+            rootRect.localPosition = new Vector3(0f, 5.25f, 7.8f);
+            rootRect.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            rootRect.localScale = Vector3.one * 0.02f;
+            rootRect.sizeDelta = new Vector2(180f, 12f);
+
+            GameObject track = new GameObject(
+                "Track",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            track.transform.SetParent(root.transform, false);
+            RectTransform trackRect = (RectTransform)track.transform;
+            trackRect.anchorMin = Vector2.zero;
+            trackRect.anchorMax = Vector2.one;
+            trackRect.offsetMin = Vector2.zero;
+            trackRect.offsetMax = Vector2.zero;
+
+            GameObject fill = new GameObject(
+                "Fill",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            fill.transform.SetParent(track.transform, false);
+            fillImage = fill.GetComponent<Image>();
+            fillImage.type = Image.Type.Filled;
+            fillImage.fillMethod = Image.FillMethod.Horizontal;
+            fillImage.fillAmount = 0f;
+
+            RectTransform fillRect = fillImage.rectTransform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(0f, 1f);
+            fillRect.pivot = new Vector2(0f, 0.5f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+
+            root.SetActive(false);
+            return root;
+        }
+
         private GameObject CreateUnit(Vector3 position)
         {
             GameObject unit = new GameObject("Runtime Rally Test Unit");
@@ -765,6 +1113,15 @@ namespace Strategy.Tests
             return (bool)method.Invoke(target, args);
         }
 
+        private static int InvokeInt(object target, string methodName, params object[] args)
+        {
+            MethodInfo method = target.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            return (int)method.Invoke(target, args);
+        }
+
         private static void SetField(Component target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(
@@ -790,6 +1147,15 @@ namespace Strategy.Tests
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.NotNull(property);
             return (T)property.GetValue(target);
+        }
+
+        private static string GetStringProperty(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(
+                propertyName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.NotNull(property);
+            return (string)property.GetValue(target);
         }
 
         private static object AddMouseDevice()
@@ -857,6 +1223,13 @@ namespace Strategy.Tests
         private static GameObject FindCommandLine(GameObject unit)
         {
             return unit != null ? GameObject.Find("CommandLine_" + unit.name) : null;
+        }
+
+        private static void DestroyRuntimeObjects()
+        {
+            GameObject runtimeObjects = GameObject.Find("Runtime Objects");
+            if (runtimeObjects != null)
+                UnityEngine.Object.Destroy(runtimeObjects);
         }
 
         private static float DistancePointToSegment2D(Vector3 point, Vector3 segmentStart, Vector3 segmentEnd)

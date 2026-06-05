@@ -42,8 +42,10 @@ This project is a Unity RTS inspired by Company of Heroes 2 and Supreme Commande
 * UI observes gameplay state.
 * UI does not own gameplay state.
 * Use events for communication.
+* If a visual, layout, position, color, size or hierarchy can be edited in the Unity Editor, author it in Unity instead of constructing it from gameplay code.
 * Author Unity UI visuals in scenes or prefabs: anchors, layout groups, colors, fonts, sprites, spacing, static labels and hierarchy must be edited through Unity UI tools whenever possible.
-* Scripts may bind serialized references and update runtime data only; do not create or style UI elements in code when the same result can be configured in the Unity editor.
+* Scripts may bind serialized references, react to events and update runtime data only; do not create or style UI elements in code when the same result can be configured in the Unity editor.
+* World-space building UI, including production bars and similar status visuals, must be placed directly in the building prefab or scene hierarchy and wired through serialized references; do not instantiate these visuals from gameplay scripts unless explicitly requested.
 * Store reusable UI prefabs in `Assets/Prefabs/UI/`.
 
 ### Performance

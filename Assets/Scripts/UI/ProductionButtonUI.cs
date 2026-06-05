@@ -30,6 +30,10 @@ namespace Strategy.UI
         [SerializeField] private TMP_Text _costText;
         [SerializeField] private TMP_Text _timeText;
         [SerializeField] private Button _button;
+        [SerializeField] private GameObject _queueBadgeRoot;
+        [SerializeField] private TMP_Text _queueCountText;
+        [SerializeField] private GameObject _progressRoot;
+        [SerializeField] private Image _progressFill;
         [SerializeField] private Vector2 _tooltipOffset = new Vector2(0f, 10f);
         [SerializeField] private TMP_FontAsset _fontAsset;
         [SerializeField] private Sprite _buttonSprite;
@@ -41,6 +45,8 @@ namespace Strategy.UI
         private static RectTransform _tooltipRoot;
         private static TMP_Text _tooltipText;
         private static Canvas _tooltipCanvas;
+
+        public ProductionItemData Item => _item;
 
         /// <summary>Зберігає спільні ресурси шрифту та спрайту, що використовуються <see cref="ApplyLayout"/> та створенням підказки.</summary>
         public void SetStyle(TMP_FontAsset fontAsset, Sprite buttonSprite)
@@ -68,6 +74,7 @@ namespace Strategy.UI
             }
 
             Bind(ProductionItemViewModel.From(item, int.MaxValue));
+            SetProductionState(ProductionButtonRuntimeState.Empty);
 
             if (_button != null)
             {
@@ -86,6 +93,29 @@ namespace Strategy.UI
                 return;
 
             BindAvailability(ProductionItemViewModel.From(_item, playerResource));
+        }
+
+        public void SetProductionState(ProductionButtonRuntimeState state)
+        {
+            CacheStatusReferences();
+
+            int pendingCount = state.PendingCount;
+            bool hasPendingWork = pendingCount > 0;
+            bool showProgress = hasPendingWork && state.HasActiveProgress;
+
+            if (_queueBadgeRoot != null)
+                _queueBadgeRoot.SetActive(hasPendingWork);
+
+            if (_queueCountText != null)
+                _queueCountText.text = hasPendingWork ? FormatQueueCount(pendingCount) : string.Empty;
+
+            if (_progressRoot != null)
+                _progressRoot.SetActive(showProgress);
+
+            SetProgressFill(showProgress ? state.Progress : 0f);
+
+            if (_timeText != null)
+                _timeText.text = showProgress ? FormatRemainingSeconds(state.RemainingSeconds) : _model.TimeText;
         }
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -185,6 +215,23 @@ namespace Strategy.UI
 
             if (_fallbackText == null)
                 _fallbackText = FindChild<TMP_Text>("FallbackIcon") ?? CreateText("FallbackIcon");
+
+            CacheStatusReferences();
+        }
+
+        private void CacheStatusReferences()
+        {
+            if (_queueBadgeRoot == null)
+                _queueBadgeRoot = FindDescendant<RectTransform>("QueueBadge")?.gameObject;
+
+            if (_queueCountText == null)
+                _queueCountText = FindDescendant<TMP_Text>("QueueCountText");
+
+            if (_progressRoot == null)
+                _progressRoot = FindDescendant<RectTransform>("ProgressRoot")?.gameObject;
+
+            if (_progressFill == null)
+                _progressFill = FindDescendant<Image>("ProgressFill");
         }
 
         /// <summary>
@@ -241,6 +288,16 @@ namespace Strategy.UI
             SetTopRect(_nameText != null ? _nameText.rectTransform : null, new Vector2(0f, -60f), new Vector2(106f, 30f));
             SetBottomLeftRect(_costText != null ? _costText.rectTransform : null, new Vector2(9f, 8f), new Vector2(48f, 21f));
             SetBottomRightRect(_timeText != null ? _timeText.rectTransform : null, new Vector2(-9f, 8f), new Vector2(50f, 21f));
+
+            SetTopRightRect(_queueBadgeRoot != null ? _queueBadgeRoot.transform as RectTransform : null, new Vector2(-5f, -5f), new Vector2(28f, 22f));
+            SetStretchBottomRect(_progressRoot != null ? _progressRoot.transform as RectTransform : null, 7f, 7f, 3f, 5f);
+
+            if (_progressFill != null)
+            {
+                _progressFill.type = Image.Type.Simple;
+                _progressFill.fillAmount = 0f;
+                SetLeftFillRect(_progressFill.rectTransform, 0f);
+            }
         }
 
         /// <summary>Шукає прямого дочірнього об'єкта за іменем та повертає запитаний компонент або null.</summary>
@@ -248,6 +305,20 @@ namespace Strategy.UI
         {
             Transform child = transform.Find(objectName);
             return child != null ? child.GetComponent<T>() : null;
+        }
+
+        private T FindDescendant<T>(string objectName) where T : Component
+        {
+            T[] components = GetComponentsInChildren<T>(true);
+
+            for (int i = 0; i < components.Length; i++)
+            {
+                T component = components[i];
+                if (component != null && component.name == objectName)
+                    return component;
+            }
+
+            return null;
         }
 
         /// <summary>Створює дочірній GameObject із компонентом <see cref="Image"/> без рейкасту та повертає його.</summary>
@@ -303,7 +374,7 @@ namespace Strategy.UI
             text.alignment = alignment;
             text.color = Color.white;
             text.raycastTarget = false;
-            text.overflowMode = TextOverflowModes.Ellipsis;
+            text.overflowMode = TextOverflowModes.Truncate;
         }
 
         /// <summary>Прив'язує RectTransform до верхнього центру батьківського об'єкта із заданим зміщенням та розміром.</summary>
@@ -343,6 +414,71 @@ namespace Strategy.UI
             rectTransform.pivot = new Vector2(1f, 0f);
             rectTransform.anchoredPosition = offset;
             rectTransform.sizeDelta = size;
+        }
+
+        private static void SetTopRightRect(RectTransform rectTransform, Vector2 offset, Vector2 size)
+        {
+            if (rectTransform == null)
+                return;
+
+            rectTransform.anchorMin = new Vector2(1f, 1f);
+            rectTransform.anchorMax = new Vector2(1f, 1f);
+            rectTransform.pivot = new Vector2(1f, 1f);
+            rectTransform.anchoredPosition = offset;
+            rectTransform.sizeDelta = size;
+        }
+
+        private static void SetStretchBottomRect(
+            RectTransform rectTransform,
+            float left,
+            float right,
+            float bottom,
+            float height)
+        {
+            if (rectTransform == null)
+                return;
+
+            rectTransform.anchorMin = new Vector2(0f, 0f);
+            rectTransform.anchorMax = new Vector2(1f, 0f);
+            rectTransform.pivot = new Vector2(0.5f, 0f);
+            rectTransform.anchoredPosition = new Vector2((left - right) * 0.5f, bottom);
+            rectTransform.sizeDelta = new Vector2(-(left + right), height);
+        }
+
+        private static void Stretch(RectTransform rectTransform, Vector2 minOffset, Vector2 maxOffset)
+        {
+            if (rectTransform == null)
+                return;
+
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = minOffset;
+            rectTransform.offsetMax = maxOffset;
+        }
+
+        private void SetProgressFill(float progress)
+        {
+            progress = Mathf.Clamp01(progress);
+
+            if (_progressFill == null)
+                return;
+
+            _progressFill.type = Image.Type.Simple;
+            _progressFill.fillAmount = progress;
+            SetLeftFillRect(_progressFill.rectTransform, progress);
+        }
+
+        private static void SetLeftFillRect(RectTransform rectTransform, float progress)
+        {
+            if (rectTransform == null)
+                return;
+
+            progress = Mathf.Clamp01(progress);
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = new Vector2(progress, 1f);
+            rectTransform.pivot = new Vector2(0f, 0.5f);
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
         }
 
         /// <summary>
@@ -534,6 +670,25 @@ namespace Strategy.UI
         private static string FormatSeconds(float seconds)
         {
             return $"{FormatNumber(seconds)}s";
+        }
+
+        private static string FormatQueueCount(int count)
+        {
+            if (count <= 0)
+                return string.Empty;
+
+            return count > 99 ? "99+" : count.ToString();
+        }
+
+        private static string FormatRemainingSeconds(float seconds)
+        {
+            if (seconds <= 0f)
+                return "0s";
+
+            if (seconds < 1f)
+                return $"{seconds:0.0}s";
+
+            return $"{Mathf.CeilToInt(seconds)}s";
         }
 
         /// <summary>Форматує число з плаваючою точкою як ціле, якщо воно не має дробової частини, інакше до двох знаків після коми.</summary>

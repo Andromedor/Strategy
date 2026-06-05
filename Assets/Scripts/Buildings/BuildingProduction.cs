@@ -49,6 +49,9 @@ namespace Strategy.Buildings
         private readonly List<Vector3> _reservedRallyDestinations = new();
         private TeamComponent _teamComponent;
         private bool _isProducing;
+        private ProductionItemData _currentProductionItem;
+        private float _currentProductionDuration;
+        private float _currentProductionElapsed;
 
         public static readonly List<BuildingProduction> All = new();
         public static event Action FactoriesChanged;
@@ -59,7 +62,7 @@ namespace Strategy.Buildings
 
         public int QueuedCount => _queue.Count;
         public bool IsProducing => _isProducing;
-        public int PendingWorkCount => _queue.Count + (_isProducing ? 1 : 0);
+        public int PendingWorkCount => _queue.Count + (_currentProductionItem != null ? 1 : 0);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
@@ -88,6 +91,7 @@ namespace Strategy.Buildings
         {
             StopAllCoroutines();
             _isProducing = false;
+            ClearCurrentProductionState();
             All.Remove(this);
             FactoriesChanged?.Invoke();
         }
@@ -156,6 +160,72 @@ namespace Strategy.Buildings
             return false;
         }
 
+        public bool TryGetCurrentProduction(out FactoryProductionRuntimeState state)
+        {
+            state = default;
+
+            if (_currentProductionItem == null)
+                return false;
+
+            float duration = Mathf.Max(0f, _currentProductionDuration);
+            float progress = duration <= 0f ? 1f : Mathf.Clamp01(_currentProductionElapsed / duration);
+            float remainingSeconds = duration <= 0f ? 0f : Mathf.Max(0f, duration - _currentProductionElapsed);
+
+            state = new FactoryProductionRuntimeState(
+                this,
+                _currentProductionItem,
+                progress,
+                remainingSeconds,
+                duration);
+            return true;
+        }
+
+        public bool TryGetActiveProductionFor(
+            ProductionItemData item,
+            out FactoryProductionRuntimeState state)
+        {
+            if (!TryGetCurrentProduction(out state))
+                return false;
+
+            if (AreEquivalentProductionItems(state.Item, item))
+                return true;
+
+            state = default;
+            return false;
+        }
+
+        public int CountPendingWorkFor(ProductionItemData item)
+        {
+            if (!IsValidProductionItem(item))
+                return 0;
+
+            int count = 0;
+
+            if (AreEquivalentProductionItems(_currentProductionItem, item))
+                count++;
+
+            foreach (ProductionItemData queuedItem in _queue)
+            {
+                if (AreEquivalentProductionItems(queuedItem, item))
+                    count++;
+            }
+
+            return count;
+        }
+
+        public static bool AreEquivalentProductionItems(
+            ProductionItemData first,
+            ProductionItemData second)
+        {
+            if (!IsValidProductionItem(first) || !IsValidProductionItem(second))
+                return false;
+
+            if (first == second || first.UnitData == second.UnitData)
+                return true;
+
+            return first.UnitData.Prefab == second.UnitData.Prefab;
+        }
+
         private static bool IsValidProductionItem(ProductionItemData item)
         {
             return item != null && item.UnitData != null && item.UnitData.Prefab != null;
@@ -168,10 +238,7 @@ namespace Strategy.Buildings
             if (!IsValidProductionItem(availableItem) || !IsValidProductionItem(requestedItem))
                 return false;
 
-            if (availableItem.UnitData == requestedItem.UnitData)
-                return true;
-
-            return availableItem.UnitData.Prefab == requestedItem.UnitData.Prefab;
+            return AreEquivalentProductionItems(availableItem, requestedItem);
         }
 
         /// <summary>Виймає елементи з черги по одному, очікує час виробництва кожного юніта, після чого викликає SpawnAndReleaseUnit.</summary>
@@ -182,13 +249,30 @@ namespace Strategy.Buildings
             while (_queue.Count > 0)
             {
                 ProductionItemData item = _queue.Dequeue();
+                _currentProductionItem = item;
+                _currentProductionDuration = Mathf.Max(0f, item.ProductionTime);
+                _currentProductionElapsed = 0f;
 
-                yield return new WaitForSeconds(Mathf.Max(0f, item.ProductionTime));
+                while (_currentProductionElapsed < _currentProductionDuration)
+                {
+                    _currentProductionElapsed = Mathf.Min(
+                        _currentProductionDuration,
+                        _currentProductionElapsed + Time.deltaTime);
+                    yield return null;
+                }
 
                 yield return StartCoroutine(SpawnAndReleaseUnit(item));
+                ClearCurrentProductionState();
             }
 
             _isProducing = false;
+        }
+
+        private void ClearCurrentProductionState()
+        {
+            _currentProductionItem = null;
+            _currentProductionDuration = 0f;
+            _currentProductionElapsed = 0f;
         }
 
         /// <summary>

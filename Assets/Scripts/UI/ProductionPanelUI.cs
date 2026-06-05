@@ -24,11 +24,14 @@ namespace Strategy.UI
         [SerializeField] private TeamType _team = TeamType.Player;
         [SerializeField] private TMP_FontAsset _fontAsset;
         [SerializeField] private Sprite _buttonSprite;
+        [SerializeField, Min(0.03f)] private float _productionStateRefreshInterval = 0.1f;
 
         private readonly List<ProductionButtonUI> _buttons = new();
         private readonly List<BuildingProduction> _selectedFactories = new();
         private readonly List<ProductionItemData> _displayItems = new();
+        private readonly List<BuildingProduction> _stateFactories = new();
         private BuildingProduction _currentFactory;
+        private float _nextProductionStateRefreshTime;
 
         private void OnEnable()
         {
@@ -45,6 +48,15 @@ namespace Strategy.UI
             EventManager.OnSelectionChanged -= OnSelectionChanged;
             ResourceManager.OnResourceChanged -= RefreshButtons;
             BuildingProduction.FactoriesChanged -= RefreshCurrentFactory;
+        }
+
+        private void Update()
+        {
+            if (_buttons.Count == 0 || Time.unscaledTime < _nextProductionStateRefreshTime)
+                return;
+
+            _nextProductionStateRefreshTime = Time.unscaledTime + _productionStateRefreshInterval;
+            RefreshProductionStates();
         }
 
         /// <summary>
@@ -112,6 +124,7 @@ namespace Strategy.UI
 
             RebuildLayout();
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
+            RefreshProductionStates();
         }
 
         /// <summary>
@@ -134,6 +147,7 @@ namespace Strategy.UI
             }
 
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
+            RefreshProductionStates();
         }
 
         /// <summary>
@@ -147,6 +161,44 @@ namespace Strategy.UI
                 if (button != null)
                     button.RefreshAvailability(playerResource);
             }
+
+            RefreshProductionStates();
+        }
+
+        private void RefreshProductionStates()
+        {
+            BuildStateFactories();
+
+            for (int i = 0; i < _buttons.Count; i++)
+            {
+                ProductionButtonUI button = _buttons[i];
+                if (button == null)
+                    continue;
+
+                button.SetProductionState(
+                    ProductionButtonStateAggregator.Build(_stateFactories, button.Item));
+            }
+        }
+
+        private void BuildStateFactories()
+        {
+            _stateFactories.Clear();
+            PruneSelectedFactories();
+
+            if (_selectedFactories.Count > 0)
+            {
+                for (int i = 0; i < _selectedFactories.Count; i++)
+                {
+                    BuildingProduction factory = _selectedFactories[i];
+                    if (factory != null && !_stateFactories.Contains(factory))
+                        _stateFactories.Add(factory);
+                }
+
+                return;
+            }
+
+            if (_currentFactory != null && _currentFactory.isActiveAndEnabled && BelongsToTeam(_currentFactory))
+                _stateFactories.Add(_currentFactory);
         }
 
         /// <summary>Знищує всі створені дочірні кнопки та очищає список кнопок.</summary>
