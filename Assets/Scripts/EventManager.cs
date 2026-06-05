@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Strategy.Buildings;
 using Strategy.UI;
 using Strategy.Units;
@@ -16,6 +17,9 @@ namespace Strategy.Core
         public static event Action<PanelType> OnOpenPanel;
         public static event Action<GameObject> OnUnitSelected;
         public static event Action<GameObject> OnUnitDeselected;
+        public static event Action<GameObject> OnBuildingSelected;
+        public static event Action<GameObject> OnBuildingDeselected;
+        public static event Action<IReadOnlyList<GameObject>> OnSelectionChanged;
         public static event Action<GameObject> OnUnitDestroyed;
         public static event Action<GameObject, Vector3> OnUnitMoveCommand;
         public static event Action<GameObject, Transform> OnUnitAttackTargetChanged;
@@ -32,6 +36,9 @@ namespace Strategy.Core
             OnOpenPanel = null;
             OnUnitSelected = null;
             OnUnitDeselected = null;
+            OnBuildingSelected = null;
+            OnBuildingDeselected = null;
+            OnSelectionChanged = null;
             OnUnitDestroyed = null;
             OnUnitMoveCommand = null;
             OnUnitAttackTargetChanged = null;
@@ -54,6 +61,15 @@ namespace Strategy.Core
         /// <summary>Сповіщає слухачів, що юніт видалено з виділення гравця.</summary>
         public static void RaiseUnitDeselected(GameObject unit) =>
             OnUnitDeselected?.Invoke(unit);
+
+        public static void RaiseBuildingSelected(GameObject building) =>
+            OnBuildingSelected?.Invoke(building);
+
+        public static void RaiseBuildingDeselected(GameObject building) =>
+            OnBuildingDeselected?.Invoke(building);
+
+        public static void RaiseSelectionChanged(IReadOnlyList<GameObject> selection) =>
+            OnSelectionChanged?.Invoke(selection);
 
         /// <summary>Сповіщає системи, що юніт знищений і має бути прибраний із довгоживучих списків на кшталт control groups.</summary>
         public static void RaiseUnitDestroyed(GameObject unit) =>

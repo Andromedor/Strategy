@@ -18,6 +18,11 @@ namespace Strategy.Buildings
 
         public static BuildingProduction SelectedFactory { get; private set; }
 
+        public static void SetSelectedFactory(BuildingProduction factory)
+        {
+            SelectedFactory = factory;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
@@ -40,6 +45,13 @@ namespace Strategy.Buildings
 
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                 return;
+
+            if (UnitCommandController.IsSelectionDragActive ||
+                UnitCommandController.DidHandleLeftReleaseThisFrame ||
+                IsPlayerUnitUnderPointer())
+            {
+                return;
+            }
 
             SelectBuilding();
         }
@@ -122,6 +134,30 @@ namespace Strategy.Buildings
             SelectedFactory = null;
             EventManager.RaiseConstructionClosed();
             EventManager.RaiseOpenPanel(PanelType.MainMenu);
+        }
+
+        private bool IsPlayerUnitUnderPointer()
+        {
+            if (_camera == null)
+                _camera = UnityEngine.Camera.main;
+
+            if (_camera == null || Mouse.current == null)
+                return false;
+
+            int playerUnitMask = LayerMask.GetMask("PlayerUnit");
+            if (playerUnitMask == 0)
+                return false;
+
+            Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (!Physics.Raycast(ray, out RaycastHit hit, 1000f, playerUnitMask))
+                return false;
+
+            GameObject hitObject = hit.collider != null ? hit.collider.gameObject : null;
+            if (hitObject == null || hitObject.CompareTag("Enemy"))
+                return false;
+
+            TeamComponent team = hitObject.GetComponentInParent<TeamComponent>();
+            return team == null || team.Team == TeamType.Player;
         }
     }
 }

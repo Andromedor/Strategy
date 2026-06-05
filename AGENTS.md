@@ -12,6 +12,8 @@ This project is a Unity RTS inspired by Company of Heroes 2 and Supreme Commande
 * Use event-driven architecture.
 * Avoid direct dependencies between UI and gameplay systems.
 * Avoid static managers unless justified.
+* Do not remove or disable existing mechanics unless the user explicitly asks for removal.
+* When extending gameplay, preserve previous behaviour first, then add new functionality on top.
 
 ## Systems
 
@@ -27,6 +29,7 @@ This project is a Unity RTS inspired by Company of Heroes 2 and Supreme Commande
 * Building data must come from ScriptableObjects.
 * Production queues should be separated from UI.
 * Building placement logic must be separated from building prefabs.
+* `Outpost` is a capture point, not a regular building or the main base; do not add building HP, destruction or building-selection mechanics to it unless explicitly requested.
 
 ### AI
 

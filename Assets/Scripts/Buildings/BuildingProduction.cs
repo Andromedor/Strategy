@@ -57,6 +57,10 @@ namespace Strategy.Buildings
             ? _productionConfig.Items
             : System.Array.Empty<ProductionItemData>();
 
+        public int QueuedCount => _queue.Count;
+        public bool IsProducing => _isProducing;
+        public int PendingWorkCount => _queue.Count + (_isProducing ? 1 : 0);
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
@@ -114,6 +118,60 @@ namespace Strategy.Buildings
                 StartCoroutine(ProcessQueue());
 
             return true;
+        }
+
+        public bool CanProduce(ProductionItemData item)
+        {
+            return TryResolveProductionItem(item, out _);
+        }
+
+        public bool TryResolveProductionItem(ProductionItemData requestedItem, out ProductionItemData productionItem)
+        {
+            productionItem = null;
+
+            if (!IsValidProductionItem(requestedItem))
+                return false;
+
+            IReadOnlyList<ProductionItemData> items = Items;
+            for (int i = 0; i < items.Count; i++)
+            {
+                ProductionItemData item = items[i];
+                if (item == requestedItem)
+                {
+                    productionItem = item;
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                ProductionItemData item = items[i];
+                if (IsEquivalentProductionItem(item, requestedItem))
+                {
+                    productionItem = item;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsValidProductionItem(ProductionItemData item)
+        {
+            return item != null && item.UnitData != null && item.UnitData.Prefab != null;
+        }
+
+        private static bool IsEquivalentProductionItem(
+            ProductionItemData availableItem,
+            ProductionItemData requestedItem)
+        {
+            if (!IsValidProductionItem(availableItem) || !IsValidProductionItem(requestedItem))
+                return false;
+
+            if (availableItem.UnitData == requestedItem.UnitData)
+                return true;
+
+            return availableItem.UnitData.Prefab == requestedItem.UnitData.Prefab;
         }
 
         /// <summary>Виймає елементи з черги по одному, очікує час виробництва кожного юніта, після чого викликає SpawnAndReleaseUnit.</summary>

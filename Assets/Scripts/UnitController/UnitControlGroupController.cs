@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Strategy.Buildings;
 using Strategy.Core;
 using Strategy.Data;
 using UnityEngine;
@@ -88,15 +89,15 @@ namespace Strategy.Units
             if (!TryGetGroup(groupNumber, out List<GameObject> group) || _selectionController == null)
                 return;
 
-            _selectionController.CopySelectedUnits(_selectionBuffer);
+            _selectionController.CopySelectedObjects(_selectionBuffer);
             group.Clear();
 
             for (int i = 0; i < _selectionBuffer.Count; i++)
             {
-                GameObject unit = _selectionBuffer[i];
+                GameObject selection = _selectionBuffer[i];
 
-                if (unit != null && !group.Contains(unit))
-                    group.Add(unit);
+                if (selection != null && !group.Contains(selection))
+                    group.Add(selection);
             }
 
             PublishGroup(groupNumber);
@@ -117,7 +118,7 @@ namespace Strategy.Units
 
             _recallBuffer.Clear();
             _recallBuffer.AddRange(group);
-            _selectionController.SelectUnits(_recallBuffer);
+            _selectionController.SelectObjects(_recallBuffer);
             PublishGroup(groupNumber);
         }
 
@@ -193,7 +194,7 @@ namespace Strategy.Units
             string fallbackText = string.Empty;
 
             if (group.Count > 0)
-                ResolveRepresentativeUnit(group[0], out icon, out fallbackText);
+                ResolveRepresentativeObject(group[0], out icon, out fallbackText);
 
             EventManager.RaiseControlGroupUpdated(groupNumber, group.Count, icon, fallbackText);
         }
@@ -215,13 +216,25 @@ namespace Strategy.Units
             return keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
         }
 
-        private static void ResolveRepresentativeUnit(GameObject unit, out Sprite icon, out string fallbackText)
+        private static void ResolveRepresentativeObject(GameObject unit, out Sprite icon, out string fallbackText)
         {
             icon = null;
             fallbackText = string.Empty;
 
             if (unit == null)
                 return;
+
+            if (unit.GetComponent<BuildingProduction>() != null)
+            {
+                fallbackText = "FAC";
+                return;
+            }
+
+            if (unit.GetComponent<ConstructionCenter>() != null)
+            {
+                fallbackText = "BASE";
+                return;
+            }
 
             UnitCombat combat = unit.GetComponent<UnitCombat>();
             UnitData data = combat != null ? combat.UnitData : null;

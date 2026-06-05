@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Strategy.Buildings;
 using Strategy.Core;
+using Strategy.UI;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
@@ -31,17 +32,40 @@ namespace Strategy.Units
 
         private readonly Collider[] _destinationOverlapBuffer = new Collider[32];
         private readonly List<Vector3> _reservedMoveDestinations = new();
+        private readonly List<GameObject> _dragUnitBuffer = new();
+        private readonly List<GameObject> _dragBuildingBuffer = new();
         private UnityEngine.Camera _camera;
         private GameObject _currentSelection;
         private Vector3 _startPoint;
         private bool _isSelectionPressActive;
+        private bool _isCtrlSelectionPress;
+        private static int _lastHandledLeftReleaseFrame = -1;
+        private static bool _isSelectionDragActive;
+
+        private enum SelectionKind
+        {
+            None,
+            Unit,
+            Building
+        }
+
+        public static bool DidHandleLeftReleaseThisFrame => _lastHandledLeftReleaseFrame == Time.frameCount;
+        public static bool IsSelectionDragActive => _isSelectionDragActive;
 
         public int SelectedUnitCount
         {
             get
             {
                 RemoveDeadSelections();
-                return _selections.Count;
+                int count = 0;
+
+                for (int i = 0; i < _selections.Count; i++)
+                {
+                    if (IsUnitSelection(_selections[i]))
+                        count++;
+                }
+
+                return count;
             }
         }
 
@@ -82,6 +106,22 @@ namespace Strategy.Units
             RemoveDeadSelections();
 
             for (int i = 0; i < _selections.Count; i++)
+            {
+                GameObject selection = _selections[i];
+                if (IsUnitSelection(selection))
+                    target.Add(selection);
+            }
+        }
+
+        public void CopySelectedObjects(List<GameObject> target)
+        {
+            if (target == null)
+                return;
+
+            target.Clear();
+            RemoveDeadSelections();
+
+            for (int i = 0; i < _selections.Count; i++)
                 target.Add(_selections[i]);
         }
 
@@ -96,13 +136,37 @@ namespace Strategy.Units
         /// </summary>
         public void SelectUnits(IEnumerable<GameObject> units)
         {
-            DeselectAll();
+            DeselectAll(false);
 
             if (units == null)
+            {
+                PublishSelectionChanged();
                 return;
+            }
 
             foreach (GameObject unit in units)
-                TryAddSelection(unit);
+            {
+                if (IsUnitSelection(unit))
+                    TryAddSelection(unit, false);
+            }
+
+            PublishSelectionChanged();
+        }
+
+        public void SelectObjects(IEnumerable<GameObject> objects)
+        {
+            DeselectAll(false);
+
+            if (objects == null)
+            {
+                PublishSelectionChanged();
+                return;
+            }
+
+            foreach (GameObject selection in objects)
+                TryAddSelection(selection, false);
+
+            PublishSelectionChanged();
         }
 
         /// <summary>Кидає промінь від позиції правого кліку до шарів ворогів та землі, направляючи до відповідного обробника — атаки або переміщення.</summary>
@@ -147,7 +211,7 @@ namespace Strategy.Units
         /// </summary>
         private void CommandMove(Vector3 targetPoint)
         {
-            GameObject firstUnit = GetFirstValidSelection();
+            GameObject firstUnit = GetFirstCommandableUnit();
 
             if (firstUnit == null)
                 return;
@@ -167,13 +231,16 @@ namespace Strategy.Units
                 if (selection == null)
                     continue;
 
+                NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
+                UnitSpawnActivator spawnActivator = selection.GetComponent<UnitSpawnActivator>();
+
+                if (agent == null && spawnActivator == null)
+                    continue;
+
                 int formationIndex = index++;
                 Vector3 destination = formationIndex == 0
                     ? targetPoint
                     : GetChessFormationPosition(targetPoint, formationIndex, formationSpacing, rotation);
-
-                NavMeshAgent agent = selection.GetComponent<NavMeshAgent>();
-                UnitSpawnActivator spawnActivator = selection.GetComponent<UnitSpawnActivator>();
 
                 if (spawnActivator != null && spawnActivator.IsSpawning)
                 {
@@ -478,12 +545,16 @@ namespace Strategy.Units
             return center + rotation * new Vector3(x, 0f, z);
         }
 
-        private GameObject GetFirstValidSelection()
+        private GameObject GetFirstCommandableUnit()
         {
             foreach (GameObject obj in _selections)
             {
-                if (obj != null)
+                if (obj != null &&
+                    (obj.GetComponent<NavMeshAgent>() != null ||
+                     obj.GetComponent<UnitSpawnActivator>() != null))
+                {
                     return obj;
+                }
             }
 
             return null;
@@ -492,11 +563,11 @@ namespace Strategy.Units
         /// <summary>Знімає виділення з усіх юнітів та записує початкову точку попадання на землю для потенційного прямокутника перетягування.</summary>
         private void StartSelectionPress()
         {
-            if (IsPointerOverUi() || !RaycastToGround(out Vector3 hitPoint))
+            if (BuildingPlacementManager.IsPlacing || IsPointerOverUi() || !RaycastToGround(out Vector3 hitPoint))
                 return;
 
-            DeselectAll();
             _startPoint = hitPoint;
+            _isCtrlSelectionPress = IsCtrlPressed();
             _isSelectionPressActive = true;
         }
 
@@ -526,6 +597,7 @@ namespace Strategy.Units
             if (_cubePrefab == null)
                 return;
 
+            _isSelectionDragActive = true;
             _currentSelection = Instantiate(
                 _cubePrefab,
                 new Vector3(_startPoint.x, 1f, _startPoint.z),
@@ -553,10 +625,18 @@ namespace Strategy.Units
         /// <summary>Використовує OverlapBox з межами куба виділення для пошуку юнітів гравця всередині та додає їх до _selections через RaiseUnitSelected.</summary>
         private void EndSelection()
         {
+            if (!_isSelectionPressActive)
+                return;
+
             _isSelectionPressActive = false;
 
             if (_currentSelection == null)
+            {
+                if (HandleClickSelection())
+                    _lastHandledLeftReleaseFrame = Time.frameCount;
+
                 return;
+            }
 
             Vector3 halfExtents = _currentSelection.transform.localScale * 0.5f;
             halfExtents.y = 1f;
@@ -565,40 +645,89 @@ namespace Strategy.Units
                 _currentSelection.transform.position,
                 halfExtents,
                 Quaternion.identity,
-                _selectedLayerMask);
+                GetSelectableLayerMask());
 
-            foreach (Collider hit in hits)
-            {
-                if (hit == null || hit.CompareTag("Enemy"))
-                    continue;
-
-                TryAddSelection(hit.transform.gameObject);
-            }
+            ApplyDragSelection(hits);
 
             Destroy(_currentSelection);
             _currentSelection = null;
+            _isSelectionDragActive = false;
+            _lastHandledLeftReleaseFrame = Time.frameCount;
         }
 
         /// <summary>Викидає RaiseUnitDeselected для кожного вибраного юніта та очищає список виділення.</summary>
-        private void DeselectAll()
+        private void DeselectAll(bool publish = true)
         {
             foreach (GameObject selection in _selections)
             {
-                if (selection != null)
+                if (selection == null)
+                    continue;
+
+                if (IsBuildingSelection(selection))
+                    EventManager.RaiseBuildingDeselected(selection);
+                else if (IsUnitSelection(selection))
                     EventManager.RaiseUnitDeselected(selection);
             }
 
             _selections.Clear();
+
+            if (publish)
+                PublishSelectionChanged();
         }
 
-        private bool TryAddSelection(GameObject unit)
+        private bool TryAddSelection(GameObject selection, bool publish = true)
         {
-            if (unit == null || unit.CompareTag("Enemy") || _selections.Contains(unit))
+            if (!TryResolveSelectionRoot(selection, out GameObject root, out SelectionKind kind) ||
+                _selections.Contains(root))
+            {
+                return false;
+            }
+
+            _selections.Add(root);
+
+            if (kind == SelectionKind.Building)
+            {
+                EnsureBuildingSelectionState(root);
+                EventManager.RaiseBuildingSelected(root);
+            }
+            else
+            {
+                EventManager.RaiseUnitSelected(root);
+            }
+
+            if (publish)
+                PublishSelectionChanged();
+
+            return true;
+        }
+
+        private bool TryRemoveSelection(GameObject selection, bool publish = true)
+        {
+            if (!TryResolveSelectionRoot(selection, out GameObject root, out SelectionKind kind))
                 return false;
 
-            _selections.Add(unit);
-            EventManager.RaiseUnitSelected(unit);
+            if (!_selections.Remove(root))
+                return false;
+
+            if (kind == SelectionKind.Building)
+                EventManager.RaiseBuildingDeselected(root);
+            else if (kind == SelectionKind.Unit)
+                EventManager.RaiseUnitDeselected(root);
+
+            if (publish)
+                PublishSelectionChanged();
+
             return true;
+        }
+
+        private bool TryToggleSelection(GameObject selection)
+        {
+            if (!TryResolveSelectionRoot(selection, out GameObject root, out _))
+                return false;
+
+            return _selections.Contains(root)
+                ? TryRemoveSelection(root)
+                : TryAddSelection(root);
         }
 
         private void RemoveDeadSelections()
@@ -608,6 +737,316 @@ namespace Strategy.Units
                 if (_selections[i] == null)
                     _selections.RemoveAt(i);
             }
+        }
+
+        private bool HandleClickSelection()
+        {
+            if (!TryCreateMouseRay(out Ray ray))
+                return false;
+
+            if (TryFindClickedUnit(ray, out GameObject unit))
+            {
+                DeselectAll(false);
+                TryAddSelection(unit, false);
+                PublishSelectionChanged();
+                return true;
+            }
+
+            if (TryFindClickedBuilding(ray, out GameObject building))
+            {
+                if (_isCtrlSelectionPress)
+                {
+                    TryToggleSelection(building);
+                    return true;
+                }
+
+                DeselectAll(false);
+                TryAddSelection(building, false);
+                PublishSelectionChanged();
+                return true;
+            }
+
+            if (!_isCtrlSelectionPress)
+                DeselectAll();
+
+            return false;
+        }
+
+        private bool TryFindClickedUnit(Ray ray, out GameObject unit)
+        {
+            unit = null;
+            int unitMask = LayerMask.GetMask("PlayerUnit");
+
+            if (unitMask == 0 || !Physics.Raycast(ray, out RaycastHit hit, 1000f, unitMask))
+                return false;
+
+            return TryResolveUnitRoot(hit.collider, out unit);
+        }
+
+        private bool TryFindClickedBuilding(Ray ray, out GameObject building)
+        {
+            building = null;
+            int buildingMask = LayerMask.GetMask("Building");
+
+            if (buildingMask == 0 || !Physics.Raycast(ray, out RaycastHit hit, 1000f, buildingMask))
+                return false;
+
+            return TryResolveBuildingRoot(hit.collider, out building);
+        }
+
+        private void CollectDragSelection(Collider[] hits)
+        {
+            _dragUnitBuffer.Clear();
+            _dragBuildingBuffer.Clear();
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                Collider hit = hits[i];
+                if (hit == null)
+                    continue;
+
+                if (TryResolveUnitRoot(hit, out GameObject unit))
+                {
+                    AddUnique(_dragUnitBuffer, unit);
+                    continue;
+                }
+
+                if (TryResolveBuildingRoot(hit, out GameObject building))
+                    AddUnique(_dragBuildingBuffer, building);
+            }
+        }
+
+        private void ApplyDragSelection(Collider[] hits)
+        {
+            DeselectAll(false);
+            CollectDragSelection(hits);
+
+            List<GameObject> selectedBuffer = _dragUnitBuffer.Count > 0
+                ? _dragUnitBuffer
+                : _dragBuildingBuffer;
+
+            for (int i = 0; i < selectedBuffer.Count; i++)
+                TryAddSelection(selectedBuffer[i], false);
+
+            PublishSelectionChanged();
+        }
+
+        private static void AddUnique(List<GameObject> target, GameObject value)
+        {
+            if (value != null && !target.Contains(value))
+                target.Add(value);
+        }
+
+        private int GetSelectableLayerMask()
+        {
+            return _selectedLayerMask.value |
+                   LayerMask.GetMask("PlayerUnit") |
+                   LayerMask.GetMask("Building");
+        }
+
+        private static bool TryResolveSelectionRoot(
+            GameObject selection,
+            out GameObject root,
+            out SelectionKind kind)
+        {
+            root = null;
+            kind = SelectionKind.None;
+
+            if (selection == null || selection.CompareTag("Enemy"))
+                return false;
+
+            if (TryResolveUnitRoot(selection, out root))
+            {
+                kind = SelectionKind.Unit;
+                return true;
+            }
+
+            if (TryResolveBuildingRoot(selection, out root))
+            {
+                kind = SelectionKind.Building;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveUnitRoot(Collider collider, out GameObject unit)
+        {
+            unit = null;
+
+            if (collider == null)
+                return false;
+
+            return TryResolveUnitRoot(collider.gameObject, out unit);
+        }
+
+        private static bool TryResolveUnitRoot(GameObject selection, out GameObject unit)
+        {
+            unit = null;
+
+            if (selection == null || selection.CompareTag("Enemy"))
+                return false;
+
+            if (selection.GetComponentInParent<BuildingProduction>() != null ||
+                selection.GetComponentInParent<ConstructionCenter>() != null ||
+                selection.GetComponentInParent<Outpost>() != null)
+            {
+                return false;
+            }
+
+            NavMeshAgent agent = selection.GetComponentInParent<NavMeshAgent>();
+            UnitCombat combat = selection.GetComponentInParent<UnitCombat>();
+            UnitSelectionState state = selection.GetComponentInParent<UnitSelectionState>();
+            GameObject candidate =
+                agent != null ? agent.gameObject :
+                combat != null ? combat.gameObject :
+                state != null ? state.gameObject :
+                selection.layer == LayerMask.NameToLayer("PlayerUnit") ? selection : null;
+
+            if (candidate == null || !BelongsToPlayer(candidate))
+                return false;
+
+            unit = candidate;
+            return true;
+        }
+
+        private static bool TryResolveBuildingRoot(Collider collider, out GameObject building)
+        {
+            building = null;
+
+            if (collider == null)
+                return false;
+
+            return TryResolveBuildingRoot(collider.gameObject, out building);
+        }
+
+        private static bool TryResolveBuildingRoot(GameObject selection, out GameObject building)
+        {
+            building = null;
+
+            if (selection == null || selection.GetComponentInParent<Outpost>() != null)
+                return false;
+
+            BuildingProduction factory = selection.GetComponentInParent<BuildingProduction>();
+            if (factory != null)
+            {
+                if (!BelongsToPlayer(factory.gameObject))
+                    return false;
+
+                building = factory.gameObject;
+                return true;
+            }
+
+            ConstructionCenter constructionCenter = selection.GetComponentInParent<ConstructionCenter>();
+            if (constructionCenter != null)
+            {
+                if (!BelongsToPlayer(constructionCenter.gameObject))
+                    return false;
+
+                building = constructionCenter.gameObject;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsUnitSelection(GameObject selection)
+        {
+            return TryResolveUnitRoot(selection, out _);
+        }
+
+        private static bool IsBuildingSelection(GameObject selection)
+        {
+            return TryResolveBuildingRoot(selection, out _);
+        }
+
+        private static bool BelongsToPlayer(GameObject selection)
+        {
+            TeamComponent team = selection != null ? selection.GetComponentInParent<TeamComponent>() : null;
+            return team == null || team.Team == TeamType.Player;
+        }
+
+        private static void EnsureBuildingSelectionState(GameObject building)
+        {
+            if (building != null && building.GetComponent<BuildingSelectionState>() == null)
+                building.AddComponent<BuildingSelectionState>();
+        }
+
+        private void PublishSelectionChanged()
+        {
+            RemoveDeadSelections();
+            PublishSelectionContext();
+            EventManager.RaiseSelectionChanged(_selections);
+        }
+
+        private void PublishSelectionContext()
+        {
+            BuildingProduction factory = GetFirstSelectedFactory();
+            if (factory != null)
+            {
+                SelectionManager.SetSelectedFactory(factory);
+                EventManager.RaiseFactorySelected(factory);
+                EventManager.RaiseOpenPanel(PanelType.Factory);
+                return;
+            }
+
+            ConstructionCenter constructionCenter = GetFirstSelectedConstructionCenter();
+            if (constructionCenter != null && GetSelectedUnitCountInternal() == 0)
+            {
+                SelectionManager.SetSelectedFactory(null);
+                EventManager.RaiseConstructionCenterSelected(constructionCenter);
+                EventManager.RaiseOpenPanel(PanelType.Construction);
+                return;
+            }
+
+            SelectionManager.SetSelectedFactory(null);
+            EventManager.RaiseConstructionClosed();
+            EventManager.RaiseOpenPanel(PanelType.MainMenu);
+        }
+
+        private BuildingProduction GetFirstSelectedFactory()
+        {
+            for (int i = 0; i < _selections.Count; i++)
+            {
+                GameObject selection = _selections[i];
+                if (selection == null)
+                    continue;
+
+                BuildingProduction factory = selection.GetComponent<BuildingProduction>();
+                if (factory != null)
+                    return factory;
+            }
+
+            return null;
+        }
+
+        private ConstructionCenter GetFirstSelectedConstructionCenter()
+        {
+            for (int i = 0; i < _selections.Count; i++)
+            {
+                GameObject selection = _selections[i];
+                if (selection == null)
+                    continue;
+
+                ConstructionCenter constructionCenter = selection.GetComponent<ConstructionCenter>();
+                if (constructionCenter != null)
+                    return constructionCenter;
+            }
+
+            return null;
+        }
+
+        private int GetSelectedUnitCountInternal()
+        {
+            int count = 0;
+
+            for (int i = 0; i < _selections.Count; i++)
+            {
+                if (IsUnitSelection(_selections[i]))
+                    count++;
+            }
+
+            return count;
         }
 
         /// <summary>Кидає промінь із камери через курсор миші до маски шару землі/куба; повертає точку попадання.</summary>
@@ -643,5 +1082,11 @@ namespace Strategy.Units
 
         private static bool IsPointerOverUi() =>
             EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        private static bool IsCtrlPressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            return keyboard != null && (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed);
+        }
     }
 }

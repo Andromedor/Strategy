@@ -26,11 +26,14 @@ namespace Strategy.UI
         [SerializeField] private Sprite _buttonSprite;
 
         private readonly List<ProductionButtonUI> _buttons = new();
+        private readonly List<BuildingProduction> _selectedFactories = new();
+        private readonly List<ProductionItemData> _displayItems = new();
         private BuildingProduction _currentFactory;
 
         private void OnEnable()
         {
             EventManager.OnFactorySelected += OpenFactory;
+            EventManager.OnSelectionChanged += OnSelectionChanged;
             ResourceManager.OnResourceChanged += RefreshButtons;
             BuildingProduction.FactoriesChanged += RefreshCurrentFactory;
             OpenFactory(GetInitialFactory());
@@ -39,6 +42,7 @@ namespace Strategy.UI
         private void OnDisable()
         {
             EventManager.OnFactorySelected -= OpenFactory;
+            EventManager.OnSelectionChanged -= OnSelectionChanged;
             ResourceManager.OnResourceChanged -= RefreshButtons;
             BuildingProduction.FactoriesChanged -= RefreshCurrentFactory;
         }
@@ -49,6 +53,14 @@ namespace Strategy.UI
         /// </summary>
         private void RefreshCurrentFactory()
         {
+            PruneSelectedFactories();
+
+            if (_selectedFactories.Count > 0)
+            {
+                RebuildForCurrentSelection();
+                return;
+            }
+
             OpenFactory(_currentFactory != null && _currentFactory.isActiveAndEnabled
                 ? _currentFactory
                 : GetInitialFactory());
@@ -65,12 +77,19 @@ namespace Strategy.UI
 
             _currentFactory = factory;
 
+            if (factory != null && (_selectedFactories.Count == 0 || !_selectedFactories.Contains(factory)))
+            {
+                _selectedFactories.Clear();
+                _selectedFactories.Add(factory);
+            }
+
             ClearButtons();
 
-            int validItems = CountValidItems(factory);
+            BuildDisplayItems();
+            int validItems = CountValidItems(_displayItems);
             ApplyLayout(validItems);
 
-            if (factory == null)
+            if (_currentFactory == null && _selectedFactories.Count == 0)
             {
                 SetEmptyText(string.Empty);
                 return;
@@ -78,7 +97,7 @@ namespace Strategy.UI
 
             SetEmptyText(string.Empty);
 
-            foreach (ProductionItemData item in factory.Items)
+            foreach (ProductionItemData item in _displayItems)
             {
                 if (item == null)
                     continue;
@@ -100,10 +119,20 @@ namespace Strategy.UI
         /// </summary>
         private void OnItemClicked(ProductionItemData item)
         {
-            if (_currentFactory == null)
+            if (item == null)
                 return;
 
-            _currentFactory.AddToQueue(item);
+            PruneSelectedFactories();
+
+            if (_selectedFactories.Count > 0)
+            {
+                FactoryProductionDistributor.TryQueueLeastLoaded(_selectedFactories, item, out _);
+            }
+            else if (_currentFactory != null)
+            {
+                _currentFactory.AddToQueue(item);
+            }
+
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
         }
 
@@ -181,15 +210,123 @@ namespace Strategy.UI
             _emptyText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
-        /// <summary>Повертає кількість ненульових записів <see cref="ProductionItemData"/> на заводі.</summary>
-        private static int CountValidItems(BuildingProduction factory)
+        private void OnSelectionChanged(IReadOnlyList<GameObject> selection)
+        {
+            _selectedFactories.Clear();
+
+            if (selection != null)
+            {
+                for (int i = 0; i < selection.Count; i++)
+                {
+                    GameObject selectedObject = selection[i];
+                    if (selectedObject == null)
+                        continue;
+
+                    BuildingProduction factory = selectedObject.GetComponent<BuildingProduction>();
+                    if (factory != null && factory.isActiveAndEnabled && BelongsToTeam(factory) &&
+                        !_selectedFactories.Contains(factory))
+                    {
+                        _selectedFactories.Add(factory);
+                    }
+                }
+            }
+
+            if (_selectedFactories.Count == 0)
+                return;
+
+            _currentFactory = _selectedFactories[0];
+            RebuildForCurrentSelection();
+        }
+
+        private void RebuildForCurrentSelection()
+        {
+            _currentFactory = _selectedFactories.Count > 0 ? _selectedFactories[0] : _currentFactory;
+            OpenFactory(_currentFactory);
+        }
+
+        private void PruneSelectedFactories()
+        {
+            for (int i = _selectedFactories.Count - 1; i >= 0; i--)
+            {
+                BuildingProduction factory = _selectedFactories[i];
+                if (factory != null && factory.isActiveAndEnabled && BelongsToTeam(factory))
+                    continue;
+
+                _selectedFactories.RemoveAt(i);
+            }
+        }
+
+        private void BuildDisplayItems()
+        {
+            _displayItems.Clear();
+            PruneSelectedFactories();
+
+            if (_selectedFactories.Count > 0)
+            {
+                for (int i = 0; i < _selectedFactories.Count; i++)
+                    AddFactoryItems(_selectedFactories[i]);
+
+                return;
+            }
+
+            AddFactoryItems(_currentFactory);
+        }
+
+        private void AddFactoryItems(BuildingProduction factory)
         {
             if (factory == null)
+                return;
+
+            foreach (ProductionItemData item in factory.Items)
+            {
+                if (item != null && !ContainsEquivalentItem(_displayItems, item))
+                    _displayItems.Add(item);
+            }
+        }
+
+        private static bool ContainsEquivalentItem(
+            IReadOnlyList<ProductionItemData> items,
+            ProductionItemData candidate)
+        {
+            if (items == null || !IsValidProductionItem(candidate))
+                return false;
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                ProductionItemData item = items[i];
+                if (item == candidate || IsEquivalentProductionItem(item, candidate))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsEquivalentProductionItem(
+            ProductionItemData item,
+            ProductionItemData candidate)
+        {
+            if (!IsValidProductionItem(item) || !IsValidProductionItem(candidate))
+                return false;
+
+            if (item.UnitData == candidate.UnitData)
+                return true;
+
+            return item.UnitData.Prefab == candidate.UnitData.Prefab;
+        }
+
+        private static bool IsValidProductionItem(ProductionItemData item)
+        {
+            return item != null && item.UnitData != null && item.UnitData.Prefab != null;
+        }
+
+        private static int CountValidItems(IReadOnlyList<ProductionItemData> items)
+        {
+            if (items == null)
                 return 0;
 
             int count = 0;
 
-            foreach (ProductionItemData item in factory.Items)
+            foreach (ProductionItemData item in items)
             {
                 if (item != null)
                     count++;

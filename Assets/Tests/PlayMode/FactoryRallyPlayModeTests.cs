@@ -24,6 +24,11 @@ namespace Strategy.Tests
         private const string UnitCommandControllerTypeName = "Strategy.Units.UnitCommandController, Assembly-CSharp";
         private const string UnitControlGroupControllerTypeName = "Strategy.Units.UnitControlGroupController, Assembly-CSharp";
         private const string UnitSelectionStateTypeName = "Strategy.Units.UnitSelectionState, Assembly-CSharp";
+        private const string ConstructionCenterTypeName = "Strategy.Buildings.ConstructionCenter, Assembly-CSharp";
+        private const string ProductionConfigTypeName = "Strategy.Data.ProductionConfig, Assembly-CSharp";
+        private const string ProductionItemDataTypeName = "Strategy.Data.ProductionItemData, Assembly-CSharp";
+        private const string UnitDataTypeName = "Strategy.Data.UnitData, Assembly-CSharp";
+        private const string FactoryProductionDistributorTypeName = "Strategy.Buildings.FactoryProductionDistributor, Assembly-CSharp";
         private const string SelectionInfoPanelUiTypeName = "Strategy.UI.SelectionInfoPanelUI, Assembly-CSharp";
         private const string EventManagerTypeName = "Strategy.Core.EventManager, Assembly-CSharp";
 
@@ -35,6 +40,11 @@ namespace Strategy.Tests
         private readonly Type _unitCommandControllerType = Type.GetType(UnitCommandControllerTypeName);
         private readonly Type _unitControlGroupControllerType = Type.GetType(UnitControlGroupControllerTypeName);
         private readonly Type _unitSelectionStateType = Type.GetType(UnitSelectionStateTypeName);
+        private readonly Type _constructionCenterType = Type.GetType(ConstructionCenterTypeName);
+        private readonly Type _productionConfigType = Type.GetType(ProductionConfigTypeName);
+        private readonly Type _productionItemDataType = Type.GetType(ProductionItemDataTypeName);
+        private readonly Type _unitDataType = Type.GetType(UnitDataTypeName);
+        private readonly Type _factoryProductionDistributorType = Type.GetType(FactoryProductionDistributorTypeName);
         private readonly Type _selectionInfoPanelUiType = Type.GetType(SelectionInfoPanelUiTypeName);
         private readonly Type _eventManagerType = Type.GetType(EventManagerTypeName);
 
@@ -52,6 +62,11 @@ namespace Strategy.Tests
             Assert.NotNull(_unitCommandControllerType);
             Assert.NotNull(_unitControlGroupControllerType);
             Assert.NotNull(_unitSelectionStateType);
+            Assert.NotNull(_constructionCenterType);
+            Assert.NotNull(_productionConfigType);
+            Assert.NotNull(_productionItemDataType);
+            Assert.NotNull(_unitDataType);
+            Assert.NotNull(_factoryProductionDistributorType);
             Assert.NotNull(_selectionInfoPanelUiType);
             Assert.NotNull(_eventManagerType);
 
@@ -369,6 +384,218 @@ namespace Strategy.Tests
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator DragSelectionPrefersUnitsWhenBuildingsAreInside()
+        {
+            GameObject cameraObject = new GameObject("Selection Priority Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            GameObject unit = CreateUnit(new Vector3(0f, 0f, 0f));
+            Component factory = CreateSelectableFactory("Selectable Factory");
+            List<GameObject> selected = new List<GameObject>();
+
+            InvokeVoid(
+                selectionController,
+                "ApplyDragSelection",
+                new object[] { new[] { unit.GetComponent<Collider>(), factory.GetComponent<Collider>() } });
+
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+
+            Assert.AreEqual(1, selected.Count);
+            Assert.AreSame(unit, selected[0]);
+
+            UnityEngine.Object.Destroy(unit);
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(cameraObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator DragSelectionSelectsBuildingsWhenNoUnitsAreInside()
+        {
+            GameObject cameraObject = new GameObject("Building Selection Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            Component factory = CreateSelectableFactory("Selectable Factory");
+            GameObject baseObject = new GameObject("MilitaryBase");
+            baseObject.layer = LayerMask.NameToLayer("Building");
+            baseObject.AddComponent<BoxCollider>();
+            baseObject.AddComponent(_constructionCenterType);
+            List<GameObject> selected = new List<GameObject>();
+
+            InvokeVoid(
+                selectionController,
+                "ApplyDragSelection",
+                new object[] { new[] { factory.GetComponent<Collider>(), baseObject.GetComponent<Collider>() } });
+
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+
+            Assert.AreEqual(2, selected.Count);
+            Assert.Contains(factory.gameObject, selected);
+            Assert.Contains(baseObject, selected);
+
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(baseObject);
+            UnityEngine.Object.Destroy(cameraObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator BuildingToggleSelectionAddsAndRemovesFactory()
+        {
+            GameObject cameraObject = new GameObject("Building Toggle Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            Component factory = CreateSelectableFactory("Toggle Factory");
+            List<GameObject> selected = new List<GameObject>();
+
+            Assert.IsTrue(InvokeBool(selectionController, "TryToggleSelection", factory.gameObject));
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+            Assert.AreEqual(1, selected.Count);
+            Assert.AreSame(factory.gameObject, selected[0]);
+
+            Assert.IsTrue(InvokeBool(selectionController, "TryToggleSelection", factory.gameObject));
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+            Assert.Zero(selected.Count);
+
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(cameraObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator EndSelectionIgnoredWhenPressDidNotStartInWorld()
+        {
+            object mouse = AddMouseDevice();
+            GameObject cameraObject = new GameObject("UI Release Selection Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            Component factory = CreateSelectableFactory("Selected Factory Before UI Click");
+            List<GameObject> selected = new List<GameObject>();
+
+            InvokeVoid(selectionController, "SelectObjects", new object[] { new[] { factory.gameObject } });
+            InvokeVoid(selectionController, "EndSelection");
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+
+            Assert.AreEqual(1, selected.Count);
+            Assert.AreSame(factory.gameObject, selected[0]);
+
+            RemoveInputDevice(mouse);
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(cameraObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator MixedControlGroupRecallRestoresUnitsFactoryAndMilitaryBase()
+        {
+            GameObject cameraObject = new GameObject("Mixed Control Group Camera");
+            cameraObject.AddComponent<Camera>();
+            Component selectionController = cameraObject.AddComponent(_unitCommandControllerType);
+            Component controlGroups = cameraObject.AddComponent(_unitControlGroupControllerType);
+            GameObject unit = CreateUnit(new Vector3(0f, 0f, 0f));
+            Component factory = CreateSelectableFactory("Grouped Factory");
+            GameObject baseObject = new GameObject("Grouped MilitaryBase");
+            baseObject.layer = LayerMask.NameToLayer("Building");
+            baseObject.AddComponent<BoxCollider>();
+            baseObject.AddComponent(_constructionCenterType);
+            List<GameObject> selected = new List<GameObject>();
+
+            InvokeVoid(selectionController, "SelectObjects", new object[] { new[] { unit, factory.gameObject, baseObject } });
+            InvokeVoid(controlGroups, "SaveGroup", 1);
+            InvokeVoid(selectionController, "ClearSelection");
+
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+            Assert.Zero(selected.Count);
+
+            InvokeVoid(controlGroups, "RecallGroup", 1);
+            InvokeVoid(selectionController, "CopySelectedObjects", selected);
+
+            Assert.AreEqual(3, selected.Count);
+            Assert.Contains(unit, selected);
+            Assert.Contains(factory.gameObject, selected);
+            Assert.Contains(baseObject, selected);
+
+            UnityEngine.Object.Destroy(unit);
+            UnityEngine.Object.Destroy(factory.gameObject);
+            UnityEngine.Object.Destroy(baseObject);
+            UnityEngine.Object.Destroy(cameraObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator MultiFactoryDistributorQueuesLeastLoadedFactoriesInStableOrder()
+        {
+            ScriptableObject config = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject item = CreateProductionItem("Test Tank", 100f, out GameObject unitPrefab);
+            InvokeVoid(config, "AddItem", item);
+            Component first = CreateProductionFactory("Factory 1", config);
+            Component second = CreateProductionFactory("Factory 2", config);
+            Component third = CreateProductionFactory("Factory 3", config);
+            Array factories = Array.CreateInstance(_buildingProductionType, 3);
+            factories.SetValue(first, 0);
+            factories.SetValue(second, 1);
+            factories.SetValue(third, 2);
+
+            AssertQueuedTo(factories, item, first, 1, 0, 0);
+            AssertQueuedTo(factories, item, second, 1, 1, 0);
+            AssertQueuedTo(factories, item, third, 1, 1, 1);
+            AssertQueuedTo(factories, item, first, 2, 1, 1);
+
+            UnityEngine.Object.Destroy(first.gameObject);
+            UnityEngine.Object.Destroy(second.gameObject);
+            UnityEngine.Object.Destroy(third.gameObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(GetPropertyValue<UnityEngine.Object>(item, "UnitData"));
+            UnityEngine.Object.Destroy(item);
+            UnityEngine.Object.Destroy(config);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator MultiFactoryDistributorQueuesEquivalentItemsToLeastLoadedFactory()
+        {
+            ScriptableObject firstConfig = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject secondConfig = ScriptableObject.CreateInstance(_productionConfigType);
+            ScriptableObject firstItem = CreateProductionItem("Shared Tank", 100f, out GameObject unitPrefab);
+            ScriptableObject sharedUnitData = GetPropertyValue<ScriptableObject>(firstItem, "UnitData");
+            ScriptableObject secondItem = CreateProductionItemForUnitData("Shared Tank Copy", sharedUnitData, 100f);
+
+            InvokeVoid(firstConfig, "AddItem", firstItem);
+            InvokeVoid(secondConfig, "AddItem", secondItem);
+
+            Component first = CreateProductionFactory("Factory 1", firstConfig);
+            Component second = CreateProductionFactory("Factory 2", secondConfig);
+            Array factories = Array.CreateInstance(_buildingProductionType, 2);
+            factories.SetValue(first, 0);
+            factories.SetValue(second, 1);
+
+            MethodInfo method = _factoryProductionDistributorType.GetMethod(
+                "TryQueueLeastLoaded",
+                BindingFlags.Static | BindingFlags.Public);
+            Assert.NotNull(method);
+
+            object[] firstArgs = { factories, firstItem, null };
+            Assert.IsTrue((bool)method.Invoke(null, firstArgs));
+            Assert.AreSame(first, firstArgs[2]);
+
+            object[] secondArgs = { factories, firstItem, null };
+            Assert.IsTrue((bool)method.Invoke(null, secondArgs));
+            Assert.AreSame(second, secondArgs[2]);
+            Assert.AreEqual(1, GetPropertyValue<int>(first, "PendingWorkCount"));
+            Assert.AreEqual(1, GetPropertyValue<int>(second, "PendingWorkCount"));
+
+            UnityEngine.Object.Destroy(first.gameObject);
+            UnityEngine.Object.Destroy(second.gameObject);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(sharedUnitData);
+            UnityEngine.Object.Destroy(firstItem);
+            UnityEngine.Object.Destroy(secondItem);
+            UnityEngine.Object.Destroy(firstConfig);
+            UnityEngine.Object.Destroy(secondConfig);
+            yield return null;
+        }
+
         private Component CreateFactory(Vector3 spawnPosition, Vector3 rallyPosition)
         {
             _factoryObject = new GameObject("Factory");
@@ -389,6 +616,96 @@ namespace Strategy.Tests
             SetField(factory, "_rallySlotSearchRows", 2);
             SetField(factory, "_rallyClearancePadding", 0.75f);
             return factory;
+        }
+
+        private Component CreateSelectableFactory(string name)
+        {
+            GameObject factoryObject = new GameObject(name);
+            factoryObject.layer = LayerMask.NameToLayer("Building");
+
+            BoxCollider collider = factoryObject.AddComponent<BoxCollider>();
+            collider.size = new Vector3(8f, 4f, 8f);
+            collider.center = new Vector3(0f, 2f, 0f);
+
+            Component factory = factoryObject.AddComponent(_buildingProductionType);
+
+            Transform spawnPoint = new GameObject(name + " Spawn").transform;
+            spawnPoint.SetParent(factoryObject.transform);
+            SetField(factory, "_unitSpawnPoint", spawnPoint);
+
+            return factory;
+        }
+
+        private Component CreateProductionFactory(string name, ScriptableObject config)
+        {
+            Component factory = CreateSelectableFactory(name);
+            SetField(factory, "_productionConfig", config);
+            return factory;
+        }
+
+        private ScriptableObject CreateProductionItem(
+            string itemName,
+            float productionTime,
+            out GameObject unitPrefab)
+        {
+            unitPrefab = new GameObject(itemName + " Prefab");
+            ScriptableObject unitData = ScriptableObject.CreateInstance(_unitDataType);
+            InvokeVoid(
+                unitData,
+                "Configure",
+                unitPrefab,
+                100f,
+                10f,
+                4f,
+                20f,
+                1f,
+                4f,
+                180f,
+                90f,
+                -5f,
+                20f,
+                3f,
+                2f,
+                90f,
+                itemName,
+                null,
+                null);
+
+            ScriptableObject item = ScriptableObject.CreateInstance(_productionItemDataType);
+            InvokeVoid(item, "Configure", itemName, unitData, 0, productionTime, null);
+            return item;
+        }
+
+        private ScriptableObject CreateProductionItemForUnitData(
+            string itemName,
+            ScriptableObject unitData,
+            float productionTime)
+        {
+            ScriptableObject item = ScriptableObject.CreateInstance(_productionItemDataType);
+            InvokeVoid(item, "Configure", itemName, unitData, 0, productionTime, null);
+            return item;
+        }
+
+        private void AssertQueuedTo(
+            Array factories,
+            ScriptableObject item,
+            Component expectedFactory,
+            int firstCount,
+            int secondCount,
+            int thirdCount)
+        {
+            MethodInfo method = _factoryProductionDistributorType.GetMethod(
+                "TryQueueLeastLoaded",
+                BindingFlags.Static | BindingFlags.Public);
+            Assert.NotNull(method);
+
+            object[] args = { factories, item, null };
+            Assert.IsTrue((bool)method.Invoke(null, args));
+            Component queuedFactory = (Component)args[2];
+            Assert.AreSame(expectedFactory, queuedFactory);
+            Assert.AreEqual(firstCount, GetPropertyValue<int>(factories.GetValue(0), "PendingWorkCount"));
+            Assert.AreEqual(secondCount, GetPropertyValue<int>(factories.GetValue(1), "PendingWorkCount"));
+            Assert.AreEqual(thirdCount, GetPropertyValue<int>(factories.GetValue(2), "PendingWorkCount"));
         }
 
         private GameObject CreateUnit(Vector3 position)
@@ -430,13 +747,22 @@ namespace Strategy.Tests
             return (Vector3)method.Invoke(target, args);
         }
 
-        private static void InvokeVoid(Component target, string methodName, params object[] args)
+        private static void InvokeVoid(object target, string methodName, params object[] args)
         {
             MethodInfo method = target.GetType().GetMethod(
                 methodName,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.NotNull(method);
             method.Invoke(target, args);
+        }
+
+        private static bool InvokeBool(object target, string methodName, params object[] args)
+        {
+            MethodInfo method = target.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            return (bool)method.Invoke(target, args);
         }
 
         private static void SetField(Component target, string fieldName, object value)
@@ -455,6 +781,59 @@ namespace Strategy.Tests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(field);
             return field.GetValue(target);
+        }
+
+        private static T GetPropertyValue<T>(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(
+                propertyName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.NotNull(property);
+            return (T)property.GetValue(target);
+        }
+
+        private static object AddMouseDevice()
+        {
+            Type inputSystemType = Type.GetType("UnityEngine.InputSystem.InputSystem, Unity.InputSystem");
+            Type mouseType = Type.GetType("UnityEngine.InputSystem.Mouse, Unity.InputSystem");
+            Assert.NotNull(inputSystemType);
+            Assert.NotNull(mouseType);
+
+            MethodInfo addDeviceMethod = null;
+            foreach (MethodInfo method in inputSystemType.GetMethods(BindingFlags.Static | BindingFlags.Public))
+            {
+                if (method.Name == "AddDevice" && method.IsGenericMethodDefinition &&
+                    method.GetParameters().Length == 0)
+                {
+                    addDeviceMethod = method;
+                    break;
+                }
+            }
+
+            Assert.NotNull(addDeviceMethod);
+            return addDeviceMethod.MakeGenericMethod(mouseType).Invoke(null, null);
+        }
+
+        private static void RemoveInputDevice(object device)
+        {
+            if (device == null)
+                return;
+
+            Type inputSystemType = Type.GetType("UnityEngine.InputSystem.InputSystem, Unity.InputSystem");
+            Assert.NotNull(inputSystemType);
+
+            foreach (MethodInfo method in inputSystemType.GetMethods(BindingFlags.Static | BindingFlags.Public))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name != "RemoveDevice" || parameters.Length != 1 ||
+                    !parameters[0].ParameterType.IsInstanceOfType(device))
+                {
+                    continue;
+                }
+
+                method.Invoke(null, new[] { device });
+                return;
+            }
         }
 
         private static void InvokeStaticVoid(Type targetType, string methodName, params object[] args)
