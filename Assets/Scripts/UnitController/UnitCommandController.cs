@@ -78,6 +78,18 @@ namespace Strategy.Units
                 _destinationBlockerMask = LayerMask.GetMask("PlayerUnit", "EnemyUnit");
         }
 
+        private void OnEnable()
+        {
+            EventManager.OnUnitDestroyed += RemoveDestroyedSelection;
+            EventManager.OnBuildingDestroyed += RemoveDestroyedSelection;
+        }
+
+        private void OnDisable()
+        {
+            EventManager.OnUnitDestroyed -= RemoveDestroyedSelection;
+            EventManager.OnBuildingDestroyed -= RemoveDestroyedSelection;
+        }
+
         private void Update()
         {
             if (Mouse.current == null)
@@ -177,9 +189,9 @@ namespace Strategy.Units
             if (_selections == null || _selections.Count == 0 || !TryCreateMouseRay(out Ray ray))
                 return;
 
-            if (Physics.Raycast(ray, out RaycastHit enemyHit, 1000f, _enemyMask))
+            if (TryRaycastAttackTarget(ray, out Transform attackTarget))
             {
-                CommandAttack(enemyHit.transform);
+                CommandAttack(attackTarget);
                 return;
             }
 
@@ -190,6 +202,9 @@ namespace Strategy.Units
         /// <summary>Призначає вручну обрану ціль атаки для UnitCombat кожного вибраного юніта та викидає OnUnitAttackTargetChanged.</summary>
         private void CommandAttack(Transform enemy)
         {
+            if (!IsAttackableTarget(enemy))
+                return;
+
             foreach (GameObject selection in _selections)
             {
                 if (selection == null)
@@ -203,6 +218,61 @@ namespace Strategy.Units
                 attack.SetManualAttackTarget(enemy);
                 EventManager.RaiseUnitAttackTargetChanged(selection, enemy);
             }
+        }
+
+        private bool TryRaycastAttackTarget(Ray ray, out Transform target)
+        {
+            target = null;
+            int attackMask = _enemyMask.value | LayerMask.GetMask("Building");
+
+            if (attackMask == 0)
+                return false;
+
+            RaycastHit[] hits = Physics.RaycastAll(
+                ray,
+                1000f,
+                attackMask,
+                QueryTriggerInteraction.Collide);
+
+            float closestDistance = float.MaxValue;
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                Transform candidate = hits[i].transform;
+
+                if (!IsAttackableTarget(candidate) || hits[i].distance >= closestDistance)
+                    continue;
+
+                target = candidate;
+                closestDistance = hits[i].distance;
+            }
+
+            return target != null;
+        }
+
+        private bool IsAttackableTarget(Transform target)
+        {
+            if (target == null || target.GetComponentInParent<Outpost>() != null)
+                return false;
+
+            if (target.GetComponentInParent<IDamageable>() == null)
+                return false;
+
+            ITeam targetTeam = target.GetComponentInParent<ITeam>();
+
+            if (targetTeam == null)
+                return false;
+
+            for (int i = 0; i < _selections.Count; i++)
+            {
+                GameObject selection = _selections[i];
+                UnitCombat combat = selection != null ? selection.GetComponent<UnitCombat>() : null;
+
+                if (combat != null && TeamRelations.AreHostile(combat.Team, targetTeam.Team))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -963,7 +1033,7 @@ namespace Strategy.Units
         private static bool BelongsToPlayer(GameObject selection)
         {
             TeamComponent team = selection != null ? selection.GetComponentInParent<TeamComponent>() : null;
-            return team == null || team.Team == TeamType.Player;
+            return team == null || LocalPlayerContext.IsLocalTeam(team.Team);
         }
 
         private static void EnsureBuildingSelectionState(GameObject building)
@@ -977,6 +1047,14 @@ namespace Strategy.Units
             RemoveDeadSelections();
             PublishSelectionContext();
             EventManager.RaiseSelectionChanged(_selections);
+        }
+
+        private void RemoveDestroyedSelection(GameObject destroyed)
+        {
+            if (destroyed == null || _selections == null || !_selections.Remove(destroyed))
+                return;
+
+            PublishSelectionChanged();
         }
 
         private void PublishSelectionContext()

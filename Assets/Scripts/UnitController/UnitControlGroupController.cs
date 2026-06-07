@@ -36,12 +36,14 @@ namespace Strategy.Units
         private void OnEnable()
         {
             EventManager.OnUnitDestroyed += RemoveUnitFromGroups;
+            EventManager.OnBuildingDestroyed += RemoveUnitFromGroups;
             PublishAllGroups();
         }
 
         private void OnDisable()
         {
             EventManager.OnUnitDestroyed -= RemoveUnitFromGroups;
+            EventManager.OnBuildingDestroyed -= RemoveUnitFromGroups;
         }
 
         private void Update()

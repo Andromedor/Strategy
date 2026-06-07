@@ -18,13 +18,17 @@ namespace Strategy.Tests
     public class FactoryRallyPlayModeTests
     {
         private const string BuildingProductionTypeName = "Strategy.Buildings.BuildingProduction, Assembly-CSharp";
+        private const string BuildingHealthTypeName = "Strategy.Buildings.BuildingHealth, Assembly-CSharp";
         private const string UnitSpawnActivatorTypeName = "Strategy.Buildings.UnitSpawnActivator, Assembly-CSharp";
         private const string UnitDestinationReservationsTypeName = "Strategy.Units.UnitDestinationReservations, Assembly-CSharp";
         private const string UnitTrafficCoordinatorTypeName = "Strategy.Units.UnitTrafficCoordinator, Assembly-CSharp";
         private const string UnitCommandArrowManagerTypeName = "Strategy.Units.UnitCommandArrowManager, Assembly-CSharp";
+        private const string UnitCombatTypeName = "Strategy.Units.UnitCombat, Assembly-CSharp";
         private const string UnitCommandControllerTypeName = "Strategy.Units.UnitCommandController, Assembly-CSharp";
         private const string UnitControlGroupControllerTypeName = "Strategy.Units.UnitControlGroupController, Assembly-CSharp";
         private const string UnitSelectionStateTypeName = "Strategy.Units.UnitSelectionState, Assembly-CSharp";
+        private const string UnitHealthBarPresenterTypeName = "Strategy.Units.UnitHealthBarPresenter, Assembly-CSharp";
+        private const string UnitHealthBarVisibilityTypeName = "Strategy.Units.UnitHealthBarVisibility, Assembly-CSharp";
         private const string ConstructionCenterTypeName = "Strategy.Buildings.ConstructionCenter, Assembly-CSharp";
         private const string ProductionConfigTypeName = "Strategy.Data.ProductionConfig, Assembly-CSharp";
         private const string ProductionItemDataTypeName = "Strategy.Data.ProductionItemData, Assembly-CSharp";
@@ -38,16 +42,22 @@ namespace Strategy.Tests
         private const string ProductionButtonUiTypeName = "Strategy.UI.ProductionButtonUI, Assembly-CSharp";
         private const string SelectionInfoPanelUiTypeName = "Strategy.UI.SelectionInfoPanelUI, Assembly-CSharp";
         private const string EventManagerTypeName = "Strategy.Core.EventManager, Assembly-CSharp";
+        private const string TeamRelationsTypeName = "Strategy.Core.TeamRelations, Assembly-CSharp";
+        private const string TeamTypeName = "Strategy.Units.TeamType, Assembly-CSharp";
         private const string TextMeshProUiTypeName = "TMPro.TextMeshProUGUI, Unity.TextMeshPro";
 
         private readonly Type _buildingProductionType = Type.GetType(BuildingProductionTypeName);
+        private readonly Type _buildingHealthType = Type.GetType(BuildingHealthTypeName);
         private readonly Type _unitSpawnActivatorType = Type.GetType(UnitSpawnActivatorTypeName);
         private readonly Type _unitDestinationReservationsType = Type.GetType(UnitDestinationReservationsTypeName);
         private readonly Type _unitTrafficCoordinatorType = Type.GetType(UnitTrafficCoordinatorTypeName);
         private readonly Type _unitCommandArrowManagerType = Type.GetType(UnitCommandArrowManagerTypeName);
+        private readonly Type _unitCombatType = Type.GetType(UnitCombatTypeName);
         private readonly Type _unitCommandControllerType = Type.GetType(UnitCommandControllerTypeName);
         private readonly Type _unitControlGroupControllerType = Type.GetType(UnitControlGroupControllerTypeName);
         private readonly Type _unitSelectionStateType = Type.GetType(UnitSelectionStateTypeName);
+        private readonly Type _unitHealthBarPresenterType = Type.GetType(UnitHealthBarPresenterTypeName);
+        private readonly Type _unitHealthBarVisibilityType = Type.GetType(UnitHealthBarVisibilityTypeName);
         private readonly Type _constructionCenterType = Type.GetType(ConstructionCenterTypeName);
         private readonly Type _productionConfigType = Type.GetType(ProductionConfigTypeName);
         private readonly Type _productionItemDataType = Type.GetType(ProductionItemDataTypeName);
@@ -62,6 +72,8 @@ namespace Strategy.Tests
         private readonly Type _textMeshProUiType = Type.GetType(TextMeshProUiTypeName);
         private readonly Type _selectionInfoPanelUiType = Type.GetType(SelectionInfoPanelUiTypeName);
         private readonly Type _eventManagerType = Type.GetType(EventManagerTypeName);
+        private readonly Type _teamRelationsType = Type.GetType(TeamRelationsTypeName);
+        private readonly Type _teamType = Type.GetType(TeamTypeName);
 
         private GameObject _navMeshRoot;
         private GameObject _factoryObject;
@@ -70,13 +82,17 @@ namespace Strategy.Tests
         public IEnumerator SetUp()
         {
             Assert.NotNull(_buildingProductionType);
+            Assert.NotNull(_buildingHealthType);
             Assert.NotNull(_unitSpawnActivatorType);
             Assert.NotNull(_unitDestinationReservationsType);
             Assert.NotNull(_unitTrafficCoordinatorType);
             Assert.NotNull(_unitCommandArrowManagerType);
+            Assert.NotNull(_unitCombatType);
             Assert.NotNull(_unitCommandControllerType);
             Assert.NotNull(_unitControlGroupControllerType);
             Assert.NotNull(_unitSelectionStateType);
+            Assert.NotNull(_unitHealthBarPresenterType);
+            Assert.NotNull(_unitHealthBarVisibilityType);
             Assert.NotNull(_constructionCenterType);
             Assert.NotNull(_productionConfigType);
             Assert.NotNull(_productionItemDataType);
@@ -91,10 +107,14 @@ namespace Strategy.Tests
             Assert.NotNull(_textMeshProUiType);
             Assert.NotNull(_selectionInfoPanelUiType);
             Assert.NotNull(_eventManagerType);
+            Assert.NotNull(_teamRelationsType);
+            Assert.NotNull(_teamType);
 
             _navMeshRoot = GameObject.CreatePrimitive(PrimitiveType.Plane);
             _navMeshRoot.name = "Runtime Test NavMesh";
             _navMeshRoot.transform.localScale = new Vector3(8f, 1f, 8f);
+
+            InvokeStaticVoid(_unitHealthBarVisibilityType, "SetForceVisible", false);
 
             NavMeshSurface surface = _navMeshRoot.AddComponent<NavMeshSurface>();
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
@@ -115,6 +135,141 @@ namespace Strategy.Tests
                 UnityEngine.Object.Destroy(_navMeshRoot);
 
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator BuildingHealthAppliesDamageAndDestroysBuilding()
+        {
+            bool destroyedEventRaised = false;
+            GameObject building = new GameObject("Damageable Test Building");
+            Component health = building.AddComponent(_buildingHealthType);
+            SetField(health, "_maxHealth", 500f);
+            InvokeVoid(health, "Awake");
+
+            void OnBuildingDestroyed(GameObject destroyed)
+            {
+                if (destroyed == building)
+                    destroyedEventRaised = true;
+            }
+
+            EventInfo destroyedEvent = _eventManagerType.GetEvent(
+                "OnBuildingDestroyed",
+                BindingFlags.Static | BindingFlags.Public);
+            Assert.NotNull(destroyedEvent);
+            Action<GameObject> handler = OnBuildingDestroyed;
+            destroyedEvent.AddEventHandler(null, handler);
+
+            InvokeVoid(health, "TakeDamage", 125f);
+            Assert.AreEqual(375f, GetPropertyValue<float>(health, "CurrentHealth"), 0.01f);
+            Assert.IsFalse(GetPropertyValue<bool>(health, "IsDead"));
+
+            InvokeVoid(health, "TakeDamage", 500f);
+            Assert.IsTrue(GetPropertyValue<bool>(health, "IsDead"));
+            Assert.IsTrue(destroyedEventRaised);
+
+            yield return null;
+
+            Assert.IsTrue(building == null);
+            destroyedEvent.RemoveEventHandler(null, handler);
+        }
+
+        [Test]
+        public void TeamRelationsSupportMultipleTeamsAndAlliances()
+        {
+            object player = Enum.Parse(_teamType, "Player");
+            object enemy = Enum.Parse(_teamType, "Enemy");
+            object neutral = Enum.Parse(_teamType, "Neutral");
+            object team3 = Enum.Parse(_teamType, "Team3");
+
+            InvokeStaticVoid(_teamRelationsType, "ClearAlliances");
+
+            Assert.IsTrue(InvokeStaticBool(_teamRelationsType, "AreHostile", player, enemy));
+            Assert.IsTrue(InvokeStaticBool(_teamRelationsType, "AreHostile", player, team3));
+
+            InvokeStaticVoid(_teamRelationsType, "SetAlliance", player, team3, true);
+
+            Assert.IsTrue(InvokeStaticBool(_teamRelationsType, "AreAllied", player, team3));
+            Assert.IsFalse(InvokeStaticBool(_teamRelationsType, "AreHostile", player, team3));
+            Assert.IsTrue(InvokeStaticBool(_teamRelationsType, "AreHostile", enemy, team3));
+            Assert.IsFalse(InvokeStaticBool(_teamRelationsType, "AreHostile", neutral, player));
+
+            InvokeStaticVoid(_teamRelationsType, "ClearAlliances");
+        }
+
+        [UnityTest]
+        public IEnumerator UnitHealthBarShowsAfterDamageAndFades()
+        {
+            GameObject unit = CreateHealthBarTestUnit(
+                out Component combat,
+                out Component presenter,
+                out Transform fill,
+                out ScriptableObject unitData,
+                out GameObject unitPrefab,
+                0.05f,
+                0.05f);
+
+            unit.SetActive(true);
+            yield return null;
+
+            Assert.IsFalse(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            InvokeVoid(combat, "TakeDamage", 25f);
+            yield return null;
+
+            Assert.IsTrue(GetPropertyValue<bool>(presenter, "IsVisible"));
+            Assert.AreEqual(0.75f, GetPropertyValue<float>(presenter, "FillAmount"), 0.01f);
+            Assert.AreEqual(0.75f, fill.localScale.x, 0.01f);
+
+            yield return new WaitForSeconds(0.16f);
+
+            Assert.IsFalse(GetPropertyValue<bool>(presenter, "IsVisible"));
+            Assert.LessOrEqual(GetPropertyValue<float>(presenter, "CurrentAlpha"), 0.01f);
+
+            UnityEngine.Object.Destroy(unit);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(unitData);
+        }
+
+        [UnityTest]
+        public IEnumerator UnitHealthBarGlobalVisibilityDoesNotCancelDamageReveal()
+        {
+            GameObject unit = CreateHealthBarTestUnit(
+                out Component combat,
+                out Component presenter,
+                out _,
+                out ScriptableObject unitData,
+                out GameObject unitPrefab,
+                5f,
+                0.05f);
+
+            unit.SetActive(true);
+            yield return null;
+
+            Assert.IsFalse(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            InvokeStaticVoid(_unitHealthBarVisibilityType, "SetForceVisible", true);
+            yield return null;
+            Assert.IsTrue(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            InvokeStaticVoid(_unitHealthBarVisibilityType, "SetForceVisible", false);
+            yield return null;
+            Assert.IsFalse(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            InvokeVoid(combat, "TakeDamage", 10f);
+            yield return null;
+            Assert.IsTrue(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            InvokeStaticVoid(_unitHealthBarVisibilityType, "SetForceVisible", true);
+            yield return null;
+            Assert.IsTrue(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            InvokeStaticVoid(_unitHealthBarVisibilityType, "SetForceVisible", false);
+            yield return null;
+            Assert.IsTrue(GetPropertyValue<bool>(presenter, "IsVisible"));
+
+            UnityEngine.Object.Destroy(unit);
+            UnityEngine.Object.Destroy(unitPrefab);
+            UnityEngine.Object.Destroy(unitData);
         }
 
         [UnityTest]
@@ -1056,6 +1211,69 @@ namespace Strategy.Tests
             return root;
         }
 
+        private GameObject CreateHealthBarTestUnit(
+            out Component combat,
+            out Component presenter,
+            out Transform fill,
+            out ScriptableObject unitData,
+            out GameObject unitPrefab,
+            float visibleAfterDamageSeconds,
+            float fadeSeconds)
+        {
+            unitPrefab = new GameObject("Health Bar Unit Prefab");
+            unitData = ScriptableObject.CreateInstance(_unitDataType);
+            InvokeVoid(
+                unitData,
+                "Configure",
+                unitPrefab,
+                100f,
+                10f,
+                4f,
+                20f,
+                1f,
+                4f,
+                180f,
+                90f,
+                -5f,
+                20f,
+                3f,
+                2f,
+                90f,
+                "Health Bar Test Unit",
+                null,
+                null);
+
+            GameObject unit = new GameObject("Health Bar Test Unit");
+            unit.SetActive(false);
+
+            combat = unit.AddComponent(_unitCombatType);
+            SetField(combat, "_unitData", unitData);
+
+            GameObject barRoot = new GameObject("UnitHealthBar");
+            barRoot.transform.SetParent(unit.transform, false);
+            barRoot.SetActive(false);
+
+            GameObject track = new GameObject("Track");
+            track.transform.SetParent(barRoot.transform, false);
+            Renderer trackRenderer = track.AddComponent<MeshRenderer>();
+
+            GameObject fillObject = new GameObject("Fill");
+            fillObject.transform.SetParent(barRoot.transform, false);
+            fillObject.transform.localScale = Vector3.one;
+            Renderer fillRenderer = fillObject.AddComponent<MeshRenderer>();
+            fill = fillObject.transform;
+
+            presenter = unit.AddComponent(_unitHealthBarPresenterType);
+            SetField(presenter, "_combat", combat);
+            SetField(presenter, "_barRoot", barRoot.transform);
+            SetField(presenter, "_fill", fill);
+            SetField(presenter, "_trackRenderer", trackRenderer);
+            SetField(presenter, "_fillRenderer", fillRenderer);
+            SetField(presenter, "_visibleAfterDamageSeconds", visibleAfterDamageSeconds);
+            SetField(presenter, "_fadeSeconds", fadeSeconds);
+            return unit;
+        }
+
         private GameObject CreateUnit(Vector3 position)
         {
             GameObject unit = new GameObject("Runtime Rally Test Unit");
@@ -1166,18 +1384,29 @@ namespace Strategy.Tests
             Assert.NotNull(mouseType);
 
             MethodInfo addDeviceMethod = null;
+            object[] arguments = null;
             foreach (MethodInfo method in inputSystemType.GetMethods(BindingFlags.Static | BindingFlags.Public))
             {
-                if (method.Name == "AddDevice" && method.IsGenericMethodDefinition &&
-                    method.GetParameters().Length == 0)
+                if (method.Name != "AddDevice" || !method.IsGenericMethodDefinition)
+                    continue;
+
+                ParameterInfo[] parameters = method.GetParameters();
+                if (parameters.Length == 0)
                 {
                     addDeviceMethod = method;
+                    break;
+                }
+
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                {
+                    addDeviceMethod = method;
+                    arguments = new object[] { null };
                     break;
                 }
             }
 
             Assert.NotNull(addDeviceMethod);
-            return addDeviceMethod.MakeGenericMethod(mouseType).Invoke(null, null);
+            return addDeviceMethod.MakeGenericMethod(mouseType).Invoke(null, arguments);
         }
 
         private static void RemoveInputDevice(object device)

@@ -35,6 +35,13 @@ namespace Strategy.Units
     public enum TeamType
     {
         Player,
-        Enemy
+        Enemy,
+        Neutral,
+        Team3,
+        Team4,
+        Team5,
+        Team6,
+        Team7,
+        Team8
     }
 }

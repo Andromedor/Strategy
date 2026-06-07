@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Strategy.Buildings;
 using Strategy.Units;
@@ -15,6 +16,8 @@ namespace Strategy.Units
     /// </summary>
     public class UnitCombat : MonoBehaviour, IDamageable
     {
+        public event Action<UnitCombat> HealthChanged;
+
         [Header("Data")]
         [SerializeField] protected UnitData _unitData;
 
@@ -42,11 +45,13 @@ namespace Strategy.Units
         private Vector3 _playerMoveDestination;
         protected float _lastTargetTime;
 
-        public TeamType Team => _teamComponent != null ? _teamComponent.Team : TeamType.Player;
+        public TeamType Team => _teamComponent != null ? _teamComponent.Team : LocalPlayerContext.LocalTeam;
         public float AttackRange => _unitData != null ? _unitData.AttackRange : 0f;
         public UnitData UnitData => _unitData;
         public float MaxHealth => _unitData != null ? _unitData.MaxHealth : 0f;
         public float CurrentHealth => _health != null ? _health.CurrentHealth : MaxHealth;
+        public float NormalizedHealth => MaxHealth <= 0f ? 0f : Mathf.Clamp01(CurrentHealth / MaxHealth);
+        public bool IsDead => _health != null && _health.IsDead;
 
         protected virtual void Awake()
         {
@@ -114,10 +119,14 @@ namespace Strategy.Units
         /// </summary>
         public void TakeDamage(float damage)
         {
-            if (_health == null)
+            if (_health == null || _health.IsDead || damage <= 0f)
                 return;
 
+            float previousHealth = _health.CurrentHealth;
             _health.TakeDamage(damage);
+
+            if (!Mathf.Approximately(previousHealth, _health.CurrentHealth))
+                HealthChanged?.Invoke(this);
 
             if (_health.IsDead)
                 Die();
@@ -262,18 +271,14 @@ namespace Strategy.Units
             Collider[] hits = Physics.OverlapSphere(
                 transform.position,
                 _unitData.AttackRange,
-                _targetMask);
+                _targetMask,
+                QueryTriggerInteraction.Collide);
 
             Transform closestTarget = null;
             float closestDistanceSqr = float.MaxValue;
 
             foreach (Collider hit in hits)
             {
-                ITeam targetTeam = hit.GetComponentInParent<ITeam>();
-
-                if (targetTeam == null || targetTeam.Team == Team)
-                    continue;
-
                 Transform target = hit.transform;
 
                 if (!IsTargetValid(target))
@@ -395,9 +400,7 @@ namespace Strategy.Units
         /// </summary>
         private void SetupTargetMask()
         {
-            _targetMask = Team == TeamType.Player
-                ? LayerMask.GetMask("EnemyUnit")
-                : LayerMask.GetMask("PlayerUnit");
+            _targetMask = LayerMask.GetMask("PlayerUnit", "EnemyUnit", "Building");
         }
 
         /// <summary>
@@ -538,7 +541,14 @@ namespace Strategy.Units
         /// </summary>
         protected bool IsTargetValid(Transform target)
         {
-            return target != null && target.gameObject.activeInHierarchy;
+            if (target == null || !target.gameObject.activeInHierarchy)
+                return false;
+
+            if (target.GetComponentInParent<IDamageable>() == null)
+                return false;
+
+            ITeam targetTeam = target.GetComponentInParent<ITeam>();
+            return targetTeam != null && TeamRelations.AreHostile(Team, targetTeam.Team);
         }
 
         /// <summary>

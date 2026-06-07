@@ -334,7 +334,7 @@ namespace Strategy.Buildings
                 _previewObject.GetComponent<TeamComponent>();
 
             if (teamComponent != null)
-                teamComponent.SetTeam(_currentTeam);
+                teamComponent.SetTeam(ResolveCurrentTeam());
 
             _previewObject.transform.SetParent(RuntimeObjectContainer.Get("Buildings"), true);
             RestorePreviewGameplay();
@@ -397,13 +397,14 @@ namespace Strategy.Buildings
         /// <summary>Вираховує економічну вартість будівлі з ресурсів гравця; повертає true, якщо доступно (або безкоштовно).</summary>
         private bool TrySpendPlacementCost()
         {
-            if (_currentBuildingData == null || _currentTeam != TeamType.Player)
+            TeamType currentTeam = ResolveCurrentTeam();
+            if (_currentBuildingData == null || !LocalPlayerContext.IsLocalTeam(currentTeam))
                 return true;
 
             int cost = Mathf.Max(0, _currentBuildingData.EconomyCost);
             return cost == 0 ||
                    ResourceManager.Instance == null ||
-                   ResourceManager.Instance.Spend(cost);
+                   ResourceManager.Instance.Spend(currentTeam, cost);
         }
 
         private void ShowAllBuildAreas()
@@ -443,7 +444,14 @@ namespace Strategy.Buildings
                 return false;
 
             TeamComponent teamComponent = center.GetComponentInParent<TeamComponent>();
-            return teamComponent == null || teamComponent.Team == _currentTeam;
+            return teamComponent == null || teamComponent.Team == ResolveCurrentTeam();
+        }
+
+        private TeamType ResolveCurrentTeam()
+        {
+            return _currentTeam == TeamType.Player
+                ? LocalPlayerContext.LocalTeam
+                : _currentTeam;
         }
 
         private struct BehaviourState

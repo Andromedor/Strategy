@@ -201,8 +201,12 @@ namespace Strategy.Units
                 return false;
 
             TeamComponent requesterTeam = requester.GetComponent<TeamComponent>();
-            if (_team != null && requesterTeam != null && _team.Team != requesterTeam.Team)
+            if (_team != null &&
+                requesterTeam != null &&
+                !TeamRelations.AreAllied(_team.Team, requesterTeam.Team))
+            {
                 return false;
+            }
 
             return true;
         }

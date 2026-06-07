@@ -17,6 +17,7 @@ namespace Strategy.Buildings
         [SerializeField] private LayerMask _buildingMask;
 
         public static BuildingProduction SelectedFactory { get; private set; }
+        private static GameObject SelectedBuilding { get; set; }
 
         public static void SetSelectedFactory(BuildingProduction factory)
         {
@@ -27,6 +28,7 @@ namespace Strategy.Buildings
         private static void ResetStaticState()
         {
             SelectedFactory = null;
+            SelectedBuilding = null;
         }
 
         private void Awake()
@@ -89,7 +91,14 @@ namespace Strategy.Buildings
             BuildingProduction production = hit.collider.GetComponentInParent<BuildingProduction>();
             if (production != null)
             {
+                if (!BelongsToLocalPlayer(production.gameObject))
+                {
+                    ClearBuildingSelection();
+                    return;
+                }
+
                 SelectedFactory = production;
+                SetSelectedBuilding(production.gameObject);
                 EventManager.RaiseOpenPanel(PanelType.Factory);
                 EventManager.RaiseFactorySelected(production);
                 return;
@@ -102,13 +111,14 @@ namespace Strategy.Buildings
         private static void SelectConstructionCenter(ConstructionCenter constructionCenter)
         {
             TeamComponent teamComponent = constructionCenter.GetComponentInParent<TeamComponent>();
-            if (teamComponent != null && teamComponent.Team != TeamType.Player)
+            if (teamComponent != null && !LocalPlayerContext.IsLocalTeam(teamComponent.Team))
             {
                 ClearBuildingSelection();
                 return;
             }
 
             SelectedFactory = null;
+            SetSelectedBuilding(constructionCenter.gameObject);
             EventManager.RaiseConstructionCenterSelected(constructionCenter);
             EventManager.RaiseOpenPanel(PanelType.Construction);
         }
@@ -117,6 +127,7 @@ namespace Strategy.Buildings
         private static void SelectOutpost(Outpost outpost)
         {
             SelectedFactory = null;
+            ClearSelectedBuildingVisual();
 
             if (outpost.Owner != TeamType.Player)
             {
@@ -132,8 +143,30 @@ namespace Strategy.Buildings
         private static void ClearBuildingSelection()
         {
             SelectedFactory = null;
+            ClearSelectedBuildingVisual();
             EventManager.RaiseConstructionClosed();
             EventManager.RaiseOpenPanel(PanelType.MainMenu);
+        }
+
+        private static void SetSelectedBuilding(GameObject building)
+        {
+            if (SelectedBuilding == building)
+                return;
+
+            ClearSelectedBuildingVisual();
+            SelectedBuilding = building;
+
+            if (SelectedBuilding != null)
+                EventManager.RaiseBuildingSelected(SelectedBuilding);
+        }
+
+        private static void ClearSelectedBuildingVisual()
+        {
+            if (SelectedBuilding == null)
+                return;
+
+            EventManager.RaiseBuildingDeselected(SelectedBuilding);
+            SelectedBuilding = null;
         }
 
         private bool IsPlayerUnitUnderPointer()
@@ -157,7 +190,13 @@ namespace Strategy.Buildings
                 return false;
 
             TeamComponent team = hitObject.GetComponentInParent<TeamComponent>();
-            return team == null || team.Team == TeamType.Player;
+            return team == null || LocalPlayerContext.IsLocalTeam(team.Team);
+        }
+
+        private static bool BelongsToLocalPlayer(GameObject selection)
+        {
+            TeamComponent team = selection != null ? selection.GetComponentInParent<TeamComponent>() : null;
+            return team == null || LocalPlayerContext.IsLocalTeam(team.Team);
         }
     }
 }

@@ -41,6 +41,7 @@ namespace Strategy.UI
             EventManager.OnConstructionCenterSelected += OnConstructionCenterSelected;
             EventManager.OnOutpostSelected += OnOutpostSelected;
             EventManager.OnConstructionClosed += OnConstructionClosed;
+            EventManager.OnBuildingDestroyed += OnBuildingDestroyed;
             ShowIdle();
         }
 
@@ -52,6 +53,7 @@ namespace Strategy.UI
             EventManager.OnConstructionCenterSelected -= OnConstructionCenterSelected;
             EventManager.OnOutpostSelected -= OnOutpostSelected;
             EventManager.OnConstructionClosed -= OnConstructionClosed;
+            EventManager.OnBuildingDestroyed -= OnBuildingDestroyed;
         }
 
         private void Update()
@@ -134,6 +136,15 @@ namespace Strategy.UI
             ShowIdle();
         }
 
+        private void OnBuildingDestroyed(GameObject building)
+        {
+            if (building == null)
+                return;
+
+            if (_selectedObject is Component component && component.gameObject == building)
+                ShowIdle();
+        }
+
         /// <summary>Скидає панель до стандартного тексту-заповнювача "немає вибору".</summary>
         private void ShowIdle()
         {
@@ -159,10 +170,37 @@ namespace Strategy.UI
                 return;
             }
 
+            if (_selectedUnits.Count == 1)
+            {
+                RefreshSingleUnit(_selectedUnits[0]);
+                return;
+            }
+
             SetInfoTextVisible(false);
             SetText(string.Empty, string.Empty, string.Empty);
             SetCompactRows(null);
             SetUnitCards(BuildUnitCardModels());
+        }
+
+        private void RefreshSingleUnit(GameObject unit)
+        {
+            if (unit == null)
+            {
+                ShowIdle();
+                return;
+            }
+
+            UnitCombat combat = unit.GetComponent<UnitCombat>();
+            UnitData data = combat != null ? combat.UnitData : null;
+            TeamComponent team = unit.GetComponent<TeamComponent>();
+
+            SetInfoTextVisible(true);
+            SetText(
+                ResolveUnitDisplayName(data, unit),
+                (team != null ? team.Team.ToString() : "Player") + " unit",
+                FormatUnitStats(combat, data));
+            SetCompactRows(null);
+            SetUnitCards(null);
         }
 
         /// <summary>
@@ -175,11 +213,12 @@ namespace Strategy.UI
             {
                 SetInfoTextVisible(true);
                 TeamComponent team = factory.GetComponent<TeamComponent>();
+                BuildingHealth health = factory.GetComponent<BuildingHealth>();
                 int itemCount = factory.Items.Count;
                 SetText(
                     GetDisplayName(factory.name),
                     (team != null ? team.Team.ToString() : "Player") + " production",
-                    $"Queue available\nUnits: {itemCount}\nUse the Units tab to train vehicles.");
+                    $"{FormatHealth(health)}\nQueue available\nUnits: {itemCount}\nUse the Units tab to train vehicles.");
                 SetCompactRows(null);
                 SetUnitCards(null);
                 return;
@@ -189,10 +228,11 @@ namespace Strategy.UI
             {
                 SetInfoTextVisible(true);
                 TeamComponent team = center.GetComponent<TeamComponent>();
+                BuildingHealth health = center.GetComponent<BuildingHealth>();
                 SetText(
                     GetDisplayName(center.name),
                     (team != null ? team.Team.ToString() : "Player") + " construction center",
-                    $"Build radius {FormatNumber(center.BuildRadius)}\nUse the Build tab to place structures.");
+                    $"{FormatHealth(health)}\nBuild radius {FormatNumber(center.BuildRadius)}\nUse the Build tab to place structures.");
                 SetCompactRows(null);
                 SetUnitCards(null);
                 return;
@@ -451,6 +491,27 @@ namespace Strategy.UI
             return Mathf.Approximately(value, Mathf.Round(value))
                 ? Mathf.RoundToInt(value).ToString()
                 : value.ToString("0.##");
+        }
+
+        private static string FormatHealth(BuildingHealth health)
+        {
+            if (health == null)
+                return "HP: n/a";
+
+            return $"HP: {FormatNumber(health.CurrentHealth)} / {FormatNumber(health.MaxHealth)}";
+        }
+
+        private static string FormatUnitStats(UnitCombat combat, UnitData data)
+        {
+            if (combat == null || data == null)
+                return "HP: n/a\nDamage: n/a";
+
+            return
+                $"HP: {FormatNumber(combat.CurrentHealth)} / {FormatNumber(combat.MaxHealth)}\n" +
+                $"Damage: {FormatNumber(data.Damage)}\n" +
+                $"Range: {FormatNumber(data.AttackRange)}\n" +
+                $"Attack delay: {FormatNumber(data.AttackDelay)}s\n" +
+                $"Speed: {FormatNumber(data.Speed)}";
         }
 
         private sealed class SelectionUnitGroup

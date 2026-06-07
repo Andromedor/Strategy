@@ -19,6 +19,7 @@ namespace Strategy.Camera
         [SerializeField] private float _maxZoomHeight = 20f;
         [SerializeField] private float _edgeScrollSpeed = 15f;
         [SerializeField] private float _edgeSize = 10f;
+        [SerializeField] private bool _disableEdgeScrollInEditor = true;
 
         private PlayerCameraInput _input;
 
@@ -95,6 +96,9 @@ namespace Strategy.Camera
         /// <summary>Повертає спрямований Vector3 (компоненти x та z), що вказує, яких країв екрана торкається курсор.</summary>
         private Vector3 GetEdgeScrollInput()
         {
+            if (_disableEdgeScrollInEditor && Application.isEditor)
+                return Vector3.zero;
+
             Vector3 input = Vector3.zero;
             Vector2 mousePosition = Mouse.current.position.ReadValue();
 

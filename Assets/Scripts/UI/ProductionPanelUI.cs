@@ -409,7 +409,14 @@ namespace Strategy.UI
         private bool BelongsToTeam(Component component)
         {
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();
-            return teamComponent == null || teamComponent.Team == _team;
+            return teamComponent == null || teamComponent.Team == ResolveTeam();
+        }
+
+        private TeamType ResolveTeam()
+        {
+            return _team == TeamType.Player
+                ? LocalPlayerContext.LocalTeam
+                : _team;
         }
     }
 }

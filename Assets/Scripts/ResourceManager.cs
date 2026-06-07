@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Strategy.Units;
 using UnityEngine;
 
@@ -14,21 +15,23 @@ namespace Strategy.Core
         public static ResourceManager Instance { get; private set; }
 
         public static event Action<int> OnResourceChanged;
+        public static event Action<TeamType, int> OnTeamResourceChanged;
 
         [SerializeField] private int _startResource = 500;
         [SerializeField] private int _startEnemyResource = 500;
+        [SerializeField] private List<TeamResourceAmount> _extraStartingResources = new();
 
-        private int _resource;
-        private int _enemyResource;
+        private readonly Dictionary<TeamType, int> _resources = new();
 
-        public int Resource => _resource;
-        public int EnemyResource => _enemyResource;
+        public int Resource => GetResource(LocalPlayerContext.LocalTeam);
+        public int EnemyResource => GetResource(TeamType.Enemy);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
             Instance = null;
             OnResourceChanged = null;
+            OnTeamResourceChanged = null;
         }
 
         private void Awake()
@@ -41,10 +44,9 @@ namespace Strategy.Core
 
             Instance = this;
 
-            _resource = _startResource;
-            _enemyResource = _startEnemyResource;
+            InitializeResources();
 
-            OnResourceChanged?.Invoke(_resource);
+            OnResourceChanged?.Invoke(Resource);
         }
 
         private void OnDestroy()
@@ -56,23 +58,26 @@ namespace Strategy.Core
         /// <summary>Вираховує суму з пулу ресурсів гравця, якщо вистачає коштів; викидає OnResourceChanged та повертає true у разі успіху.</summary>
         public bool Spend(int amount)
         {
+            return Spend(LocalPlayerContext.LocalTeam, amount);
+        }
+
+        public bool Spend(TeamType team, int amount)
+        {
             if (amount <= 0)
                 return true;
 
-            if (_resource < amount)
+            int current = GetResource(team);
+            if (current < amount)
                 return false;
 
-            _resource -= amount;
-
-            OnResourceChanged?.Invoke(_resource);
-
+            SetResource(team, current - amount);
             return true;
         }
 
         /// <summary>Зручне перевантаження, що додає ресурси до пулу гравця.</summary>
         public void Add(int amount)
         {
-            Add(TeamType.Player, amount);
+            Add(LocalPlayerContext.LocalTeam, amount);
         }
 
         /// <summary>Додає ресурси до пулу вказаної команди; викидає OnResourceChanged лише для команди гравця.</summary>
@@ -81,15 +86,48 @@ namespace Strategy.Core
             if (amount <= 0)
                 return;
 
-            if (team == TeamType.Enemy)
-            {
-                _enemyResource += amount;
-                return;
-            }
-
-            _resource += amount;
-
-            OnResourceChanged?.Invoke(_resource);
+            SetResource(team, GetResource(team) + amount);
         }
+
+        public int GetResource(TeamType team)
+        {
+            return _resources.TryGetValue(team, out int value) ? value : 0;
+        }
+
+        public void SetResource(TeamType team, int amount)
+        {
+            int clampedAmount = Mathf.Max(0, amount);
+            _resources[team] = clampedAmount;
+            OnTeamResourceChanged?.Invoke(team, clampedAmount);
+
+            if (LocalPlayerContext.IsLocalTeam(team))
+                OnResourceChanged?.Invoke(clampedAmount);
+        }
+
+        private void InitializeResources()
+        {
+            _resources.Clear();
+            _resources[TeamType.Player] = Mathf.Max(0, _startResource);
+            _resources[TeamType.Enemy] = Mathf.Max(0, _startEnemyResource);
+
+            if (_extraStartingResources == null)
+                return;
+
+            for (int i = 0; i < _extraStartingResources.Count; i++)
+            {
+                TeamResourceAmount resource = _extraStartingResources[i];
+                _resources[resource.Team] = Mathf.Max(0, resource.Amount);
+            }
+        }
+    }
+
+    [Serializable]
+    public struct TeamResourceAmount
+    {
+        [SerializeField] private TeamType _team;
+        [SerializeField] private int _amount;
+
+        public TeamType Team => _team;
+        public int Amount => _amount;
     }
 }

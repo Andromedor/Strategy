@@ -171,8 +171,12 @@ namespace Strategy.Units
 
                 ITeam targetTeam = hit.GetComponentInParent<ITeam>();
 
-                if (_ownerTeam != null && targetTeam != null && targetTeam.Team == _ownerTeam.Team)
+                if (_ownerTeam != null &&
+                    targetTeam != null &&
+                    !TeamRelations.AreHostile(_ownerTeam.Team, targetTeam.Team))
+                {
                     continue;
+                }
 
                 float splashMultiplier = Random.Range(_splashDamageMinMultiplier, _splashDamageMaxMultiplier);
                 damageable.TakeDamage(_damage * splashMultiplier);
@@ -190,8 +194,12 @@ namespace Strategy.Units
 
             ITeam targetTeam = target.GetComponentInParent<ITeam>();
 
-            if (_ownerTeam != null && targetTeam != null && targetTeam.Team == _ownerTeam.Team)
+            if (_ownerTeam != null &&
+                targetTeam != null &&
+                !TeamRelations.AreHostile(_ownerTeam.Team, targetTeam.Team))
+            {
                 return false;
+            }
 
             return true;
         }

@@ -1,4 +1,5 @@
 using Strategy.Buildings;
+using Strategy.Core;
 using UnityEngine;
 
 namespace Strategy.Units
@@ -9,10 +10,20 @@ namespace Strategy.Units
     /// </summary>
     public class BulletController : MonoBehaviour
     {
+        private const float ImpactDistance = 0.25f;
+        private const float MaxLifetime = 8f;
+
         private float _speed;
         private float _damage;
         private Transform _target;
         private GameObject _owner;
+        private TrailRenderer[] _trails;
+        private float _spawnTime;
+
+        private void Awake()
+        {
+            _trails = GetComponentsInChildren<TrailRenderer>(true);
+        }
 
         private void Update()
         {
@@ -23,6 +34,8 @@ namespace Strategy.Units
         {
             _target = null;
             _owner = null;
+            SetTrailEmission(false);
+            ClearTrails();
         }
 
         /// <summary>
@@ -34,6 +47,9 @@ namespace Strategy.Units
             _speed = speed;
             _target = target;
             _owner = owner;
+            _spawnTime = Time.time;
+            ClearTrails();
+            SetTrailEmission(true);
         }
 
         /// <summary>
@@ -48,8 +64,17 @@ namespace Strategy.Units
                 return;
             }
 
+            if (Time.time - _spawnTime >= MaxLifetime)
+            {
+                ReturnToPool();
+                return;
+            }
+
             float step = Time.deltaTime * _speed;
             transform.position = Vector3.MoveTowards(transform.position, _target.position, step);
+
+            if ((transform.position - _target.position).sqrMagnitude <= ImpactDistance * ImpactDistance)
+                TryApplyDamageToTarget(_target);
         }
 
         /// <summary>
@@ -70,8 +95,12 @@ namespace Strategy.Units
             ITeam ownerTeam = _owner.GetComponentInParent<ITeam>();
             ITeam targetTeam = other.GetComponentInParent<ITeam>();
 
-            if (ownerTeam != null && targetTeam != null && ownerTeam.Team == targetTeam.Team)
+            if (ownerTeam != null &&
+                targetTeam != null &&
+                !TeamRelations.AreHostile(ownerTeam.Team, targetTeam.Team))
+            {
                 return;
+            }
 
             IDamageable damageable = other.GetComponentInParent<IDamageable>();
 
@@ -82,16 +111,69 @@ namespace Strategy.Units
             ReturnToPool();
         }
 
+        private void TryApplyDamageToTarget(Transform target)
+        {
+            if (target == null || _owner == null)
+            {
+                ReturnToPool();
+                return;
+            }
+
+            ITeam ownerTeam = _owner.GetComponentInParent<ITeam>();
+            ITeam targetTeam = target.GetComponentInParent<ITeam>();
+
+            if (ownerTeam != null &&
+                targetTeam != null &&
+                !TeamRelations.AreHostile(ownerTeam.Team, targetTeam.Team))
+            {
+                ReturnToPool();
+                return;
+            }
+
+            IDamageable damageable = target.GetComponentInParent<IDamageable>();
+            if (damageable != null)
+                damageable.TakeDamage(_damage);
+
+            ReturnToPool();
+        }
+
         /// <summary>
         /// Повертає цю кулю до BulletPool.Instance, або деактивує GameObject, якщо пул
         /// недоступний.
         /// </summary>
         private void ReturnToPool()
         {
+            SetTrailEmission(false);
+            ClearTrails();
+
             if (BulletPool.Instance != null)
                 BulletPool.Instance.ReturnBullet(gameObject);
             else
                 gameObject.SetActive(false);
+        }
+
+        private void SetTrailEmission(bool emitting)
+        {
+            if (_trails == null)
+                return;
+
+            for (int i = 0; i < _trails.Length; i++)
+            {
+                if (_trails[i] != null)
+                    _trails[i].emitting = emitting;
+            }
+        }
+
+        private void ClearTrails()
+        {
+            if (_trails == null)
+                return;
+
+            for (int i = 0; i < _trails.Length; i++)
+            {
+                if (_trails[i] != null)
+                    _trails[i].Clear();
+            }
         }
     }
 }

@@ -109,9 +109,9 @@ namespace Strategy.Buildings
                 return false;
 
             if (_teamComponent != null &&
-                _teamComponent.Team == TeamType.Player &&
+                LocalPlayerContext.IsLocalTeam(_teamComponent.Team) &&
                 ResourceManager.Instance != null &&
-                !ResourceManager.Instance.Spend(item.Cost))
+                !ResourceManager.Instance.Spend(_teamComponent.Team, item.Cost))
             {
                 return false;
             }
@@ -330,7 +330,7 @@ namespace Strategy.Buildings
             unitTeam.SetTeam(_teamComponent.Team);
 
             int layer = LayerMask.NameToLayer(
-                _teamComponent.Team == TeamType.Player ? "PlayerUnit" : "EnemyUnit");
+                LocalPlayerContext.IsLocalTeam(_teamComponent.Team) ? "PlayerUnit" : "EnemyUnit");
 
             if (layer >= 0)
                 SetLayerRecursively(spawnedUnit.transform, layer);

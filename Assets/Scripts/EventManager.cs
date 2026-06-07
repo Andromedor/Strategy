@@ -21,6 +21,7 @@ namespace Strategy.Core
         public static event Action<GameObject> OnBuildingDeselected;
         public static event Action<IReadOnlyList<GameObject>> OnSelectionChanged;
         public static event Action<GameObject> OnUnitDestroyed;
+        public static event Action<GameObject> OnBuildingDestroyed;
         public static event Action<GameObject, Vector3> OnUnitMoveCommand;
         public static event Action<GameObject, Transform> OnUnitAttackTargetChanged;
         public static event Action<int, int, Sprite, string> OnControlGroupUpdated;
@@ -40,6 +41,7 @@ namespace Strategy.Core
             OnBuildingDeselected = null;
             OnSelectionChanged = null;
             OnUnitDestroyed = null;
+            OnBuildingDestroyed = null;
             OnUnitMoveCommand = null;
             OnUnitAttackTargetChanged = null;
             OnControlGroupUpdated = null;
@@ -74,6 +76,9 @@ namespace Strategy.Core
         /// <summary>Сповіщає системи, що юніт знищений і має бути прибраний із довгоживучих списків на кшталт control groups.</summary>
         public static void RaiseUnitDestroyed(GameObject unit) =>
             OnUnitDestroyed?.Invoke(unit);
+
+        public static void RaiseBuildingDestroyed(GameObject building) =>
+            OnBuildingDestroyed?.Invoke(building);
 
         /// <summary>Розсилає наказ переміщення юніта до вказаної точки у світових координатах.</summary>
         public static void RaiseUnitMoveCommand(GameObject unit, Vector3 destination) =>
