@@ -44,6 +44,7 @@ namespace Strategy.Tests
         private const string EventManagerTypeName = "Strategy.Core.EventManager, Assembly-CSharp";
         private const string TeamRelationsTypeName = "Strategy.Core.TeamRelations, Assembly-CSharp";
         private const string TeamTypeName = "Strategy.Units.TeamType, Assembly-CSharp";
+        private const string GameTickRunnerTypeName = "Strategy.Core.GameTickRunner, Assembly-CSharp";
         private const string TextMeshProUiTypeName = "TMPro.TextMeshProUGUI, Unity.TextMeshPro";
 
         private readonly Type _buildingProductionType = Type.GetType(BuildingProductionTypeName);
@@ -74,9 +75,11 @@ namespace Strategy.Tests
         private readonly Type _eventManagerType = Type.GetType(EventManagerTypeName);
         private readonly Type _teamRelationsType = Type.GetType(TeamRelationsTypeName);
         private readonly Type _teamType = Type.GetType(TeamTypeName);
+        private readonly Type _gameTickRunnerType = Type.GetType(GameTickRunnerTypeName);
 
         private GameObject _navMeshRoot;
         private GameObject _factoryObject;
+        private GameObject _tickRunnerObject;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -109,10 +112,13 @@ namespace Strategy.Tests
             Assert.NotNull(_eventManagerType);
             Assert.NotNull(_teamRelationsType);
             Assert.NotNull(_teamType);
+            Assert.NotNull(_gameTickRunnerType);
 
             _navMeshRoot = GameObject.CreatePrimitive(PrimitiveType.Plane);
             _navMeshRoot.name = "Runtime Test NavMesh";
             _navMeshRoot.transform.localScale = new Vector3(8f, 1f, 8f);
+            _tickRunnerObject = new GameObject("Runtime Test Game Tick Runner");
+            _tickRunnerObject.AddComponent(_gameTickRunnerType);
 
             InvokeStaticVoid(_unitHealthBarVisibilityType, "SetForceVisible", false);
 
@@ -133,6 +139,9 @@ namespace Strategy.Tests
 
             if (_navMeshRoot != null)
                 UnityEngine.Object.Destroy(_navMeshRoot);
+
+            if (_tickRunnerObject != null)
+                UnityEngine.Object.Destroy(_tickRunnerObject);
 
             yield return null;
         }

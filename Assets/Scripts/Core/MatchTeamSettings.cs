@@ -17,10 +17,24 @@ namespace Strategy.Core
         };
 
         public IReadOnlyList<TeamSlot> Teams => _teams;
+        public static MatchTeamSettings Active { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            Active = null;
+        }
 
         private void Awake()
         {
+            Active = this;
             Apply();
+        }
+
+        private void OnDestroy()
+        {
+            if (Active == this)
+                Active = null;
         }
 
         private void OnValidate()

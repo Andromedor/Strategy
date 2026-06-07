@@ -14,7 +14,7 @@ namespace Strategy.Units
     /// Базовий клас для всієї бойової поведінки юнітів. Обробляє виявлення цілей, наведення вежі/гармати,
     /// рух до дистанції атаки та стрільбу через BulletPool. Успадковується артилерією та автогарматними юнітами.
     /// </summary>
-    public class UnitCombat : MonoBehaviour, IDamageable
+    public class UnitCombat : MonoBehaviour, IDamageable, ISimulationTickable
     {
         public event Action<UnitCombat> HealthChanged;
 
@@ -94,6 +94,7 @@ namespace Strategy.Units
                 _teamComponent.TeamChanged += OnTeamChanged;
 
             EventManager.OnUnitMoveCommand += OnMoveCommand;
+            GameTickRunner.Register(this, 0.25f);
             SetupTargetMask();
         }
 
@@ -103,12 +104,13 @@ namespace Strategy.Units
                 _teamComponent.TeamChanged -= OnTeamChanged;
 
             EventManager.OnUnitMoveCommand -= OnMoveCommand;
+            GameTickRunner.Unregister(this);
             StopAttack();
         }
 
-        protected virtual void Start()
+        public void Tick(GameTickContext context)
         {
-            InvokeRepeating(nameof(CheckEnemies), 0f, 0.25f);
+            CheckEnemies();
         }
 
         /// <summary>

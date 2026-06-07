@@ -12,7 +12,7 @@ namespace Strategy.Units
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NavMeshAgent))]
-    public class UnitTrafficCoordinator : MonoBehaviour
+    public class UnitTrafficCoordinator : MonoBehaviour, ISimulationTickable
     {
         // Локальний runtime-реєстр активних координаторів: дозволяє перевіряти сусідні юніти без FindObjectOfType у gameplay-коді.
         private static readonly List<UnitTrafficCoordinator> All = new();
@@ -123,16 +123,18 @@ namespace Strategy.Units
                 All.Add(this);
 
             EventManager.OnUnitMoveCommand += OnUnitMoveCommand;
+            GameTickRunner.Register(this);
         }
 
         private void OnDisable()
         {
             All.Remove(this);
             EventManager.OnUnitMoveCommand -= OnUnitMoveCommand;
+            GameTickRunner.Unregister(this);
             ReleaseTrafficReservation();
         }
 
-        private void Update()
+        public void Tick(GameTickContext context)
         {
             if (!_enableTrafficYield || _agent == null || !_agent.enabled || !_agent.isOnNavMesh)
                 return;

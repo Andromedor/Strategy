@@ -28,15 +28,21 @@ namespace Strategy.Units
         [SerializeField, Min(1)] private int _destinationSearchRings = 4;
         [SerializeField, Min(4)] private int _destinationCandidatesPerRing = 8;
         [SerializeField] private float _selectionDragThreshold = 0.35f;
+        [SerializeField, Min(1f)] private float _selectionDragScreenThreshold = 6f;
+        [SerializeField] private SelectionDragBoxUI _selectionDragBox;
         [SerializeField] private LayerMask _destinationBlockerMask;
 
         private readonly Collider[] _destinationOverlapBuffer = new Collider[32];
         private readonly List<Vector3> _reservedMoveDestinations = new();
         private readonly List<GameObject> _dragUnitBuffer = new();
         private readonly List<GameObject> _dragBuildingBuffer = new();
+        private readonly List<Vector3> _dragGroundCornerBuffer = new();
+        private readonly List<GameObject> _commandTargetBuffer = new();
         private UnityEngine.Camera _camera;
-        private GameObject _currentSelection;
         private Vector3 _startPoint;
+        private Vector2 _dragStartScreenPoint;
+        private Vector2 _dragCurrentScreenPoint;
+        private bool _hasDragStartGroundPoint;
         private bool _isSelectionPressActive;
         private bool _isCtrlSelectionPress;
         private static int _lastHandledLeftReleaseFrame = -1;
@@ -88,6 +94,9 @@ namespace Strategy.Units
         {
             EventManager.OnUnitDestroyed -= RemoveDestroyedSelection;
             EventManager.OnBuildingDestroyed -= RemoveDestroyedSelection;
+            HideSelectionVisual();
+            _isSelectionPressActive = false;
+            _isSelectionDragActive = false;
         }
 
         private void Update()
@@ -191,12 +200,29 @@ namespace Strategy.Units
 
             if (TryRaycastAttackTarget(ray, out Transform attackTarget))
             {
-                CommandAttack(attackTarget);
+                DispatchAttackCommand(attackTarget);
                 return;
             }
 
             if (Physics.Raycast(ray, out RaycastHit groundHit, 1000f, _cubeMask))
-                CommandMove(groundHit.point);
+                DispatchMoveCommand(groundHit.point);
+        }
+
+        private void DispatchAttackCommand(Transform enemy)
+        {
+            GameObject[] targets = SnapshotCommandableUnits();
+            PlayerCommand command = PlayerCommand.AttackTarget(
+                LocalPlayerContext.LocalTeam,
+                LocalPlayerContext.LocalPlayerId,
+                targets,
+                enemy);
+
+            CommandDispatcher.Dispatch(command, ExecuteAttackCommand);
+        }
+
+        private void ExecuteAttackCommand(PlayerCommand command)
+        {
+            CommandAttack(command.TargetTransform);
         }
 
         /// <summary>Призначає вручну обрану ціль атаки для UnitCombat кожного вибраного юніта та викидає OnUnitAttackTargetChanged.</summary>
@@ -279,6 +305,23 @@ namespace Strategy.Units
         /// Видає наказ усім вибраним юнітам переміститися до позицій формації у шаховому порядку навколо targetPoint,
         /// прив'язуючи кожен пункт призначення до доступної точки NavMesh перед викликом SetDestination.
         /// </summary>
+        private void DispatchMoveCommand(Vector3 targetPoint)
+        {
+            GameObject[] targets = SnapshotCommandableUnits();
+            PlayerCommand command = PlayerCommand.MoveUnits(
+                LocalPlayerContext.LocalTeam,
+                LocalPlayerContext.LocalPlayerId,
+                targets,
+                targetPoint);
+
+            CommandDispatcher.Dispatch(command, ExecuteMoveCommand);
+        }
+
+        private void ExecuteMoveCommand(PlayerCommand command)
+        {
+            CommandMove(command.TargetPosition);
+        }
+
         private void CommandMove(Vector3 targetPoint)
         {
             GameObject firstUnit = GetFirstCommandableUnit();
@@ -631,12 +674,38 @@ namespace Strategy.Units
         }
 
         /// <summary>Знімає виділення з усіх юнітів та записує початкову точку попадання на землю для потенційного прямокутника перетягування.</summary>
+        private GameObject[] SnapshotCommandableUnits()
+        {
+            _commandTargetBuffer.Clear();
+
+            for (int i = 0; i < _selections.Count; i++)
+            {
+                GameObject selection = _selections[i];
+
+                if (selection == null)
+                    continue;
+
+                if (selection.GetComponent<NavMeshAgent>() == null &&
+                    selection.GetComponent<UnitSpawnActivator>() == null &&
+                    selection.GetComponent<UnitCombat>() == null)
+                {
+                    continue;
+                }
+
+                _commandTargetBuffer.Add(selection);
+            }
+
+            return _commandTargetBuffer.ToArray();
+        }
+
         private void StartSelectionPress()
         {
-            if (BuildingPlacementManager.IsPlacing || IsPointerOverUi() || !RaycastToGround(out Vector3 hitPoint))
+            if (BuildingPlacementManager.IsPlacing || IsPointerOverUi() || !TryCreateMouseRay(out _))
                 return;
 
-            _startPoint = hitPoint;
+            _dragStartScreenPoint = Mouse.current.position.ReadValue();
+            _dragCurrentScreenPoint = _dragStartScreenPoint;
+            _hasDragStartGroundPoint = RaycastToGround(out _startPoint);
             _isCtrlSelectionPress = IsCtrlPressed();
             _isSelectionPressActive = true;
         }
@@ -644,55 +713,111 @@ namespace Strategy.Units
         /// <summary>Ініціює куб виділення перетягуванням, як тільки переміщення перевищує поріг, потім змінює його розмір для відстеження курсора.</summary>
         private void UpdateSelectionPress()
         {
-            if (!RaycastToGround(out Vector3 currentPoint))
-                return;
+            _dragCurrentScreenPoint = Mouse.current.position.ReadValue();
 
-            if (_currentSelection == null)
+            if (!_isSelectionDragActive)
             {
-                Vector3 delta = currentPoint - _startPoint;
-                delta.y = 0f;
+                float screenThreshold = Mathf.Max(
+                    _selectionDragScreenThreshold,
+                    _selectionDragThreshold * 16f);
 
-                if (delta.sqrMagnitude < _selectionDragThreshold * _selectionDragThreshold)
+                if ((_dragCurrentScreenPoint - _dragStartScreenPoint).sqrMagnitude <
+                    screenThreshold * screenThreshold)
+                {
                     return;
+                }
 
                 BeginSelectionDrag();
             }
 
-            UpdateSelectionVisual(currentPoint);
+            UpdateSelectionVisual(_dragCurrentScreenPoint);
         }
 
         /// <summary>Спавнить префаб куба — візуальний прямокутник виділення — у початковій позиції перетягування.</summary>
         private void BeginSelectionDrag()
         {
-            if (_cubePrefab == null)
-                return;
-
             _isSelectionDragActive = true;
-            _currentSelection = Instantiate(
-                _cubePrefab,
-                new Vector3(_startPoint.x, 1f, _startPoint.z),
-                Quaternion.identity,
-                RuntimeObjectContainer.Get("Selection"));
+            _selectionDragBox?.Show(_dragStartScreenPoint, _dragCurrentScreenPoint);
         }
 
         /// <summary>Переміщує та масштабує куб виділення так, щоб він охоплював від початкової точки перетягування до поточної позиції курсора.</summary>
-        private void UpdateSelectionVisual(Vector3 currentPoint)
+        private void UpdateSelectionVisual(Vector2 currentScreenPoint)
         {
-            if (_currentSelection == null)
-                return;
-
-            Vector3 center = (_startPoint + currentPoint) * 0.5f;
-            Vector3 size = new Vector3(
-                Mathf.Abs(currentPoint.x - _startPoint.x),
-                1f,
-                Mathf.Abs(currentPoint.z - _startPoint.z));
-
-            _currentSelection.transform.position = new Vector3(center.x, 1f, center.z);
-            _currentSelection.transform.rotation = Quaternion.identity;
-            _currentSelection.transform.localScale = size;
+            _selectionDragBox?.UpdateBox(_dragStartScreenPoint, currentScreenPoint);
         }
 
         /// <summary>Використовує OverlapBox з межами куба виділення для пошуку юнітів гравця всередині та додає їх до _selections через RaiseUnitSelected.</summary>
+        private void HideSelectionVisual()
+        {
+            _selectionDragBox?.Hide();
+        }
+
+        private Rect GetDragScreenRect()
+        {
+            Vector2 min = Vector2.Min(_dragStartScreenPoint, _dragCurrentScreenPoint);
+            Vector2 max = Vector2.Max(_dragStartScreenPoint, _dragCurrentScreenPoint);
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+        }
+
+        private bool TryBuildDragWorldBroadphase(Rect screenRect, out Vector3 center, out Vector3 halfExtents)
+        {
+            _dragGroundCornerBuffer.Clear();
+
+            TryAddGroundPoint(new Vector2(screenRect.xMin, screenRect.yMin));
+            TryAddGroundPoint(new Vector2(screenRect.xMin, screenRect.yMax));
+            TryAddGroundPoint(new Vector2(screenRect.xMax, screenRect.yMin));
+            TryAddGroundPoint(new Vector2(screenRect.xMax, screenRect.yMax));
+
+            if (_dragGroundCornerBuffer.Count == 0)
+            {
+                center = Vector3.zero;
+                halfExtents = Vector3.zero;
+                return false;
+            }
+
+            Vector3 min = _dragGroundCornerBuffer[0];
+            Vector3 max = _dragGroundCornerBuffer[0];
+
+            for (int i = 1; i < _dragGroundCornerBuffer.Count; i++)
+            {
+                min = Vector3.Min(min, _dragGroundCornerBuffer[i]);
+                max = Vector3.Max(max, _dragGroundCornerBuffer[i]);
+            }
+
+            center = (min + max) * 0.5f;
+            center.y = 8f;
+            halfExtents = new Vector3(
+                Mathf.Max(0.5f, (max.x - min.x) * 0.5f + 1f),
+                40f,
+                Mathf.Max(0.5f, (max.z - min.z) * 0.5f + 1f));
+            return true;
+        }
+
+        private void TryAddGroundPoint(Vector2 screenPoint)
+        {
+            if (TryScreenPointToGround(screenPoint, out Vector3 point))
+                _dragGroundCornerBuffer.Add(point);
+        }
+
+        private bool TryScreenPointToGround(Vector2 screenPoint, out Vector3 point)
+        {
+            point = Vector3.zero;
+
+            if (_camera == null)
+                _camera = GetComponent<UnityEngine.Camera>();
+
+            if (_camera == null)
+                return false;
+
+            Ray ray = _camera.ScreenPointToRay(screenPoint);
+
+            if (!Physics.Raycast(ray, out RaycastHit hit, 1000f, _cubeMask))
+                return false;
+
+            point = hit.point;
+            return true;
+        }
+
         private void EndSelection()
         {
             if (!_isSelectionPressActive)
@@ -700,7 +825,7 @@ namespace Strategy.Units
 
             _isSelectionPressActive = false;
 
-            if (_currentSelection == null)
+            if (!_isSelectionDragActive)
             {
                 if (HandleClickSelection())
                     _lastHandledLeftReleaseFrame = Time.frameCount;
@@ -708,19 +833,9 @@ namespace Strategy.Units
                 return;
             }
 
-            Vector3 halfExtents = _currentSelection.transform.localScale * 0.5f;
-            halfExtents.y = 1f;
-
-            Collider[] hits = Physics.OverlapBox(
-                _currentSelection.transform.position,
-                halfExtents,
-                Quaternion.identity,
-                GetSelectableLayerMask());
-
-            ApplyDragSelection(hits);
-
-            Destroy(_currentSelection);
-            _currentSelection = null;
+            _dragCurrentScreenPoint = Mouse.current.position.ReadValue();
+            ApplyScreenDragSelection(GetDragScreenRect());
+            HideSelectionVisual();
             _isSelectionDragActive = false;
             _lastHandledLeftReleaseFrame = Time.frameCount;
         }
@@ -858,13 +973,21 @@ namespace Strategy.Units
             building = null;
             int buildingMask = LayerMask.GetMask("Building");
 
-            if (buildingMask == 0 || !Physics.Raycast(ray, out RaycastHit hit, 1000f, buildingMask))
+            if (buildingMask == 0 ||
+                !Physics.Raycast(ray, out RaycastHit hit, 1000f, buildingMask, QueryTriggerInteraction.Collide))
+            {
                 return false;
+            }
 
             return TryResolveBuildingRoot(hit.collider, out building);
         }
 
         private void CollectDragSelection(Collider[] hits)
+        {
+            CollectDragSelection(hits, default, false);
+        }
+
+        private void CollectDragSelection(Collider[] hits, Rect screenRect, bool useScreenRect)
         {
             _dragUnitBuffer.Clear();
             _dragBuildingBuffer.Clear();
@@ -873,6 +996,9 @@ namespace Strategy.Units
             {
                 Collider hit = hits[i];
                 if (hit == null)
+                    continue;
+
+                if (useScreenRect && !IsColliderInsideScreenRect(hit, screenRect))
                     continue;
 
                 if (TryResolveUnitRoot(hit, out GameObject unit))
@@ -899,6 +1025,64 @@ namespace Strategy.Units
                 TryAddSelection(selectedBuffer[i], false);
 
             PublishSelectionChanged();
+        }
+
+        private void ApplyScreenDragSelection(Rect screenRect)
+        {
+            DeselectAll(false);
+
+            if (!TryBuildDragWorldBroadphase(screenRect, out Vector3 center, out Vector3 halfExtents))
+            {
+                PublishSelectionChanged();
+                return;
+            }
+
+            Collider[] hits = Physics.OverlapBox(
+                center,
+                halfExtents,
+                Quaternion.identity,
+                GetSelectableLayerMask(),
+                QueryTriggerInteraction.Collide);
+
+            CollectDragSelection(hits, screenRect, true);
+
+            List<GameObject> selectedBuffer = _dragUnitBuffer.Count > 0
+                ? _dragUnitBuffer
+                : _dragBuildingBuffer;
+
+            for (int i = 0; i < selectedBuffer.Count; i++)
+                TryAddSelection(selectedBuffer[i], false);
+
+            PublishSelectionChanged();
+        }
+
+        private bool IsColliderInsideScreenRect(Collider hit, Rect screenRect)
+        {
+            if (_camera == null)
+                _camera = GetComponent<UnityEngine.Camera>();
+
+            if (_camera == null || hit == null)
+                return false;
+
+            Bounds bounds = hit.bounds;
+            Vector3 min = bounds.min;
+            Vector3 max = bounds.max;
+
+            return IsWorldPointInsideScreenRect(bounds.center, screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(min.x, min.y, min.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(min.x, min.y, max.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(min.x, max.y, min.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(min.x, max.y, max.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(max.x, min.y, min.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(max.x, min.y, max.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(max.x, max.y, min.z), screenRect) ||
+                   IsWorldPointInsideScreenRect(new Vector3(max.x, max.y, max.z), screenRect);
+        }
+
+        private bool IsWorldPointInsideScreenRect(Vector3 worldPoint, Rect screenRect)
+        {
+            Vector3 screenPoint = _camera.WorldToScreenPoint(worldPoint);
+            return screenPoint.z > 0f && screenRect.Contains((Vector2)screenPoint);
         }
 
         private static void AddUnique(List<GameObject> target, GameObject value)

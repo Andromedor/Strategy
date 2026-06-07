@@ -19,6 +19,7 @@ namespace Strategy.Core
 
         [SerializeField] private int _startResource = 500;
         [SerializeField] private int _startEnemyResource = 500;
+        [SerializeField] private int _defaultTeamResource = 500;
         [SerializeField] private List<TeamResourceAmount> _extraStartingResources = new();
 
         private readonly Dictionary<TeamType, int> _resources = new();
@@ -107,8 +108,26 @@ namespace Strategy.Core
         private void InitializeResources()
         {
             _resources.Clear();
-            _resources[TeamType.Player] = Mathf.Max(0, _startResource);
-            _resources[TeamType.Enemy] = Mathf.Max(0, _startEnemyResource);
+
+            MatchTeamSettings matchSettings = MatchTeamSettings.Active;
+
+            if (matchSettings != null && matchSettings.Teams.Count > 0)
+            {
+                for (int i = 0; i < matchSettings.Teams.Count; i++)
+                {
+                    TeamSlot team = matchSettings.Teams[i];
+
+                    if (team.Team == TeamType.Neutral)
+                        continue;
+
+                    _resources[team.Team] = ResolveStartingResource(team.Team);
+                }
+            }
+            else
+            {
+                _resources[TeamType.Player] = Mathf.Max(0, _startResource);
+                _resources[TeamType.Enemy] = Mathf.Max(0, _startEnemyResource);
+            }
 
             if (_extraStartingResources == null)
                 return;
@@ -118,6 +137,17 @@ namespace Strategy.Core
                 TeamResourceAmount resource = _extraStartingResources[i];
                 _resources[resource.Team] = Mathf.Max(0, resource.Amount);
             }
+        }
+
+        private int ResolveStartingResource(TeamType team)
+        {
+            if (team == TeamType.Player)
+                return Mathf.Max(0, _startResource);
+
+            if (team == TeamType.Enemy)
+                return Mathf.Max(0, _startEnemyResource);
+
+            return Mathf.Max(0, _defaultTeamResource);
         }
     }
 
