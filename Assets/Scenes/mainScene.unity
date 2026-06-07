@@ -7005,6 +7005,7 @@ MonoBehaviour:
   _maxZoomHeight: 40
   _edgeScrollSpeed: 15
   _edgeSize: 10
+  _disableEdgeScrollInEditor: 1
 --- !u!114 &330585549
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10113,6 +10114,7 @@ MonoBehaviour:
   _team: 0
   _fontAsset: {fileID: 11400000, guid: 38fc5a74a5afa2d4aa89aa1085d4b9ba, type: 2}
   _buttonSprite: {fileID: 21300000, guid: 9a32a6cc2cb803443983d45d4a513506, type: 3}
+  _productionStateRefreshInterval: 0.1
 --- !u!114 &506745662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10424,6 +10426,8 @@ MonoBehaviour:
   _blockMask:
     serializedVersion: 2
     m_Bits: 896
+  _gridConfig: {fileID: 11400000, guid: 3353f5fd74ea4e678e0744bf35fa770f, type: 2}
+  _useGridPlacement: 1
   _rotationStep: 90
   _validColor: {r: 0, g: 1, b: 0, a: 0.5}
   _invalidColor: {r: 1, g: 0, b: 0, a: 0.5}
@@ -10459,6 +10463,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DefaultNamespace.ResourceManager
   _startResource: 500
   _startEnemyResource: 500
+  _extraStartingResources: []
 --- !u!1 &530878504
 GameObject:
   m_ObjectHideFlags: 0
@@ -17079,7 +17084,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 427720, guid: d6786c9bcf7304f1f8c2bbc4231bd81e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -29.4
+      value: -58.4
       objectReference: {fileID: 0}
     - target: {fileID: 427720, guid: d6786c9bcf7304f1f8c2bbc4231bd81e, type: 3}
       propertyPath: m_LocalPosition.y
@@ -17087,7 +17092,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 427720, guid: d6786c9bcf7304f1f8c2bbc4231bd81e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -16.8
+      value: -37.4
       objectReference: {fileID: 0}
     - target: {fileID: 427720, guid: d6786c9bcf7304f1f8c2bbc4231bd81e, type: 3}
       propertyPath: m_LocalRotation.w

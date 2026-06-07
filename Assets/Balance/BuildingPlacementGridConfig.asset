@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f78afc191af4a0f89bc12caa14a3c71, type: 3}
+  m_Name: BuildingPlacementGridConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Strategy.Data.BuildingPlacementGridConfig
+  _cellSize: 5
+  _origin: {x: 0, y: 0, z: 0}
+  _markerPrefab: {fileID: 7424505983745072262, guid: 778f825cd188b51459969936010c6c3e, type: 3}
+  _validCellColor: {r: 0, g: 0.95, b: 1, a: 0.42}
+  _invalidCellColor: {r: 1, g: 0.05, b: 0.05, a: 0.48}
+  _buildAreaCellColor: {r: 0, g: 0.85, b: 1, a: 0.16}
+  _markerYOffset: 0.08
+  _markerScale: 0.94

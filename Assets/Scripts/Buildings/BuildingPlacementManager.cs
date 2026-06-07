@@ -27,6 +27,10 @@ namespace Strategy.Buildings
         [Header("Placement check")]
         [SerializeField] private LayerMask _blockMask;
 
+        [Header("Grid")]
+        [SerializeField] private BuildingPlacementGridConfig _gridConfig;
+        [SerializeField] private bool _useGridPlacement = true;
+
         [Header("Rotation")]
         [SerializeField] private float _rotationStep = 90f;
 
@@ -43,9 +47,18 @@ namespace Strategy.Buildings
         private MaterialPropertyBlock _propertyBlock;
         private BuildingData _currentBuildingData;
         private ConstructionCenter _currentConstructionCenter;
+        private Vector2Int _currentGridCell;
+        private int _rotationSteps;
         private readonly List<BehaviourState> _previewBehaviourStates = new();
         private readonly List<ColliderState> _previewColliderStates = new();
         private readonly List<RigidbodyState> _previewRigidbodyStates = new();
+        private readonly List<Vector2Int> _gridCellBuffer = new();
+        private readonly List<Vector3> _gridCellCenterBuffer = new();
+        private readonly List<Vector2Int> _invalidGridCellBuffer = new();
+        private readonly List<Vector3> _buildAreaGridCellCenters = new();
+        private readonly List<GridMarkerState> _gridMarkers = new();
+        private readonly List<GridMarkerState> _buildAreaGridMarkers = new();
+        private MaterialPropertyBlock _gridMarkerPropertyBlock;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
@@ -140,6 +153,7 @@ namespace Strategy.Buildings
                 return;
 
             _currentBuildingData = buildingData;
+            _rotationSteps = 0;
 
             CreatePreviewObject(buildingData.Prefab);
 
@@ -213,6 +227,19 @@ namespace Strategy.Buildings
             Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Physics.Raycast(ray, out var hit, 1000,_groundMask))
             {
+                if (IsGridPlacementActive())
+                {
+                    _currentGridCell = BuildingGridPlacementService.WorldToCell(hit.point, _gridConfig);
+                    _previewObject.transform.SetPositionAndRotation(
+                        BuildingGridPlacementService.GetPlacementPosition(
+                            _currentBuildingData,
+                            _currentGridCell,
+                            _rotationSteps,
+                            _gridConfig),
+                        BuildingGridPlacementService.RotationFromSteps(_rotationSteps));
+                    return;
+                }
+
                 _previewObject.transform.position = hit.point;
             }
         }
@@ -225,12 +252,40 @@ namespace Strategy.Buildings
 
             if (Keyboard.current.qKey.wasPressedThisFrame)
             {
-                _previewObject.transform.Rotate(Vector3.up, -_rotationStep);
+                if (IsGridPlacementActive())
+                {
+                    _rotationSteps = BuildingGridPlacementService.NormalizeRotationSteps(_rotationSteps - ResolveRotationStepCells());
+                    _previewObject.transform.SetPositionAndRotation(
+                        BuildingGridPlacementService.GetPlacementPosition(
+                            _currentBuildingData,
+                            _currentGridCell,
+                            _rotationSteps,
+                            _gridConfig),
+                        BuildingGridPlacementService.RotationFromSteps(_rotationSteps));
+                }
+                else
+                {
+                    _previewObject.transform.Rotate(Vector3.up, -_rotationStep);
+                }
             }
 
             if (Keyboard.current.eKey.wasPressedThisFrame)
             {
-                _previewObject.transform.Rotate(Vector3.up, _rotationStep);
+                if (IsGridPlacementActive())
+                {
+                    _rotationSteps = BuildingGridPlacementService.NormalizeRotationSteps(_rotationSteps + ResolveRotationStepCells());
+                    _previewObject.transform.SetPositionAndRotation(
+                        BuildingGridPlacementService.GetPlacementPosition(
+                            _currentBuildingData,
+                            _currentGridCell,
+                            _rotationSteps,
+                            _gridConfig),
+                        BuildingGridPlacementService.RotationFromSteps(_rotationSteps));
+                }
+                else
+                {
+                    _previewObject.transform.Rotate(Vector3.up, _rotationStep);
+                }
             }
         }
 
@@ -245,6 +300,23 @@ namespace Strategy.Buildings
             if (!HasAvailableConstructionArea())
             {
                 _isValidPlacement = false;
+                RefreshGridFootprintBuffers();
+                return;
+            }
+
+            if (IsGridPlacementActive())
+            {
+                _isValidPlacement = BuildingGridPlacementService.EvaluatePlacement(
+                    _currentBuildingData,
+                    _currentGridCell,
+                    _rotationSteps,
+                    _gridConfig,
+                    ResolveCurrentTeam(),
+                    _blockMask,
+                    _previewObject.transform,
+                    _gridCellBuffer,
+                    _gridCellCenterBuffer,
+                    _invalidGridCellBuffer);
                 return;
             }
 
@@ -304,6 +376,8 @@ namespace Strategy.Buildings
                 _propertyBlock.SetColor("_BaseColor", color);
                 renderer.SetPropertyBlock(_propertyBlock);
             }
+
+            UpdateGridMarkers();
         }
 
         /// <summary>Видаляє блок властивостей тонування з усіх рендерерів попереднього перегляду, відновлюючи їх оригінальний вигляд матеріалу.</summary>
@@ -337,6 +411,17 @@ namespace Strategy.Buildings
                 teamComponent.SetTeam(ResolveCurrentTeam());
 
             _previewObject.transform.SetParent(RuntimeObjectContainer.Get("Buildings"), true);
+
+            if (IsGridPlacementActive())
+            {
+                BuildingGridOccupancy occupancy = _previewObject.GetComponent<BuildingGridOccupancy>();
+
+                if (occupancy == null)
+                    occupancy = _previewObject.AddComponent<BuildingGridOccupancy>();
+
+                occupancy.Initialize(_currentBuildingData, _gridConfig, _currentGridCell, _rotationSteps);
+            }
+
             RestorePreviewGameplay();
             ClearPreviewState();
 
@@ -392,6 +477,10 @@ namespace Strategy.Buildings
             _renderers = null;
             _propertyBlock = null;
             _currentBuildingData = null;
+            _gridCellBuffer.Clear();
+            _gridCellCenterBuffer.Clear();
+            _invalidGridCellBuffer.Clear();
+            HideGridMarkers();
         }
 
         /// <summary>Вираховує економічну вартість будівлі з ресурсів гравця; повертає true, якщо доступно (або безкоштовно).</summary>
@@ -407,6 +496,199 @@ namespace Strategy.Buildings
                    ResourceManager.Instance.Spend(currentTeam, cost);
         }
 
+        private bool IsGridPlacementActive()
+        {
+            return _useGridPlacement && _currentBuildingData != null;
+        }
+
+        private int ResolveRotationStepCells()
+        {
+            if (Mathf.Approximately(_rotationStep, 0f))
+                return 1;
+
+            return Mathf.Max(1, Mathf.RoundToInt(Mathf.Abs(_rotationStep) / 90f));
+        }
+
+        private void RefreshGridFootprintBuffers()
+        {
+            _gridCellBuffer.Clear();
+            _gridCellCenterBuffer.Clear();
+            _invalidGridCellBuffer.Clear();
+
+            if (!IsGridPlacementActive())
+                return;
+
+            BuildingGridPlacementService.GetOccupiedCells(
+                _currentBuildingData,
+                _currentGridCell,
+                _rotationSteps,
+                _gridConfig,
+                _gridCellBuffer);
+            BuildingGridPlacementService.GetOccupiedCellCenters(
+                _currentBuildingData,
+                _currentGridCell,
+                _rotationSteps,
+                _gridConfig,
+                _gridCellCenterBuffer);
+
+            _invalidGridCellBuffer.AddRange(_gridCellBuffer);
+        }
+
+        private void UpdateGridMarkers()
+        {
+            if (!IsGridPlacementActive() ||
+                _gridConfig == null ||
+                _gridConfig.MarkerPrefab == null ||
+                _gridCellCenterBuffer.Count == 0)
+            {
+                HideGridMarkers();
+                return;
+            }
+
+            EnsureGridMarkerCount(_gridMarkers, _gridCellCenterBuffer.Count, "Placement Cell");
+
+            float cellSize = BuildingGridPlacementService.ResolveCellSize(_gridConfig);
+            float markerSize = cellSize * _gridConfig.MarkerScale;
+
+            for (int i = 0; i < _gridMarkers.Count; i++)
+            {
+                GridMarkerState marker = _gridMarkers[i];
+                bool visible = i < _gridCellCenterBuffer.Count;
+                marker.GameObject.SetActive(visible);
+
+                if (!visible)
+                    continue;
+
+                Vector3 markerPosition = _gridCellCenterBuffer[i] + Vector3.up * _gridConfig.MarkerYOffset;
+                marker.GameObject.transform.SetPositionAndRotation(markerPosition, Quaternion.identity);
+                marker.GameObject.transform.localScale = new Vector3(markerSize, 0.04f, markerSize);
+                Color color = i < _gridCellBuffer.Count && _invalidGridCellBuffer.Contains(_gridCellBuffer[i])
+                    ? _gridConfig.InvalidCellColor
+                    : _gridConfig.ValidCellColor;
+                SetGridMarkerColor(marker, color);
+            }
+        }
+
+        private void UpdateBuildAreaGridMarkers()
+        {
+            if (!_useGridPlacement ||
+                _gridConfig == null ||
+                _gridConfig.MarkerPrefab == null)
+            {
+                HideMarkers(_buildAreaGridMarkers);
+                return;
+            }
+
+            _buildAreaGridCellCenters.Clear();
+            HashSet<Vector2Int> visitedCells = new();
+            float cellSize = BuildingGridPlacementService.ResolveCellSize(_gridConfig);
+
+            foreach (ConstructionCenter center in ConstructionCenter.All)
+            {
+                if (!IsConstructionCenterForCurrentTeam(center))
+                    continue;
+
+                Vector2Int centerCell = BuildingGridPlacementService.WorldToCell(center.Position, _gridConfig);
+                int radiusCells = Mathf.CeilToInt(center.BuildRadius / cellSize);
+
+                for (int x = -radiusCells; x <= radiusCells; x++)
+                {
+                    for (int y = -radiusCells; y <= radiusCells; y++)
+                    {
+                        Vector2Int cell = centerCell + new Vector2Int(x, y);
+
+                        if (!visitedCells.Add(cell))
+                            continue;
+
+                        Vector3 cellCenter = BuildingGridPlacementService.CellToWorld(cell, _gridConfig);
+
+                        if (center.IsInsideBuildArea(cellCenter))
+                            _buildAreaGridCellCenters.Add(cellCenter);
+                    }
+                }
+            }
+
+            EnsureGridMarkerCount(_buildAreaGridMarkers, _buildAreaGridCellCenters.Count, "Build Area Cell");
+
+            float markerSize = cellSize * _gridConfig.MarkerScale;
+
+            for (int i = 0; i < _buildAreaGridMarkers.Count; i++)
+            {
+                GridMarkerState marker = _buildAreaGridMarkers[i];
+                bool visible = i < _buildAreaGridCellCenters.Count;
+                marker.GameObject.SetActive(visible);
+
+                if (!visible)
+                    continue;
+
+                Vector3 markerPosition = _buildAreaGridCellCenters[i] + Vector3.up * (_gridConfig.MarkerYOffset * 0.5f);
+                marker.GameObject.transform.SetPositionAndRotation(markerPosition, Quaternion.identity);
+                marker.GameObject.transform.localScale = new Vector3(markerSize, 0.025f, markerSize);
+                Vector2Int cell = BuildingGridPlacementService.WorldToCell(_buildAreaGridCellCenters[i], _gridConfig);
+                Color color = BuildingGridPlacementService.IsReservedByOther(cell, null) ||
+                              BuildingGridPlacementService.IsCellBlocked(
+                                  _buildAreaGridCellCenters[i],
+                                  _gridConfig,
+                                  _blockMask)
+                    ? _gridConfig.InvalidCellColor
+                    : _gridConfig.BuildAreaCellColor;
+                SetGridMarkerColor(marker, color);
+            }
+        }
+
+        private void EnsureGridMarkerCount(List<GridMarkerState> markers, int count, string suffix)
+        {
+            while (markers.Count < count)
+                markers.Add(CreateGridMarker(suffix));
+        }
+
+        private GridMarkerState CreateGridMarker(string suffix)
+        {
+            Transform markerContainer = RuntimeObjectContainer.Get("Building Grid Markers");
+            GameObject markerObject = Instantiate(_gridConfig.MarkerPrefab, markerContainer);
+            markerObject.name = $"{_gridConfig.MarkerPrefab.name} ({suffix})";
+
+            foreach (Collider markerCollider in markerObject.GetComponentsInChildren<Collider>(true))
+                markerCollider.enabled = false;
+
+            return new GridMarkerState
+            {
+                GameObject = markerObject,
+                Renderers = markerObject.GetComponentsInChildren<Renderer>(true)
+            };
+        }
+
+        private void SetGridMarkerColor(GridMarkerState marker, Color color)
+        {
+            if (_gridMarkerPropertyBlock == null)
+                _gridMarkerPropertyBlock = new MaterialPropertyBlock();
+
+            foreach (Renderer renderer in marker.Renderers)
+            {
+                if (renderer == null)
+                    continue;
+
+                renderer.GetPropertyBlock(_gridMarkerPropertyBlock);
+                _gridMarkerPropertyBlock.SetColor("_BaseColor", color);
+                _gridMarkerPropertyBlock.SetColor("_Color", color);
+                renderer.SetPropertyBlock(_gridMarkerPropertyBlock);
+            }
+        }
+
+        private void HideGridMarkers()
+        {
+            HideMarkers(_gridMarkers);
+        }
+
+        private static void HideMarkers(List<GridMarkerState> markers)
+        {
+            foreach (GridMarkerState marker in markers)
+            {
+                if (marker.GameObject != null)
+                    marker.GameObject.SetActive(false);
+            }
+        }
+
         private void ShowAllBuildAreas()
         {
             foreach (ConstructionCenter center in ConstructionCenter.All)
@@ -414,6 +696,8 @@ namespace Strategy.Buildings
                 if (IsConstructionCenterForCurrentTeam(center))
                     center.ShowBuildArea();
             }
+
+            UpdateBuildAreaGridMarkers();
         }
 
         private void HideAllBuildAreas()
@@ -423,6 +707,9 @@ namespace Strategy.Buildings
                 if (IsConstructionCenterForCurrentTeam(center))
                     center.HideBuildArea();
             }
+
+            HideMarkers(_buildAreaGridMarkers);
+            _buildAreaGridCellCenters.Clear();
         }
 
         /// <summary>Повертає true, якщо в сцені існує хоча б один увімкнений ConstructionCenter, що належить поточній команді.</summary>
@@ -452,6 +739,12 @@ namespace Strategy.Buildings
             return _currentTeam == TeamType.Player
                 ? LocalPlayerContext.LocalTeam
                 : _currentTeam;
+        }
+
+        private sealed class GridMarkerState
+        {
+            public GameObject GameObject;
+            public Renderer[] Renderers;
         }
 
         private struct BehaviourState

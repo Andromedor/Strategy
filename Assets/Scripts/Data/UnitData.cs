@@ -34,6 +34,11 @@ namespace Strategy.Data
         [SerializeField, FormerlySerializedAs("AimAngleTolerance")] private float _aimAngleTolerance = 3f;
         [SerializeField, FormerlySerializedAs("ReturnTurretDelay")] private float _returnTurretDelay = 2f;
         [SerializeField, FormerlySerializedAs("IdleTurretRotationSpeed")] private float _idleTurretRotationSpeed = 90f;
+        [SerializeField, Min(0f)] private float _idleScanDelay = 5f;
+        [SerializeField, Min(0f)] private float _idleScanIntervalMin = 2.5f;
+        [SerializeField, Min(0f)] private float _idleScanIntervalMax = 6f;
+        [SerializeField, Range(0f, 180f)] private float _idleScanYawRange = 45f;
+        [SerializeField] private bool _opportunisticTargeting = true;
 
         public GameObject Prefab => _prefab;
         public string DisplayName => _displayName;
@@ -52,6 +57,11 @@ namespace Strategy.Data
         public float AimAngleTolerance => _aimAngleTolerance;
         public float ReturnTurretDelay => _returnTurretDelay;
         public float IdleTurretRotationSpeed => _idleTurretRotationSpeed;
+        public float IdleScanDelay => _idleScanDelay;
+        public float IdleScanIntervalMin => _idleScanIntervalMin;
+        public float IdleScanIntervalMax => Mathf.Max(_idleScanIntervalMin, _idleScanIntervalMax);
+        public float IdleScanYawRange => _idleScanYawRange;
+        public bool OpportunisticTargeting => _opportunisticTargeting;
 
         /// <summary>
         /// Записує всі характеристики юніта за один виклик; використовується редакторними скриптами
@@ -99,6 +109,14 @@ namespace Strategy.Data
 
             if (!string.IsNullOrWhiteSpace(selectionFallbackText))
                 _selectionFallbackText = selectionFallbackText;
+        }
+
+        private void OnValidate()
+        {
+            _idleScanDelay = Mathf.Max(0f, _idleScanDelay);
+            _idleScanIntervalMin = Mathf.Max(0f, _idleScanIntervalMin);
+            _idleScanIntervalMax = Mathf.Max(_idleScanIntervalMin, _idleScanIntervalMax);
+            _idleScanYawRange = Mathf.Clamp(_idleScanYawRange, 0f, 180f);
         }
     }
 }

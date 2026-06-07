@@ -230,6 +230,7 @@ GameObject:
   - component: {fileID: 8293821140606752439}
   - component: {fileID: 3333333333333333333}
   - component: {fileID: 5531199200683985367}
+  - component: {fileID: 7777777777777777778}
   m_Layer: 8
   m_Name: struct_Factory_Heavy_A_yup
   m_TagString: Untagged
@@ -451,6 +452,24 @@ MonoBehaviour:
   _rendererPriority: 100
   _visibleAfterDamageSeconds: 5
   _fadeSeconds: 0.8
+--- !u!114 &7777777777777777778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2221833450515023493}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2984518c75f042e0b7fea25e5dd6108b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Strategy.Buildings.BuildingGridOccupancy
+  _buildingData: {fileID: 11400000, guid: 7ced5d753867f1f42b6ba223f50f9631, type: 2}
+  _gridConfig: {fileID: 11400000, guid: 3353f5fd74ea4e678e0744bf35fa770f, type: 2}
+  _originCell: {x: 0, y: 0}
+  _rotationSteps: 0
+  _reserveOnEnable: 1
+  _snapTransformToGridOnEnable: 1
 --- !u!1 &3909771343675748711
 GameObject:
   m_ObjectHideFlags: 0

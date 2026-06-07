@@ -44,6 +44,9 @@ namespace Strategy.Units
         private bool _hasPlayerMoveCommand;
         private Vector3 _playerMoveDestination;
         protected float _lastTargetTime;
+        private float _nextIdleScanTime;
+        private float _idleScanYaw;
+        private bool _hasIdleScanYaw;
 
         public TeamType Team => _teamComponent != null ? _teamComponent.Team : LocalPlayerContext.LocalTeam;
         public float AttackRange => _unitData != null ? _unitData.AttackRange : 0f;
@@ -67,6 +70,8 @@ namespace Strategy.Units
             if (_shotEffects != null)
                 _shotEffects.Configure(_gun, _pointPosition);
 
+            _lastTargetTime = Time.time;
+            _nextIdleScanTime = Time.time;
             SetupTargetMask();
         }
 
@@ -74,6 +79,7 @@ namespace Strategy.Units
         {
             if (IsTargetValid(_aimTarget))
             {
+                _hasIdleScanYaw = false;
                 AimAtTarget(_aimTarget);
             }
             else
@@ -111,6 +117,14 @@ namespace Strategy.Units
         public void SetManualAttackTarget(Transform target)
         {
             _manualAttackTarget = target;
+
+            if (IsTargetValid(target))
+            {
+                _aimTarget = target;
+                _lastTargetTime = Time.time;
+                _hasIdleScanYaw = false;
+            }
+
             EventManager.RaiseUnitAttackTargetChanged(gameObject, target);
         }
 
@@ -182,10 +196,37 @@ namespace Strategy.Units
                 return;
             }
 
+            float distance = Vector3.Distance(transform.position, target.position);
+
+            if (hasManualTarget && distance > _unitData.AttackRange)
+            {
+                MoveToAttackRange(target);
+
+                Transform opportunisticTarget = _unitData.OpportunisticTargeting
+                    ? FindAutoTarget()
+                    : null;
+
+                if (IsTargetValid(opportunisticTarget))
+                {
+                    _aimTarget = opportunisticTarget;
+                    _lastTargetTime = Time.time;
+
+                    if (AimAtTarget(opportunisticTarget))
+                        StartAttackIfNeeded(opportunisticTarget);
+                    else
+                        StopAttack();
+
+                    return;
+                }
+
+                StopAttack();
+                _aimTarget = target;
+                _lastTargetTime = Time.time;
+                return;
+            }
+
             _aimTarget = target;
             _lastTargetTime = Time.time;
-
-            float distance = Vector3.Distance(transform.position, target.position);
 
             if (_hasPlayerMoveCommand)
             {
@@ -206,9 +247,6 @@ namespace Strategy.Units
             {
                 StopAttack();
                 _aimTarget = null;
-
-                if (hasManualTarget)
-                    MoveToAttackRange(target);
 
                 return;
             }
@@ -524,6 +562,29 @@ namespace Strategy.Units
 
             if (Time.time < _lastTargetTime + _unitData.ReturnTurretDelay)
                 return;
+
+            if (Time.time >= _lastTargetTime + _unitData.IdleScanDelay)
+            {
+                if (!_hasIdleScanYaw || Time.time >= _nextIdleScanTime)
+                {
+                    _idleScanYaw = UnityEngine.Random.Range(-_unitData.IdleScanYawRange, _unitData.IdleScanYawRange);
+                    _nextIdleScanTime = Time.time + UnityEngine.Random.Range(
+                        _unitData.IdleScanIntervalMin,
+                        _unitData.IdleScanIntervalMax);
+                    _hasIdleScanYaw = true;
+                }
+
+                float scanYaw = Mathf.MoveTowardsAngle(
+                    _turret.localEulerAngles.y,
+                    _idleScanYaw,
+                    _unitData.IdleTurretRotationSpeed * Time.deltaTime);
+
+                _turret.localRotation = Quaternion.Euler(0f, scanYaw, 0f);
+                MoveGunPitch(0f);
+                return;
+            }
+
+            _hasIdleScanYaw = false;
 
             float currentYaw = _turret.localEulerAngles.y;
             float newYaw = Mathf.MoveTowardsAngle(
