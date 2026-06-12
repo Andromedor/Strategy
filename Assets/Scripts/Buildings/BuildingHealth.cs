@@ -120,6 +120,22 @@ namespace Strategy.Buildings
                 Die();
         }
 
+        /// <summary>
+        /// Відновлює HP недобудованої будівлі: cap залежить від прогресу, але поточний HP лишається тим,
+        /// що був у сейві, щоб атаки під час будівництва не стиралися.
+        /// </summary>
+        public void RestoreConstructionHealthForLoad(float currentHealth, float progress)
+        {
+            _isDead = false;
+            _usesConstructionHealthCap = true;
+            _constructionHealthCap = Mathf.Lerp(1f, _maxHealth, Mathf.Clamp01(progress));
+            _currentHealth = Mathf.Clamp(currentHealth, 0f, CurrentHealthLimit);
+            HealthChanged?.Invoke(this);
+
+            if (_currentHealth <= 0f)
+                Die();
+        }
+
         private float CurrentHealthLimit => _usesConstructionHealthCap
             ? Mathf.Clamp(_constructionHealthCap, 1f, _maxHealth)
             : _maxHealth;

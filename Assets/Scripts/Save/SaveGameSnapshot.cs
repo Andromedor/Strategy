@@ -10,13 +10,16 @@ namespace Strategy.Save
     [Serializable]
     public sealed class SaveGameSnapshot
     {
-        public string version = "1";
+        public const string CurrentVersion = "2";
+
+        public string version = CurrentVersion;
         public string savedAtUtc;
         public string mapId;
         public MatchLaunchMode mode;
         public SkirmishTeamMode teamMode;
         public TeamType localTeam;
         public int localPlayerId;
+        public CameraSnapshot camera;
         public List<TeamSlotSnapshot> teams = new();
         public List<ResourceSnapshot> resources = new();
         public List<UnitSnapshot> units = new();
@@ -65,6 +68,17 @@ namespace Strategy.Save
     }
 
     [Serializable]
+    public struct CameraSnapshot
+    {
+        public bool hasCamera;
+        public SerializableVector3 position;
+        public SerializableQuaternion rotation;
+        public bool orthographic;
+        public float orthographicSize;
+        public float fieldOfView;
+    }
+
+    [Serializable]
     public struct UnitSnapshot
     {
         public string unitId;
@@ -82,6 +96,9 @@ namespace Strategy.Save
         public SerializableVector3 position;
         public SerializableQuaternion rotation;
         public float currentHealth;
+        public bool isUnderConstruction;
+        public float constructionElapsedSeconds;
+        public float constructionDurationSeconds;
         public SerializableVector2Int originCell;
         public int rotationSteps;
         public FactorySnapshot factory;

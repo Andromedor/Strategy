@@ -13,6 +13,7 @@ namespace Strategy.Tests
     public sealed class MainMenuPlayModeSmokeTests
     {
         private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
+        private const string MainScenePath = "Assets/Scenes/mainScene.unity";
         private const string MainSceneName = "mainScene";
         private const string GameMenuControllerTypeName = "Strategy.Menu.GameMenuController, Assembly-CSharp";
         private const string MatchLaunchContextTypeName = "Strategy.Core.MatchLaunchContext, Assembly-CSharp";
@@ -127,6 +128,53 @@ namespace Strategy.Tests
 
             Assert.GreaterOrEqual(CountStaticList(BuildingHealthTypeName, "All"), 2, "A 1v1 bot match should spawn at least two starting bases.");
             Assert.GreaterOrEqual(CountActiveComponents(AiControllerTypeName), 1, "A bot match should create at least one AI controller.");
+        }
+
+        [UnityTest]
+        public IEnumerator GameplaySceneHasPauseToastMinimapAndBoundary()
+        {
+            ClearLaunchContext();
+            AsyncOperation operation = SceneManager.LoadSceneAsync(MainScenePath, LoadSceneMode.Single);
+            Assert.NotNull(operation, "mainScene is not available in Build Settings.");
+            while (!operation.isDone)
+                yield return null;
+
+            yield return null;
+
+            GameObject pauseMenu = GameObject.Find("InGamePauseMenu");
+            Assert.NotNull(pauseMenu);
+            CanvasGroup pauseGroup = pauseMenu.GetComponent<CanvasGroup>();
+            Assert.NotNull(pauseGroup);
+            Assert.AreEqual(0f, pauseGroup.alpha, 0.01f);
+            Assert.IsFalse(pauseGroup.blocksRaycasts);
+
+            GameObject toast = GameObject.Find("SaveGameToast");
+            Assert.NotNull(toast);
+            CanvasGroup toastGroup = toast.GetComponent<CanvasGroup>();
+            Assert.NotNull(toastGroup);
+            Assert.AreEqual(0f, toastGroup.alpha, 0.01f);
+            Assert.IsFalse(toastGroup.blocksRaycasts);
+
+            GameObject minimapView = GameObject.Find("MinimapView");
+            Assert.NotNull(minimapView);
+            RawImage rawImage = minimapView.GetComponent<RawImage>();
+            Assert.NotNull(rawImage);
+            Assert.NotNull(rawImage.texture);
+
+            GameObject minimapCameraObject = GameObject.Find("MinimapCamera");
+            Assert.NotNull(minimapCameraObject);
+            Camera minimapCamera = minimapCameraObject.GetComponent<Camera>();
+            Assert.NotNull(minimapCamera);
+            Assert.IsTrue(minimapCamera.orthographic);
+            Assert.AreEqual(rawImage.texture, minimapCamera.targetTexture);
+
+            GameObject boundary = GameObject.Find("MapBoundary");
+            Assert.NotNull(boundary);
+            Assert.NotNull(GameObject.Find("RedBorder")?.GetComponent<LineRenderer>());
+            Assert.NotNull(GameObject.Find("OutsideNorth"));
+            Assert.NotNull(GameObject.Find("OutsideSouth"));
+            Assert.NotNull(GameObject.Find("OutsideEast"));
+            Assert.NotNull(GameObject.Find("OutsideWest"));
         }
 
         private static IEnumerator LoadMainMenu()

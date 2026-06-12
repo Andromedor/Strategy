@@ -55,18 +55,37 @@ namespace Strategy.Save
 
         public static string GetDisplayName(string path, MapCatalog catalog)
         {
+            return GetDisplayName(path, catalog, 0);
+        }
+
+        public static string GetDisplayName(string path, MapCatalog catalog, int displayIndex)
+        {
             if (!TryRead(path, out SaveGameSnapshot snapshot))
-                return Path.GetFileNameWithoutExtension(path);
+                return FormatSavePrefix(displayIndex) + " • " + Path.GetFileNameWithoutExtension(path);
 
             string mapName = snapshot.mapId;
             MapDefinition map = catalog != null ? catalog.FindById(snapshot.mapId) : null;
             if (map != null)
                 mapName = map.DisplayName;
 
-            string timestamp = string.IsNullOrWhiteSpace(snapshot.savedAtUtc)
-                ? File.GetLastWriteTime(path).ToString("g")
-                : snapshot.savedAtUtc;
-            return $"{mapName} - {timestamp}";
+            string timestamp = ResolveDisplayTimestamp(path, snapshot.savedAtUtc);
+            return $"{FormatSavePrefix(displayIndex)} • {timestamp} • {mapName}";
+        }
+
+        private static string FormatSavePrefix(int displayIndex)
+        {
+            return $"Сейв {Mathf.Max(1, displayIndex + 1)}";
+        }
+
+        private static string ResolveDisplayTimestamp(string path, string savedAtUtc)
+        {
+            if (!string.IsNullOrWhiteSpace(savedAtUtc) &&
+                DateTime.TryParse(savedAtUtc, out DateTime parsed))
+            {
+                return parsed.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+            }
+
+            return File.GetLastWriteTime(path).ToString("dd.MM.yyyy HH:mm");
         }
     }
 }

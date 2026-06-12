@@ -1052,7 +1052,7 @@ public static class GameMenuSetupBuilder
 
     private static void CreateToast(Transform parent)
     {
-        GameObject toast = CreatePanel(parent, "SaveGameToast", new Color(0.05f, 0.16f, 0.24f, 0.94f));
+        GameObject toast = CreatePanel(parent, "SaveGameToast", new Color(0.02f, 0.08f, 0.13f, 0.96f));
         RectTransform rect = toast.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(0.5f, 0.9f);
         rect.anchorMax = new Vector2(0.5f, 0.9f);
@@ -1060,10 +1060,18 @@ public static class GameMenuSetupBuilder
         rect.sizeDelta = new Vector2(280f, 44f);
         rect.anchoredPosition = Vector2.zero;
 
+        CanvasGroup group = GetOrAdd<CanvasGroup>(toast);
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
         SaveGameToastUI toastUi = toast.AddComponent<SaveGameToastUI>();
         TMP_Text text = CreateText(toast.transform, "Message", "Гру збережено", 18f, TextAlignmentOptions.Center);
+        text.color = Color.white;
+        text.fontStyle = FontStyles.Bold;
         SerializedObject serialized = new(toastUi);
         SetObject(serialized, "_root", toast);
+        SetObject(serialized, "_rootGroup", group);
         SetObject(serialized, "_messageText", text);
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }

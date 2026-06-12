@@ -80,6 +80,42 @@ namespace Strategy.Buildings
                 ConstructionCompleted?.Invoke(this);
         }
 
+        /// <summary>
+        /// Відновлює construction-state із сейву. Готові будівлі отримують звичайний HP без construction cap,
+        /// а недобудовані продовжують таймер із тим самим прогресом і поточним HP.
+        /// </summary>
+        public void RestoreForLoad(
+            BuildingData buildingData,
+            bool isUnderConstruction,
+            float elapsedSeconds,
+            float durationSeconds,
+            float currentHealth)
+        {
+            CacheComponents();
+
+            if (!isUnderConstruction)
+            {
+                CompleteImmediately();
+                _health?.SetCurrentHealthForLoad(currentHealth);
+                return;
+            }
+
+            _duration = durationSeconds > 0f ? durationSeconds : ResolveDuration(buildingData);
+            _elapsed = Mathf.Clamp(elapsedSeconds, 0f, Mathf.Max(0f, _duration));
+
+            if (_duration <= 0f || _elapsed >= _duration)
+            {
+                CompleteImmediately();
+                _health?.SetCurrentHealthForLoad(currentHealth);
+                return;
+            }
+
+            _isUnderConstruction = true;
+            _health?.RestoreConstructionHealthForLoad(currentHealth, Progress);
+            ApplyAvailability(false);
+            ProgressChanged?.Invoke(this);
+        }
+
         public static bool IsConstructing(Component component)
         {
             if (component == null)

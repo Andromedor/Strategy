@@ -25,8 +25,15 @@ namespace Strategy.Save
         private readonly List<ProductionItemData> _queuedItemsBuffer = new();
         private readonly List<ProductionItemData> _restoreQueueBuffer = new();
 
+        private void Awake()
+        {
+            ResolveDependencies();
+        }
+
         private void Start()
         {
+            ResolveDependencies();
+
             if (MatchLaunchContext.HasPendingSaveLoad)
                 StartCoroutine(RestorePendingSave());
         }
@@ -39,6 +46,8 @@ namespace Strategy.Save
 
         public void SaveQuick()
         {
+            ResolveDependencies();
+
             MatchLaunchConfig config = MatchLaunchContext.CurrentConfig;
             if (config != null && !config.AllowsSaving)
             {
@@ -60,6 +69,7 @@ namespace Strategy.Save
         private IEnumerator RestorePendingSave()
         {
             yield return null;
+            ResolveDependencies();
 
             string savePath = MatchLaunchContext.PendingSavePath;
             if (!SaveGameFileIO.TryRead(savePath, out SaveGameSnapshot snapshot))
@@ -76,6 +86,8 @@ namespace Strategy.Save
 
         private SaveGameSnapshot CaptureSnapshot()
         {
+            ResolveDependencies();
+
             MatchLaunchConfig config = MatchLaunchContext.CurrentConfig ?? BuildSceneConfig();
             SaveGameSnapshot snapshot = new()
             {
@@ -88,6 +100,7 @@ namespace Strategy.Save
             };
 
             CaptureTeams(config, snapshot);
+            CaptureCamera(snapshot);
             CaptureResources(snapshot);
             CaptureUnits(snapshot);
             CaptureBuildings(snapshot);
@@ -166,6 +179,24 @@ namespace Strategy.Save
             }
         }
 
+        // Камеру зберігаємо окремо від match config: це runtime-позиція гравця, а не правило старту матчу.
+        private void CaptureCamera(SaveGameSnapshot snapshot)
+        {
+            UnityEngine.Camera camera = FindGameplayCamera();
+            if (camera == null)
+                return;
+
+            snapshot.camera = new CameraSnapshot
+            {
+                hasCamera = true,
+                position = new SerializableVector3(camera.transform.position),
+                rotation = new SerializableQuaternion(camera.transform.rotation),
+                orthographic = camera.orthographic,
+                orthographicSize = camera.orthographicSize,
+                fieldOfView = camera.fieldOfView
+            };
+        }
+
         private void CaptureUnits(SaveGameSnapshot snapshot)
         {
             for (int i = 0; i < UnitCombat.All.Count; i++)
@@ -202,6 +233,7 @@ namespace Strategy.Save
                     continue;
 
                 TeamComponent team = health.GetComponentInParent<TeamComponent>();
+                BuildingConstructionState construction = health.GetComponent<BuildingConstructionState>();
                 BuildingSnapshot building = new()
                 {
                     buildingId = buildingId,
@@ -209,6 +241,9 @@ namespace Strategy.Save
                     position = new SerializableVector3(health.transform.position),
                     rotation = new SerializableQuaternion(health.transform.rotation),
                     currentHealth = health.CurrentHealth,
+                    isUnderConstruction = construction != null && construction.IsUnderConstruction,
+                    constructionElapsedSeconds = construction != null ? construction.ElapsedSeconds : 0f,
+                    constructionDurationSeconds = construction != null ? construction.Duration : 0f,
                     originCell = new SerializableVector2Int(occupancy != null ? occupancy.OriginCell : Vector2Int.zero),
                     rotationSteps = occupancy != null ? occupancy.RotationSteps : 0
                 };
@@ -267,6 +302,8 @@ namespace Strategy.Save
 
         private void RestoreSnapshot(SaveGameSnapshot snapshot)
         {
+            ResolveDependencies();
+
             if (_registry == null || snapshot == null)
                 return;
 
@@ -275,6 +312,7 @@ namespace Strategy.Save
             RestoreBuildings(snapshot);
             RestoreUnits(snapshot);
             RestoreOutposts(snapshot);
+            RestoreCamera(snapshot);
         }
 
         private void ClearRuntimeObjects()
@@ -325,7 +363,6 @@ namespace Strategy.Save
                     root);
                 building.name = $"{data.BuildingName} ({saved.team})";
                 TeamObjectSetup.AssignTeam(building, saved.team);
-                building.GetComponent<BuildingConstructionState>()?.CompleteImmediately();
 
                 BuildingGridOccupancy occupancy = building.GetComponent<BuildingGridOccupancy>();
                 if (occupancy == null)
@@ -334,8 +371,22 @@ namespace Strategy.Save
                 occupancy.Initialize(data, _gridConfig != null ? _gridConfig : occupancy.GridConfig, saved.originCell.ToVector2Int(), saved.rotationSteps);
 
                 BuildingHealth health = building.GetComponent<BuildingHealth>();
-                if (health != null)
-                    health.SetCurrentHealthForLoad(saved.currentHealth);
+                BuildingConstructionState construction = building.GetComponent<BuildingConstructionState>();
+                float restoredHealth = ResolveBuildingHealthForLoad(snapshot, saved, data, health);
+
+                if (construction != null)
+                {
+                    construction.RestoreForLoad(
+                        data,
+                        saved.isUnderConstruction,
+                        saved.constructionElapsedSeconds,
+                        saved.constructionDurationSeconds,
+                        restoredHealth);
+                }
+                else if (health != null)
+                {
+                    health.SetCurrentHealthForLoad(restoredHealth);
+                }
 
                 RestoreFactory(building.GetComponent<BuildingProduction>(), saved.factory);
             }
@@ -398,6 +449,105 @@ namespace Strategy.Save
             }
         }
 
+        // Якщо сейв новий, повертаємо точну позицію камери; для legacy-сейвів фокусуємося на локальній базі.
+        private void RestoreCamera(SaveGameSnapshot snapshot)
+        {
+            UnityEngine.Camera camera = FindGameplayCamera();
+            if (camera == null)
+                return;
+
+            if (snapshot.camera.hasCamera)
+            {
+                camera.transform.SetPositionAndRotation(
+                    snapshot.camera.position.ToVector3(),
+                    snapshot.camera.rotation.ToQuaternion());
+                camera.orthographic = snapshot.camera.orthographic;
+
+                if (snapshot.camera.orthographic)
+                    camera.orthographicSize = Mathf.Max(0.01f, snapshot.camera.orthographicSize);
+                else if (snapshot.camera.fieldOfView > 0f)
+                    camera.fieldOfView = snapshot.camera.fieldOfView;
+
+                return;
+            }
+
+            FocusCameraOnLocalBuilding(camera);
+        }
+
+        private static void FocusCameraOnLocalBuilding(UnityEngine.Camera camera)
+        {
+            if (camera == null)
+                return;
+
+            for (int i = 0; i < BuildingHealth.All.Count; i++)
+            {
+                BuildingHealth building = BuildingHealth.All[i];
+                if (building == null || building.IsDead)
+                    continue;
+
+                TeamComponent team = building.GetComponentInParent<TeamComponent>();
+                if (team == null || !LocalPlayerContext.IsLocalTeam(team.Team))
+                    continue;
+
+                Strategy.Camera.CameraController controller = camera.GetComponent<Strategy.Camera.CameraController>();
+                if (controller != null)
+                    controller.FocusOnGroundPoint(building.transform.position);
+                else
+                    camera.transform.position = building.transform.position + new Vector3(0f, 28f, -24f);
+                return;
+            }
+        }
+
+        // MinimapCamera також є Camera у сцені, тому save/load навмисно бере лише камеру без targetTexture.
+        private static UnityEngine.Camera FindGameplayCamera()
+        {
+            UnityEngine.Camera mainCamera = UnityEngine.Camera.main;
+            if (IsGameplayCamera(mainCamera))
+                return mainCamera;
+
+            UnityEngine.Camera[] cameras = FindObjectsByType<UnityEngine.Camera>(FindObjectsSortMode.None);
+            for (int i = 0; i < cameras.Length; i++)
+            {
+                if (IsGameplayCamera(cameras[i]))
+                    return cameras[i];
+            }
+
+            return null;
+        }
+
+        private static bool IsGameplayCamera(UnityEngine.Camera camera)
+        {
+            return camera != null &&
+                   camera.targetTexture == null &&
+                   !camera.name.Contains("Minimap", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Legacy-сейви не мали construction-state, тому низький HP міг бути не уроном, а будівельним cap.
+        private static float ResolveBuildingHealthForLoad(
+            SaveGameSnapshot snapshot,
+            BuildingSnapshot saved,
+            BuildingData data,
+            BuildingHealth health)
+        {
+            float maxHealth = health != null
+                ? health.MaxHealth
+                : data != null && data.MaxHealth > 0f ? data.MaxHealth : saved.currentHealth;
+
+            float currentHealth = Mathf.Clamp(saved.currentHealth, 0f, Mathf.Max(1f, maxHealth));
+
+            if (IsLegacySaveWithoutConstructionState(snapshot) && !saved.isUnderConstruction && currentHealth > 0f)
+                return Mathf.Max(currentHealth, maxHealth);
+
+            return currentHealth;
+        }
+
+        private static bool IsLegacySaveWithoutConstructionState(SaveGameSnapshot snapshot)
+        {
+            return snapshot == null ||
+                   string.IsNullOrWhiteSpace(snapshot.version) ||
+                   !string.Equals(snapshot.version, SaveGameSnapshot.CurrentVersion, StringComparison.Ordinal);
+        }
+
         private static Outpost FindOutpost(OutpostSnapshot snapshot)
         {
             Outpost best = null;
@@ -425,6 +575,17 @@ namespace Strategy.Save
         {
             Debug.Log(message);
             SaveStatusMessage?.Invoke(message);
+        }
+
+        private void ResolveDependencies()
+        {
+            // Serialized refs лишаються основним шляхом, але Resources fallback страхує нові карти,
+            // де SaveGameManager могли додати без ручного підключення registry/catalog.
+            if (_registry == null)
+                _registry = Resources.Load<GameAssetRegistry>("GameAssetRegistry");
+
+            if (_mapCatalog == null)
+                _mapCatalog = Resources.Load<MapCatalog>("MapCatalog");
         }
     }
 }

@@ -619,9 +619,16 @@ namespace Strategy.Menu
             _saveDropdown.ClearOptions();
             List<string> options = new();
             for (int i = 0; i < _saveFiles.Count; i++)
-                options.Add(SaveGameFileIO.GetDisplayName(_saveFiles[i], _mapCatalog));
+                options.Add(SaveGameFileIO.GetDisplayName(_saveFiles[i], _mapCatalog, i));
+
+            if (options.Count == 0)
+                options.Add("Немає збережень");
+
             _saveDropdown.AddOptions(options);
-            _saveDropdown.interactable = options.Count > 0;
+            _saveDropdown.interactable = _saveFiles.Count > 0;
+
+            if (_loadSaveButton != null)
+                _loadSaveButton.interactable = _saveFiles.Count > 0;
         }
 
         private void PopulateResolutions()
