@@ -60,6 +60,39 @@ namespace Strategy.Buildings
             return distanceSqr <= _buildRadius * _buildRadius;
         }
 
+        /// <summary>
+        /// Визначає команду, якій належить зона будівництва.
+        /// Основна база має TeamComponent, а додаткова зона аванпоста бере власника з Outpost.
+        /// </summary>
+        public bool TryGetOwningTeam(out TeamType team)
+        {
+            TeamComponent teamComponent = GetComponentInParent<TeamComponent>();
+            if (teamComponent != null && teamComponent.Team != TeamType.Neutral)
+            {
+                team = teamComponent.Team;
+                return true;
+            }
+
+            Outpost outpost = GetComponentInParent<Outpost>();
+            if (outpost != null &&
+                outpost.Owner.HasValue &&
+                outpost.Owner.Value != TeamType.Neutral)
+            {
+                team = outpost.Owner.Value;
+                return true;
+            }
+
+            team = TeamType.Neutral;
+            return false;
+        }
+
+        public bool BelongsToTeam(TeamType team)
+        {
+            return team != TeamType.Neutral &&
+                   TryGetOwningTeam(out TeamType owner) &&
+                   owner == team;
+        }
+
         /// <summary>Масштабує візуальний диск зони будівництва відповідно до _buildRadius, щоб відображений оверлей збігався з реальною зоною.</summary>
         private void UpdateBuildAreaVisualSize()
         {

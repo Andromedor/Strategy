@@ -460,6 +460,11 @@ namespace Strategy.AI
 
         private bool BelongsToTeam(GameObject target)
         {
+            ConstructionCenter constructionCenter =
+                target != null ? target.GetComponentInParent<ConstructionCenter>() : null;
+            if (constructionCenter != null)
+                return constructionCenter.BelongsToTeam(_team);
+
             TeamComponent teamComponent = target != null ? target.GetComponentInParent<TeamComponent>() : null;
             return teamComponent != null && teamComponent.Team == _team;
         }

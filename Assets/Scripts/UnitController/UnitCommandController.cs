@@ -1226,6 +1226,11 @@ namespace Strategy.Units
 
         private static bool BelongsToPlayer(GameObject selection)
         {
+            ConstructionCenter constructionCenter =
+                selection != null ? selection.GetComponentInParent<ConstructionCenter>() : null;
+            if (constructionCenter != null)
+                return constructionCenter.BelongsToTeam(LocalPlayerContext.LocalTeam);
+
             TeamComponent team = selection != null ? selection.GetComponentInParent<TeamComponent>() : null;
             return team == null || LocalPlayerContext.IsLocalTeam(team.Team);
         }
@@ -1302,7 +1307,8 @@ namespace Strategy.Units
 
                 ConstructionCenter constructionCenter = selection.GetComponent<ConstructionCenter>();
                 if (constructionCenter != null &&
-                    !BuildingConstructionState.IsConstructing(constructionCenter))
+                    !BuildingConstructionState.IsConstructing(constructionCenter) &&
+                    constructionCenter.BelongsToTeam(LocalPlayerContext.LocalTeam))
                 {
                     return constructionCenter;
                 }

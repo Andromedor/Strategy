@@ -428,9 +428,7 @@ namespace Strategy.Buildings
                 if (center == null || !center.isActiveAndEnabled)
                     continue;
 
-                TeamComponent teamComponent = center.GetComponentInParent<TeamComponent>();
-
-                if (teamComponent != null && teamComponent.Team != team)
+                if (!center.BelongsToTeam(team))
                     continue;
 
                 if (center.IsInsideBuildArea(position))

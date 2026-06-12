@@ -758,8 +758,7 @@ namespace Strategy.Buildings
             if (center == null || !center.isActiveAndEnabled)
                 return false;
 
-            TeamComponent teamComponent = center.GetComponentInParent<TeamComponent>();
-            return teamComponent == null || teamComponent.Team == ResolveCurrentTeam();
+            return center.BelongsToTeam(ResolveCurrentTeam());
         }
 
         private TeamType ResolveCurrentTeam()

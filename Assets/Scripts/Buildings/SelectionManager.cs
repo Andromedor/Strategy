@@ -123,8 +123,7 @@ namespace Strategy.Buildings
                 return;
             }
 
-            TeamComponent teamComponent = constructionCenter.GetComponentInParent<TeamComponent>();
-            if (teamComponent != null && !LocalPlayerContext.IsLocalTeam(teamComponent.Team))
+            if (!constructionCenter.BelongsToTeam(LocalPlayerContext.LocalTeam))
             {
                 ClearBuildingSelection();
                 return;
@@ -202,12 +201,21 @@ namespace Strategy.Buildings
             if (hitObject == null || hitObject.CompareTag("Enemy"))
                 return false;
 
+            ConstructionCenter constructionCenter = hitObject.GetComponentInParent<ConstructionCenter>();
+            if (constructionCenter != null)
+                return constructionCenter.BelongsToTeam(LocalPlayerContext.LocalTeam);
+
             TeamComponent team = hitObject.GetComponentInParent<TeamComponent>();
             return team == null || LocalPlayerContext.IsLocalTeam(team.Team);
         }
 
         private static bool BelongsToLocalPlayer(GameObject selection)
         {
+            ConstructionCenter constructionCenter =
+                selection != null ? selection.GetComponentInParent<ConstructionCenter>() : null;
+            if (constructionCenter != null)
+                return constructionCenter.BelongsToTeam(LocalPlayerContext.LocalTeam);
+
             TeamComponent team = selection != null ? selection.GetComponentInParent<TeamComponent>() : null;
             return team == null || LocalPlayerContext.IsLocalTeam(team.Team);
         }

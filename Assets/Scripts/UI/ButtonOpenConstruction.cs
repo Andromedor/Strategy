@@ -47,7 +47,22 @@ namespace Strategy.UI
         private void Refresh()
         {
             if (_button != null)
-                _button.interactable = ConstructionCenter.All.Count > 0;
+                _button.interactable = HasPlayerConstructionCenter();
+        }
+
+        private static bool HasPlayerConstructionCenter()
+        {
+            foreach (ConstructionCenter center in ConstructionCenter.All)
+            {
+                if (center != null &&
+                    center.isActiveAndEnabled &&
+                    center.BelongsToTeam(LocalPlayerContext.LocalTeam))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

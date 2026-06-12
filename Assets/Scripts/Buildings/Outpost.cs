@@ -315,7 +315,7 @@ namespace Strategy.Buildings
                 return false;
 
             _isUpgraded = true;
-            SetBuildAreaActive(true, true);
+            SetBuildAreaActive(true, false);
             NotifyStatsChanged();
 
             return true;

@@ -92,8 +92,11 @@ namespace Strategy.UI
         /// <summary>Повертає true, якщо <paramref name="component"/> належить налаштованій команді кнопки.</summary>
         private bool BelongsToTeam(Component component)
         {
+            if (component is ConstructionCenter constructionCenter)
+                return constructionCenter.BelongsToTeam(ResolveTeam());
+
             TeamComponent teamComponent = component.GetComponentInParent<TeamComponent>();
-            return teamComponent == null || teamComponent.Team == ResolveTeam();
+            return teamComponent != null && teamComponent.Team == ResolveTeam();
         }
 
         private TeamType ResolveTeam()
