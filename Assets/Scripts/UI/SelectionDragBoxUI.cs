@@ -67,6 +67,10 @@ namespace Strategy.UI
 
         public void Hide()
         {
+            // Unity може лишити кероване посилання на вже знищений компонент під час unload сцени.
+            if (this == null)
+                return;
+
             if (_boxRect != null)
                 _boxRect.sizeDelta = Vector2.zero;
 

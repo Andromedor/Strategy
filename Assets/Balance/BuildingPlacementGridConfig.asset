@@ -18,5 +18,5 @@ MonoBehaviour:
   _validCellColor: {r: 0, g: 0.95, b: 1, a: 0.42}
   _invalidCellColor: {r: 1, g: 0.05, b: 0.05, a: 0.48}
   _buildAreaCellColor: {r: 0, g: 0.85, b: 1, a: 0.16}
-  _markerYOffset: 0.08
+  _markerYOffset: 0.05
   _markerScale: 0.94

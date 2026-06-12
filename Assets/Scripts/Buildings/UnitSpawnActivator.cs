@@ -32,6 +32,7 @@ namespace Strategy.Buildings
         private UnitSelectionState _selectionState;
         private NavMeshVehicleMotor _vehicleMotor;
         private Collider[] _colliders;
+        private GameObject _reservationOwner;
         private bool _isSpawning;
         private bool _hasQueuedMoveCommand;
         private Vector3 _queuedMoveDestination;
@@ -52,6 +53,7 @@ namespace Strategy.Buildings
             _selectionState = GetComponent<UnitSelectionState>();
             _vehicleMotor = GetComponent<NavMeshVehicleMotor>();
             _colliders = GetComponentsInChildren<Collider>();
+            _reservationOwner = gameObject;
             UnitTrafficCoordinator.Ensure(gameObject);
         }
 
@@ -65,6 +67,14 @@ namespace Strategy.Buildings
             EventManager.OnUnitMoveCommand -= OnUnitMoveCommand;
             ReleaseDefaultMoveReservation();
             ReleaseMoveReservation();
+            StopAllCoroutines();
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseDefaultMoveReservation();
+            ReleaseMoveReservation();
+            StopAllCoroutines();
         }
 
         /// <summary>
@@ -73,6 +83,9 @@ namespace Strategy.Buildings
         /// </summary>
         public void SetSpawningState(bool isSpawning)
         {
+            if (this == null)
+                return;
+
             if (isSpawning)
             {
                 _isSpawning = true;
@@ -128,6 +141,9 @@ namespace Strategy.Buildings
         /// </summary>
         public void QueueMoveAfterSpawn(Vector3 destination)
         {
+            if (this == null)
+                return;
+
             _queuedMoveDestination = destination;
             _hasQueuedMoveCommand = true;
             // Агент ще може бути вимкнений під час виїзду, але ціль гравця вже треба забронювати, щоб наступний юніт не взяв ту саму точку.
@@ -139,6 +155,12 @@ namespace Strategy.Buildings
 
         public void SetDefaultMoveAfterSpawn(Vector3 destination, Action<Vector3> releaseReservation = null)
         {
+            if (this == null)
+            {
+                releaseReservation?.Invoke(destination);
+                return;
+            }
+
             if (_hasQueuedMoveCommand)
             {
                 releaseReservation?.Invoke(destination);
@@ -172,12 +194,19 @@ namespace Strategy.Buildings
             Vector3 defaultDestination,
             Action<Vector3> releaseDefaultReservation)
         {
+            if (this == null)
+                yield break;
+
             if (_hasQueuedMoveCommand)
                 releaseDefaultReservation?.Invoke(defaultDestination);
             else
                 SetDefaultMoveAfterSpawn(defaultDestination, releaseDefaultReservation);
 
             yield return MoveToFactoryPoint(gatePoint);
+
+            if (this == null)
+                yield break;
+
             SetSpawningState(false);
         }
 
@@ -185,7 +214,7 @@ namespace Strategy.Buildings
         {
             float blockedSince = -1f;
 
-            while (Vector3.Distance(transform.position, targetPoint) > _exitDistance)
+            while (this != null && Vector3.Distance(transform.position, targetPoint) > _exitDistance)
             {
                 if (ShouldWaitForTrafficYield(targetPoint, ref blockedSince))
                 {
@@ -208,15 +237,19 @@ namespace Strategy.Buildings
                 yield return null;
             }
 
-            transform.position = targetPoint;
+            if (this != null)
+                transform.position = targetPoint;
         }
 
         private bool ShouldWaitForTrafficYield(Vector3 targetPoint, ref float blockedSince)
         {
+            if (this == null)
+                return false;
+
             float corridorRadius = ResolveExitTrafficCorridorRadius();
             // Поки NavMeshAgent вимкнений, юніт виїжджає вручну, тому просимо idle-союзників звільнити коридор перед MoveTowards.
             bool blocked = UnitTrafficCoordinator.RequestYieldForCorridor(
-                gameObject,
+                _reservationOwner,
                 transform.position,
                 targetPoint,
                 corridorRadius);
@@ -367,7 +400,7 @@ namespace Strategy.Buildings
 
         private void OnUnitMoveCommand(GameObject unit, Vector3 destination)
         {
-            if (unit != gameObject)
+            if (unit != _reservationOwner)
                 return;
 
             ReserveMoveDestination(destination);
@@ -384,7 +417,7 @@ namespace Strategy.Buildings
 
         private void ReserveMoveDestination(Vector3 destination)
         {
-            UnitDestinationReservations.Reserve(gameObject, destination, ResolveMoveReservationRadius());
+            UnitDestinationReservations.Reserve(_reservationOwner, destination, ResolveMoveReservationRadius());
 
             if (_releaseMoveReservationCoroutine != null)
                 StopCoroutine(_releaseMoveReservationCoroutine);
@@ -408,7 +441,9 @@ namespace Strategy.Buildings
             }
 
             _releaseMoveReservationCoroutine = null;
-            UnitDestinationReservations.Release(gameObject);
+
+            if (this != null)
+                UnitDestinationReservations.Release(_reservationOwner);
         }
 
         private void ReleaseMoveReservation()
@@ -419,7 +454,7 @@ namespace Strategy.Buildings
                 _releaseMoveReservationCoroutine = null;
             }
 
-            UnitDestinationReservations.Release(gameObject);
+            UnitDestinationReservations.Release(_reservationOwner);
         }
 
         private float ResolveMoveReservationRadius()

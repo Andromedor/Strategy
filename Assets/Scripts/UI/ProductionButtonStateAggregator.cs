@@ -20,8 +20,12 @@ namespace Strategy.UI
             for (int i = 0; i < factories.Count; i++)
             {
                 BuildingProduction factory = factories[i];
-                if (factory == null || !factory.isActiveAndEnabled)
+                if (factory == null ||
+                    !factory.isActiveAndEnabled ||
+                    BuildingConstructionState.IsConstructing(factory))
+                {
                     continue;
+                }
 
                 pendingCount += factory.CountPendingWorkFor(item);
 

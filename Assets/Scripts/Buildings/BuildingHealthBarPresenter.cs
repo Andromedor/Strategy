@@ -15,6 +15,7 @@ namespace Strategy.Buildings
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
 
         [SerializeField] private BuildingHealth _health;
+        [SerializeField] private BuildingConstructionState _construction;
         [SerializeField] private Transform _barRoot;
         [SerializeField] private Transform _fill;
         [SerializeField] private Renderer _trackRenderer;
@@ -62,6 +63,9 @@ namespace Strategy.Buildings
             if (_health == null)
                 _health = GetComponent<BuildingHealth>();
 
+            if (_construction == null)
+                _construction = GetComponent<BuildingConstructionState>();
+
             ConfigureRendererOrder();
 
             if (_fill != null)
@@ -80,6 +84,12 @@ namespace Strategy.Buildings
             if (_health != null)
                 _health.HealthChanged += OnHealthChanged;
 
+            if (_construction != null)
+            {
+                _construction.ProgressChanged += OnConstructionProgressChanged;
+                _construction.ConstructionCompleted += OnConstructionCompleted;
+            }
+
             EventManager.OnBuildingSelected += OnBuildingSelected;
             EventManager.OnBuildingDeselected += OnBuildingDeselected;
             UnitHealthBarVisibility.ForceVisibilityChanged += OnForceVisibilityChanged;
@@ -96,6 +106,12 @@ namespace Strategy.Buildings
         {
             if (_health != null)
                 _health.HealthChanged -= OnHealthChanged;
+
+            if (_construction != null)
+            {
+                _construction.ProgressChanged -= OnConstructionProgressChanged;
+                _construction.ConstructionCompleted -= OnConstructionCompleted;
+            }
 
             EventManager.OnBuildingSelected -= OnBuildingSelected;
             EventManager.OnBuildingDeselected -= OnBuildingDeselected;
@@ -114,6 +130,18 @@ namespace Strategy.Buildings
             _lastDamageTime = Time.time;
             ApplyHealthFill();
             ApplyVisibility(1f);
+        }
+
+        private void OnConstructionProgressChanged(BuildingConstructionState state)
+        {
+            ApplyHealthFill();
+            ApplyVisibility(ResolveTargetAlpha());
+        }
+
+        private void OnConstructionCompleted(BuildingConstructionState state)
+        {
+            ApplyHealthFill();
+            ApplyVisibility(ResolveTargetAlpha());
         }
 
         private void OnBuildingSelected(GameObject building)
@@ -139,12 +167,27 @@ namespace Strategy.Buildings
             ApplyVisibility(ResolveTargetAlpha());
         }
 
+        /// <summary>Повертає true, якщо renderer належить цій HP-шкалі і не має анімуватися як частина будівлі.</summary>
+        public bool OwnsRenderer(Renderer renderer)
+        {
+            if (renderer == null)
+                return false;
+
+            if (renderer == _trackRenderer || renderer == _fillRenderer)
+                return true;
+
+            return _barRoot != null && renderer.transform.IsChildOf(_barRoot);
+        }
+
         private float ResolveTargetAlpha()
         {
             if (_health == null || _health.MaxHealth <= 0f)
                 return 0f;
 
             if (_isSelected || UnitHealthBarVisibility.ForceVisible)
+                return 1f;
+
+            if (_construction != null && _construction.IsUnderConstruction)
                 return 1f;
 
             float elapsedSinceDamage = Time.time - _lastDamageTime;

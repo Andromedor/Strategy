@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using SelectionDragBoxUI = Strategy.UI.SelectionDragBoxUI;
 
 namespace Strategy.Units
 {
@@ -737,19 +738,22 @@ namespace Strategy.Units
         private void BeginSelectionDrag()
         {
             _isSelectionDragActive = true;
-            _selectionDragBox?.Show(_dragStartScreenPoint, _dragCurrentScreenPoint);
+            if (_selectionDragBox != null)
+                _selectionDragBox.Show(_dragStartScreenPoint, _dragCurrentScreenPoint);
         }
 
         /// <summary>Переміщує та масштабує куб виділення так, щоб він охоплював від початкової точки перетягування до поточної позиції курсора.</summary>
         private void UpdateSelectionVisual(Vector2 currentScreenPoint)
         {
-            _selectionDragBox?.UpdateBox(_dragStartScreenPoint, currentScreenPoint);
+            if (_selectionDragBox != null)
+                _selectionDragBox.UpdateBox(_dragStartScreenPoint, currentScreenPoint);
         }
 
         /// <summary>Використовує OverlapBox з межами куба виділення для пошуку юнітів гравця всередині та додає їх до _selections через RaiseUnitSelected.</summary>
         private void HideSelectionVisual()
         {
-            _selectionDragBox?.Hide();
+            if (_selectionDragBox != null)
+                _selectionDragBox.Hide();
         }
 
         private Rect GetDragScreenRect()
@@ -1184,8 +1188,11 @@ namespace Strategy.Units
             BuildingProduction factory = selection.GetComponentInParent<BuildingProduction>();
             if (factory != null)
             {
-                if (!BelongsToPlayer(factory.gameObject))
+                if (BuildingConstructionState.IsConstructing(factory) ||
+                    !BelongsToPlayer(factory.gameObject))
+                {
                     return false;
+                }
 
                 building = factory.gameObject;
                 return true;
@@ -1194,8 +1201,11 @@ namespace Strategy.Units
             ConstructionCenter constructionCenter = selection.GetComponentInParent<ConstructionCenter>();
             if (constructionCenter != null)
             {
-                if (!BelongsToPlayer(constructionCenter.gameObject))
+                if (BuildingConstructionState.IsConstructing(constructionCenter) ||
+                    !BelongsToPlayer(constructionCenter.gameObject))
+                {
                     return false;
+                }
 
                 building = constructionCenter.gameObject;
                 return true;
@@ -1275,7 +1285,7 @@ namespace Strategy.Units
                     continue;
 
                 BuildingProduction factory = selection.GetComponent<BuildingProduction>();
-                if (factory != null)
+                if (factory != null && !BuildingConstructionState.IsConstructing(factory))
                     return factory;
             }
 
@@ -1291,8 +1301,11 @@ namespace Strategy.Units
                     continue;
 
                 ConstructionCenter constructionCenter = selection.GetComponent<ConstructionCenter>();
-                if (constructionCenter != null)
+                if (constructionCenter != null &&
+                    !BuildingConstructionState.IsConstructing(constructionCenter))
+                {
                     return constructionCenter;
+                }
             }
 
             return null;

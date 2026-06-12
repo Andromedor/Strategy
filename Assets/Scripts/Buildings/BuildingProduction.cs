@@ -102,6 +102,9 @@ namespace Strategy.Buildings
         /// </summary>
         public bool AddToQueue(ProductionItemData item)
         {
+            if (BuildingConstructionState.IsConstructing(this))
+                return false;
+
             if (item == null || item.UnitData == null || item.UnitData.Prefab == null)
                 return false;
 
@@ -109,7 +112,7 @@ namespace Strategy.Buildings
                 return false;
 
             if (_teamComponent != null &&
-                LocalPlayerContext.IsLocalTeam(_teamComponent.Team) &&
+                _teamComponent.Team != TeamType.Neutral &&
                 ResourceManager.Instance != null &&
                 !ResourceManager.Instance.Spend(_teamComponent.Team, item.Cost))
             {
@@ -126,6 +129,9 @@ namespace Strategy.Buildings
 
         public bool CanProduce(ProductionItemData item)
         {
+            if (BuildingConstructionState.IsConstructing(this))
+                return false;
+
             return TryResolveProductionItem(item, out _);
         }
 
@@ -213,6 +219,46 @@ namespace Strategy.Buildings
             return count;
         }
 
+        public void CopyQueuedItems(List<ProductionItemData> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+            foreach (ProductionItemData item in _queue)
+                results.Add(item);
+        }
+
+        public void RestoreProductionState(
+            ProductionItemData currentItem,
+            float remainingSeconds,
+            IReadOnlyList<ProductionItemData> queuedItems)
+        {
+            StopAllCoroutines();
+            _queue.Clear();
+            ClearCurrentProductionState();
+            _isProducing = false;
+
+            if (queuedItems != null)
+            {
+                for (int i = 0; i < queuedItems.Count; i++)
+                {
+                    ProductionItemData item = queuedItems[i];
+                    if (IsValidProductionItem(item))
+                        _queue.Enqueue(item);
+                }
+            }
+
+            if (IsValidProductionItem(currentItem))
+            {
+                StartCoroutine(ProcessRestoredQueue(currentItem, remainingSeconds));
+                return;
+            }
+
+            if (_queue.Count > 0 && isActiveAndEnabled)
+                StartCoroutine(ProcessQueue());
+        }
+
         public static bool AreEquivalentProductionItems(
             ProductionItemData first,
             ProductionItemData second)
@@ -249,23 +295,44 @@ namespace Strategy.Buildings
             while (_queue.Count > 0)
             {
                 ProductionItemData item = _queue.Dequeue();
-                _currentProductionItem = item;
-                _currentProductionDuration = Mathf.Max(0f, item.ProductionTime);
-                _currentProductionElapsed = 0f;
-
-                while (_currentProductionElapsed < _currentProductionDuration)
-                {
-                    _currentProductionElapsed = Mathf.Min(
-                        _currentProductionDuration,
-                        _currentProductionElapsed + Time.deltaTime);
-                    yield return null;
-                }
-
-                yield return StartCoroutine(SpawnAndReleaseUnit(item));
-                ClearCurrentProductionState();
+                yield return StartCoroutine(ProduceItem(item, 0f));
             }
 
             _isProducing = false;
+        }
+
+        private IEnumerator ProcessRestoredQueue(ProductionItemData currentItem, float remainingSeconds)
+        {
+            _isProducing = true;
+            float duration = Mathf.Max(0f, currentItem.ProductionTime);
+            float elapsed = Mathf.Clamp(duration - Mathf.Max(0f, remainingSeconds), 0f, duration);
+            yield return StartCoroutine(ProduceItem(currentItem, elapsed));
+
+            while (_queue.Count > 0)
+            {
+                ProductionItemData item = _queue.Dequeue();
+                yield return StartCoroutine(ProduceItem(item, 0f));
+            }
+
+            _isProducing = false;
+        }
+
+        private IEnumerator ProduceItem(ProductionItemData item, float initialElapsed)
+        {
+            _currentProductionItem = item;
+            _currentProductionDuration = Mathf.Max(0f, item.ProductionTime);
+            _currentProductionElapsed = Mathf.Clamp(initialElapsed, 0f, _currentProductionDuration);
+
+            while (_currentProductionElapsed < _currentProductionDuration)
+            {
+                _currentProductionElapsed = Mathf.Min(
+                    _currentProductionDuration,
+                    _currentProductionElapsed + Time.deltaTime);
+                yield return null;
+            }
+
+            yield return StartCoroutine(SpawnAndReleaseUnit(item));
+            ClearCurrentProductionState();
         }
 
         private void ClearCurrentProductionState()

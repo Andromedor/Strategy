@@ -12,6 +12,9 @@ namespace Strategy.Tests
         private const string BuildingPlacementGridConfigTypeName = "Strategy.Data.BuildingPlacementGridConfig, Assembly-CSharp";
         private const string BuildingGridPlacementServiceTypeName = "Strategy.Buildings.BuildingGridPlacementService, Assembly-CSharp";
         private const string BuildingGridOccupancyTypeName = "Strategy.Buildings.BuildingGridOccupancy, Assembly-CSharp";
+        private const string BuildingConstructionStateTypeName = "Strategy.Buildings.BuildingConstructionState, Assembly-CSharp";
+        private const string BuildingConstructionVisualTypeName = "Strategy.Buildings.BuildingConstructionVisual, Assembly-CSharp";
+        private const string BuildingHealthTypeName = "Strategy.Buildings.BuildingHealth, Assembly-CSharp";
         private const string ConstructionCenterTypeName = "Strategy.Buildings.ConstructionCenter, Assembly-CSharp";
         private const string TeamTypeName = "Strategy.Units.TeamType, Assembly-CSharp";
 
@@ -19,6 +22,9 @@ namespace Strategy.Tests
         private readonly Type _gridConfigType = Type.GetType(BuildingPlacementGridConfigTypeName);
         private readonly Type _gridServiceType = Type.GetType(BuildingGridPlacementServiceTypeName);
         private readonly Type _gridOccupancyType = Type.GetType(BuildingGridOccupancyTypeName);
+        private readonly Type _constructionStateType = Type.GetType(BuildingConstructionStateTypeName);
+        private readonly Type _constructionVisualType = Type.GetType(BuildingConstructionVisualTypeName);
+        private readonly Type _buildingHealthType = Type.GetType(BuildingHealthTypeName);
         private readonly Type _constructionCenterType = Type.GetType(ConstructionCenterTypeName);
         private readonly Type _teamType = Type.GetType(TeamTypeName);
 
@@ -29,6 +35,9 @@ namespace Strategy.Tests
             Assert.NotNull(_gridConfigType);
             Assert.NotNull(_gridServiceType);
             Assert.NotNull(_gridOccupancyType);
+            Assert.NotNull(_constructionStateType);
+            Assert.NotNull(_constructionVisualType);
+            Assert.NotNull(_buildingHealthType);
             Assert.NotNull(_constructionCenterType);
             Assert.NotNull(_teamType);
         }
@@ -207,6 +216,65 @@ namespace Strategy.Tests
             }
         }
 
+        [Test]
+        public void ConstructionVisualKeepsFoundationVisibleAtZeroProgress()
+        {
+            ScriptableObject buildingData = CreateBuildingData(Vector2Int.one, Vector3.one, Vector3.zero);
+            SetField(buildingData, "_buildTime", 10f);
+
+            GameObject building = new("Building Under Construction");
+            GameObject foundation = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            foundation.name = "Foundation";
+            foundation.transform.SetParent(building.transform, false);
+            Renderer foundationRenderer = foundation.GetComponent<Renderer>();
+
+            Component construction = building.AddComponent(_constructionStateType);
+            building.AddComponent(_constructionVisualType);
+
+            try
+            {
+                InvokeInstanceVoid(construction, "Begin", buildingData);
+
+                Assert.IsTrue(
+                    foundationRenderer.enabled,
+                    "A newly placed building must have a visible foundation immediately after construction starts.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(building);
+                UnityEngine.Object.DestroyImmediate(buildingData);
+            }
+        }
+
+        [Test]
+        public void ConstructionHealthStartsAtOneAndPreservesDamage()
+        {
+            GameObject building = new("Building Health Under Construction");
+            Component health = building.AddComponent(_buildingHealthType);
+
+            try
+            {
+                InvokeInstanceVoid(health, "BeginConstructionHealth");
+                Assert.AreEqual(1f, GetProperty<float>(health, "CurrentHealth"), 0.01f);
+
+                InvokeInstanceVoid(health, "UpdateConstructionHealth", 0.5f);
+                float halfBuiltHealth = GetProperty<float>(health, "CurrentHealth");
+                Assert.Greater(halfBuiltHealth, 1f);
+
+                InvokeInstanceVoid(health, "TakeDamage", 100f);
+                InvokeInstanceVoid(health, "UpdateConstructionHealth", 1f);
+                InvokeInstanceVoid(health, "CompleteConstructionHealth");
+
+                float maxHealth = GetProperty<float>(health, "MaxHealth");
+                float finalHealth = GetProperty<float>(health, "CurrentHealth");
+                Assert.AreEqual(maxHealth - 100f, finalHealth, 0.1f);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(building);
+            }
+        }
+
         private ScriptableObject CreateBuildingData(Vector2Int footprint, Vector3 checkBoxSize, Vector3 checkBoxOffset)
         {
             ScriptableObject buildingData = ScriptableObject.CreateInstance(_buildingDataType);
@@ -272,11 +340,25 @@ namespace Strategy.Tests
             method.Invoke(null, args);
         }
 
+        private static void InvokeInstanceVoid(object target, string methodName, params object[] args)
+        {
+            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(method);
+            method.Invoke(target, args);
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(field, $"Missing field {fieldName} on {target.GetType().Name}");
             field.SetValue(target, value);
+        }
+
+        private static T GetProperty<T>(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(property, $"Missing property {propertyName} on {target.GetType().Name}");
+            return (T)property.GetValue(target);
         }
     }
 }

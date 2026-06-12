@@ -1,0 +1,11 @@
+<Project>
+  <Target Name="RemoveUnityEditorOnlyRuntimeReferences"
+          BeforeTargets="ResolveAssemblyReferences"
+          Condition="'$(MSBuildProjectName)' == 'Assembly-CSharp'">
+    <ItemGroup>
+      <Reference Remove="Unity.Services.Multiplayer.Multiplay.Authoring.Editor" />
+      <Reference Remove="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring" />
+      <Reference Remove="MCPForUnity.Editor" />
+    </ItemGroup>
+  </Target>
+</Project>

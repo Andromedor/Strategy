@@ -16,6 +16,8 @@ namespace Strategy.Units
     /// </summary>
     public class UnitCombat : MonoBehaviour, IDamageable, ISimulationTickable
     {
+        public static readonly System.Collections.Generic.List<UnitCombat> All = new();
+
         public event Action<UnitCombat> HealthChanged;
 
         [Header("Data")]
@@ -56,6 +58,12 @@ namespace Strategy.Units
         public float NormalizedHealth => MaxHealth <= 0f ? 0f : Mathf.Clamp01(CurrentHealth / MaxHealth);
         public bool IsDead => _health != null && _health.IsDead;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            All.Clear();
+        }
+
         protected virtual void Awake()
         {
             _agent = GetComponent<NavMeshAgent>();
@@ -90,6 +98,9 @@ namespace Strategy.Units
 
         protected virtual void OnEnable()
         {
+            if (!All.Contains(this))
+                All.Add(this);
+
             if (_teamComponent != null)
                 _teamComponent.TeamChanged += OnTeamChanged;
 
@@ -100,6 +111,8 @@ namespace Strategy.Units
 
         protected virtual void OnDisable()
         {
+            All.Remove(this);
+
             if (_teamComponent != null)
                 _teamComponent.TeamChanged -= OnTeamChanged;
 
@@ -143,6 +156,19 @@ namespace Strategy.Units
 
             if (!Mathf.Approximately(previousHealth, _health.CurrentHealth))
                 HealthChanged?.Invoke(this);
+
+            if (_health.IsDead)
+                Die();
+        }
+
+        public void SetCurrentHealthForLoad(float currentHealth)
+        {
+            if (_unitData == null)
+                return;
+
+            _health ??= new UnitHealth(_unitData.MaxHealth);
+            _health.SetCurrentHealth(currentHealth, _unitData.MaxHealth);
+            HealthChanged?.Invoke(this);
 
             if (_health.IsDead)
                 Die();

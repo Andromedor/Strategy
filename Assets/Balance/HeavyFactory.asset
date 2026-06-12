@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0431f7631aa76846b9ece7513c340b2, type: 3}
   m_Name: HeavyFactory
   m_EditorClassIdentifier: Assembly-CSharp::BuildingData
-  prefab: {fileID: 2221833450515023493, guid: b426e496210a16744b3f6a654afe58b8, type: 3}
-  economy: 0
-  BuildTime: 0
+  _buildingName: 
+  _icon: {fileID: 0}
+  _prefab: {fileID: 2221833450515023493, guid: b426e496210a16744b3f6a654afe58b8, type: 3}
+  _economyCost: 250
+  _buildTime: 10
   _maxHealth: 2000
-  CheckBoxSize: {x: 10, y: 10.84212, z: 15}
-  CheckBoxOffset: {x: 0, y: 5.421, z: 0}
+  _checkBoxSize: {x: 10, y: 10.84212, z: 15}
+  _checkBoxOffset: {x: 0, y: 5.421, z: 0}
   _gridFootprintCells: {x: 2, y: 3}
   _gridPivot: 0
   _autoCalculateFootprintFromCheckBox: 0

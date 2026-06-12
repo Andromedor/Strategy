@@ -72,6 +72,12 @@ namespace Strategy.Core
                 return false;
             }
 
+            if (command.Type == PlayerCommandType.UpgradeOutpost && command.TargetTransform == null)
+            {
+                reason = "Upgrade outpost command has no target.";
+                return false;
+            }
+
             return true;
         }
     }

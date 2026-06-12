@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65da6e5b322f13546b08fee575bfad51, type: 3}
+  m_Name: HardAI
+  m_EditorClassIdentifier: Assembly-CSharp::Strategy.AI.AiDifficultyProfile
+  _difficulty: 2
+  _decisionInterval: 0.75
+  _attackCooldown: 12
+  _captureCooldown: 5
+  _buildCooldown: 8
+  _minimumOwnedOutposts: 2
+  _resourceReserve: 60
+  _desiredFactoryCount: 2
+  _outpostUpgradeResourceMultiplier: 2.5
+  _captureSquadSize: 3
+  _attackGroupSize: 8
+  _defenseRadius: 55
+  _maxPendingWorkPerFactory: 3
+  _focusHighValueBuildings: 1
+  _productionWeights:
+  - _item: {fileID: 11400000, guid: bae9135be8b7f6648b3ad496fa6c9b8a, type: 2}
+    _weight: 0.75
+  - _item: {fileID: 11400000, guid: f83509def1fbe4a468b83ca0a4a598af, type: 2}
+    _weight: 1.2
+  - _item: {fileID: 11400000, guid: b0311d41d60616b4da60ab2dfaaa6a6d, type: 2}
+    _weight: 0.65

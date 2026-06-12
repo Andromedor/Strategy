@@ -51,7 +51,7 @@ namespace Strategy.UI
         /// </summary>
         private void Open(Outpost outpost)
         {
-            if (outpost == null || outpost.Owner != TeamType.Player)
+            if (outpost == null || outpost.Owner != LocalPlayerContext.LocalTeam)
             {
                 _currentOutpost = null;
                 gameObject.SetActive(false);
@@ -68,7 +68,7 @@ namespace Strategy.UI
         /// <summary>Оновлює мітку вартості/стану та оновлює стан кнопки покращення.</summary>
         private void Refresh()
         {
-            if (_currentOutpost == null || _currentOutpost.Owner != TeamType.Player)
+            if (_currentOutpost == null || _currentOutpost.Owner != LocalPlayerContext.LocalTeam)
             {
                 gameObject.SetActive(false);
                 return;
@@ -107,7 +107,7 @@ namespace Strategy.UI
 
             _upgradeButton.interactable =
                 _currentOutpost != null &&
-                _currentOutpost.CanUpgrade;
+                _currentOutpost.CanUpgradeFor(LocalPlayerContext.LocalTeam);
 
             if (_upgradeButtonText == null)
                 return;
@@ -120,7 +120,7 @@ namespace Strategy.UI
 
             if (_currentOutpost.IsUpgraded)
                 _upgradeButtonText.text = "Upgraded";
-            else if (!_currentOutpost.CanUpgrade)
+            else if (!_currentOutpost.CanUpgradeFor(LocalPlayerContext.LocalTeam))
                 _upgradeButtonText.text = "Need resources";
             else
                 _upgradeButtonText.text = "Upgrade Outpost";
@@ -132,8 +132,21 @@ namespace Strategy.UI
             if (_currentOutpost == null)
                 return;
 
-            if (_currentOutpost.TryUpgrade())
+            PlayerCommand command = PlayerCommand.UpgradeOutpost(
+                LocalPlayerContext.LocalTeam,
+                LocalPlayerContext.LocalPlayerId,
+                _currentOutpost.transform);
+
+            if (CommandDispatcher.Dispatch(command, ExecuteUpgradeCommand))
                 Refresh();
+        }
+
+        private void ExecuteUpgradeCommand(PlayerCommand command)
+        {
+            Outpost outpost = command.TargetTransform != null
+                ? command.TargetTransform.GetComponentInParent<Outpost>()
+                : null;
+            outpost?.TryUpgrade(command.Team);
         }
 
         /// <summary>Знаходить дочірню мітку TMP_Text кнопки покращення для подальшого використання.</summary>

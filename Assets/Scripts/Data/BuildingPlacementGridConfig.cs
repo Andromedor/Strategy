@@ -11,7 +11,7 @@ namespace Strategy.Data
         [SerializeField] private Color _validCellColor = new(0f, 0.95f, 1f, 0.42f);
         [SerializeField] private Color _invalidCellColor = new(1f, 0.05f, 0.05f, 0.48f);
         [SerializeField] private Color _buildAreaCellColor = new(0f, 0.85f, 1f, 0.16f);
-        [SerializeField, Min(0f)] private float _markerYOffset = 0.08f;
+        [SerializeField, Min(0f)] private float _markerYOffset = 0.05f;
         [SerializeField, Range(0.1f, 1f)] private float _markerScale = 0.94f;
 
         public float CellSize => Mathf.Max(0.01f, _cellSize);

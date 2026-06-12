@@ -113,6 +113,7 @@ namespace Strategy.Buildings
             HandleRotation();
             CheckPlacement();
             UpdatePreviewColor();
+            UpdateBuildAreaGridMarkers();
 
             if (!_canPlaceClick)
             {
@@ -394,35 +395,48 @@ namespace Strategy.Buildings
         }
 
         /// <summary>
-        /// Витрачає вартість будівлі, перебатьківщує попередній перегляд до контейнера Buildings,
-        /// відновлює всі ігрові компоненти та завершує розміщення.
+        /// Витрачає ресурси, створює чистий інстанс будівлі з prefab і прибирає preview.
+        /// Це не переносить вимкнені preview-компоненти в gameplay-об'єкт.
         /// </summary>
         private void ConfirmPlacement()
         {
+            if (_previewObject == null || _currentBuildingData == null)
+                return;
+
             if (!TrySpendPlacementCost())
                 return;
 
-            ResetPreviewColor();
+            Vector3 position = _previewObject.transform.position;
+            Quaternion rotation = _previewObject.transform.rotation;
+            Vector2Int placedCell = _currentGridCell;
+            int placedRotationSteps = _rotationSteps;
+            BuildingData placedData = _currentBuildingData;
+            TeamType placedTeam = ResolveCurrentTeam();
+            GameObject preview = _previewObject;
 
-            TeamComponent teamComponent =
-                _previewObject.GetComponent<TeamComponent>();
+            GameObject building = Instantiate(
+                placedData.Prefab,
+                position,
+                rotation,
+                RuntimeObjectContainer.Get("Buildings"));
+            building.name = string.IsNullOrWhiteSpace(placedData.BuildingName)
+                ? placedData.Prefab.name
+                : placedData.BuildingName;
 
-            if (teamComponent != null)
-                teamComponent.SetTeam(ResolveCurrentTeam());
-
-            _previewObject.transform.SetParent(RuntimeObjectContainer.Get("Buildings"), true);
+            TeamObjectSetup.AssignTeam(building, placedTeam);
 
             if (IsGridPlacementActive())
             {
-                BuildingGridOccupancy occupancy = _previewObject.GetComponent<BuildingGridOccupancy>();
+                BuildingGridOccupancy occupancy = building.GetComponent<BuildingGridOccupancy>();
 
                 if (occupancy == null)
-                    occupancy = _previewObject.AddComponent<BuildingGridOccupancy>();
+                    occupancy = building.AddComponent<BuildingGridOccupancy>();
 
-                occupancy.Initialize(_currentBuildingData, _gridConfig, _currentGridCell, _rotationSteps);
+                occupancy.Initialize(placedData, _gridConfig, placedCell, placedRotationSteps);
             }
 
-            RestorePreviewGameplay();
+            BeginPlacedBuildingConstruction(building, placedData);
+            Destroy(preview);
             ClearPreviewState();
 
             _previewObject = null;
@@ -431,7 +445,19 @@ namespace Strategy.Buildings
             HideAllBuildAreas();
         }
 
-        /// <summary>Знищує об'єкт попереднього перегляду та виходить із режиму розміщення, приховуючи всі оверлеї зон будівництва.</summary>
+        /// <summary>Запускає стан будівництва для щойно розміщеної будівлі.</summary>
+        private void BeginPlacedBuildingConstruction(GameObject building, BuildingData buildingData)
+        {
+            if (building == null)
+                return;
+
+            BuildingConstructionState construction = building.GetComponent<BuildingConstructionState>();
+            if (construction == null)
+                construction = building.AddComponent<BuildingConstructionState>();
+
+            construction.Begin(buildingData);
+        }
+
         private void CancelPlacement()
         {
             if (_previewObject != null)
@@ -600,6 +626,10 @@ namespace Strategy.Buildings
                         if (!visitedCells.Add(cell))
                             continue;
 
+                        // exclude cells occupied by the current building footprint to prevent z-fighting
+                        if (_gridCellBuffer.Contains(cell))
+                            continue;
+
                         Vector3 cellCenter = BuildingGridPlacementService.CellToWorld(cell, _gridConfig);
 
                         if (center.IsInsideBuildArea(cellCenter))
@@ -621,7 +651,7 @@ namespace Strategy.Buildings
                 if (!visible)
                     continue;
 
-                Vector3 markerPosition = _buildAreaGridCellCenters[i] + Vector3.up * (_gridConfig.MarkerYOffset * 0.5f);
+                Vector3 markerPosition = _buildAreaGridCellCenters[i] + Vector3.up * _gridConfig.MarkerYOffset;
                 marker.GameObject.transform.SetPositionAndRotation(markerPosition, Quaternion.identity);
                 marker.GameObject.transform.localScale = new Vector3(markerSize, 0.025f, markerSize);
                 Vector2Int cell = BuildingGridPlacementService.WorldToCell(_buildAreaGridCellCenters[i], _gridConfig);
@@ -696,8 +726,6 @@ namespace Strategy.Buildings
                 if (IsConstructionCenterForCurrentTeam(center))
                     center.ShowBuildArea();
             }
-
-            UpdateBuildAreaGridMarkers();
         }
 
         private void HideAllBuildAreas()

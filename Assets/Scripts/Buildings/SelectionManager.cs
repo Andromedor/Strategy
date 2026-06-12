@@ -77,6 +77,12 @@ namespace Strategy.Buildings
             ConstructionCenter constructionCenter = hit.collider.GetComponentInParent<ConstructionCenter>();
             if (constructionCenter != null)
             {
+                if (BuildingConstructionState.IsConstructing(constructionCenter))
+                {
+                    ClearBuildingSelection();
+                    return;
+                }
+
                 SelectConstructionCenter(constructionCenter);
                 return;
             }
@@ -91,7 +97,8 @@ namespace Strategy.Buildings
             BuildingProduction production = hit.collider.GetComponentInParent<BuildingProduction>();
             if (production != null)
             {
-                if (!BelongsToLocalPlayer(production.gameObject))
+                if (BuildingConstructionState.IsConstructing(production) ||
+                    !BelongsToLocalPlayer(production.gameObject))
                 {
                     ClearBuildingSelection();
                     return;
@@ -110,6 +117,12 @@ namespace Strategy.Buildings
         /// <summary>Відкриває панель будівництва для ConstructionCenter гравця; знімає виділення, якщо він належить ворогу.</summary>
         private static void SelectConstructionCenter(ConstructionCenter constructionCenter)
         {
+            if (BuildingConstructionState.IsConstructing(constructionCenter))
+            {
+                ClearBuildingSelection();
+                return;
+            }
+
             TeamComponent teamComponent = constructionCenter.GetComponentInParent<TeamComponent>();
             if (teamComponent != null && !LocalPlayerContext.IsLocalTeam(teamComponent.Team))
             {
@@ -129,7 +142,7 @@ namespace Strategy.Buildings
             SelectedFactory = null;
             ClearSelectedBuildingVisual();
 
-            if (outpost.Owner != TeamType.Player)
+            if (outpost.Owner != LocalPlayerContext.LocalTeam)
             {
                 ClearBuildingSelection();
                 return;

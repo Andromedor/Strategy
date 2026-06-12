@@ -1,4 +1,6 @@
 using Strategy.Buildings;
+using Strategy.Core;
+using Strategy.Units;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -20,12 +22,26 @@ namespace Strategy.Camera
         [SerializeField] private float _edgeScrollSpeed = 15f;
         [SerializeField] private float _edgeSize = 10f;
         [SerializeField] private bool _disableEdgeScrollInEditor = true;
+        [SerializeField] private bool _focusOnLocalStartingBase = true;
+        [SerializeField, Min(0f)] private float _startingBaseFocusHeight = 28f;
+        [SerializeField, Min(0f)] private float _startingBaseBackDistance = 24f;
+        [SerializeField] private Vector3 _startingBaseFocusOffset = Vector3.zero;
 
         private PlayerCameraInput _input;
 
         private void Awake()
         {
             _input = GetComponent<PlayerCameraInput>();
+        }
+
+        private void OnEnable()
+        {
+            MatchStartSpawner.StartingBaseSpawned += HandleStartingBaseSpawned;
+        }
+
+        private void OnDisable()
+        {
+            MatchStartSpawner.StartingBaseSpawned -= HandleStartingBaseSpawned;
         }
 
         private void Update()
@@ -37,6 +53,30 @@ namespace Strategy.Camera
             RotateByKeyboard();
             RotateByMouse();
             ZoomCamera();
+        }
+
+        /// <summary>Ставить камеру так, щоб стартова база локального гравця одразу була в полі зору після спавну.</summary>
+        private void HandleStartingBaseSpawned(GameObject baseObject, TeamType team)
+        {
+            if (!_focusOnLocalStartingBase || baseObject == null || !LocalPlayerContext.IsLocalTeam(team))
+                return;
+
+            FocusOnGroundPoint(baseObject.transform.position);
+        }
+
+        /// <summary>Фокусує камеру на точці землі, зберігаючи поточний напрямок огляду та відступаючи назад по горизонталі.</summary>
+        public void FocusOnGroundPoint(Vector3 groundPoint)
+        {
+            Vector3 planarForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            if (planarForward.sqrMagnitude < 0.001f)
+                planarForward = Vector3.forward;
+
+            planarForward.Normalize();
+
+            float height = Mathf.Clamp(_startingBaseFocusHeight, _minZoomHeight, _maxZoomHeight);
+            Vector3 desiredPosition = groundPoint - planarForward * _startingBaseBackDistance + _startingBaseFocusOffset;
+            desiredPosition.y = groundPoint.y + height;
+            transform.position = desiredPosition;
         }
 
         /// <summary>Переміщує камеру, використовуючи введення WASD та прокрутку по краях екрана, ігноруючи компонент Y векторів вперед/вправо.</summary>

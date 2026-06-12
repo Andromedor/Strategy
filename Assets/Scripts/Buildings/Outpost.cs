@@ -62,10 +62,7 @@ namespace Strategy.Buildings
         public float ResourceTicksPerMinute => _resourceTicksPerMinute;
         public float CurrentResourcePerMinute => CurrentResourcePerTick * _resourceTicksPerMinute;
         public bool CanUpgrade =>
-            _owner == TeamType.Player &&
-            !_isUpgraded &&
-            ResourceManager.Instance != null &&
-            ResourceManager.Instance.Resource >= _upgradeCost;
+            CanUpgradeFor(LocalPlayerContext.LocalTeam);
         public Color CurrentZoneColor
         {
             get
@@ -80,7 +77,18 @@ namespace Strategy.Buildings
     /// <summary>Повертає колір зони, призначений для вказаної команди (гравець = зелений, ворог = червоний).</summary>
     public Color GetColorForTeam(TeamType team)
     {
-        return team == TeamType.Player ? _playerColor : _enemyColor;
+        return team switch
+        {
+            TeamType.Player => _playerColor,
+            TeamType.Enemy => _enemyColor,
+            TeamType.Team3 => new Color(0.95f, 0.8f, 0.05f, 0.28f),
+            TeamType.Team4 => new Color(0.55f, 0.25f, 1f, 0.28f),
+            TeamType.Team5 => new Color(0f, 0.75f, 1f, 0.28f),
+            TeamType.Team6 => new Color(1f, 0.45f, 0f, 0.28f),
+            TeamType.Team7 => new Color(0.85f, 0.25f, 0.75f, 0.28f),
+            TeamType.Team8 => new Color(0.3f, 1f, 0.45f, 0.28f),
+            _ => _neutralColor
+        };
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -132,6 +140,8 @@ namespace Strategy.Buildings
             return ticksPerMinute;
         }
 
+        public static IReadOnlyList<Outpost> All => AllOutposts;
+
         private void Awake()
         {
             _propertyBlock = new MaterialPropertyBlock();
@@ -165,7 +175,21 @@ namespace Strategy.Buildings
         /// </summary>
         public void TickCapture(int playerUnits, int enemyUnits, bool hasBlockingBuildings, float deltaTime)
         {
-            if (!CanCapture(playerUnits, enemyUnits, hasBlockingBuildings, out TeamType team))
+            Dictionary<TeamType, int> unitCounts = new()
+            {
+                [TeamType.Player] = Mathf.Max(0, playerUnits),
+                [TeamType.Enemy] = Mathf.Max(0, enemyUnits)
+            };
+
+            TickCapture(unitCounts, hasBlockingBuildings, deltaTime);
+        }
+
+        public void TickCapture(
+            IReadOnlyDictionary<TeamType, int> unitCountsByTeam,
+            bool hasBlockingBuildings,
+            float deltaTime)
+        {
+            if (!CanCapture(unitCountsByTeam, hasBlockingBuildings, out TeamType team))
             {
                 ResetCaptureProgress();
                 return;
@@ -188,8 +212,7 @@ namespace Strategy.Buildings
         /// Повертає false і встановлює capturingTeam у значення за замовчуванням, якщо захоплення не дозволено.
         /// </summary>
         private bool CanCapture(
-            int playerUnits,
-            int enemyUnits,
+            IReadOnlyDictionary<TeamType, int> unitCountsByTeam,
             bool hasBlockingBuildings,
             out TeamType capturingTeam)
         {
@@ -198,22 +221,40 @@ namespace Strategy.Buildings
             if (hasBlockingBuildings)
                 return false;
 
-            if (playerUnits > 0 && enemyUnits > 0)
+            if (unitCountsByTeam == null || unitCountsByTeam.Count == 0)
                 return false;
 
-            if (playerUnits == 0 && enemyUnits == 0)
-                return false;
+            bool foundCandidate = false;
+            int presentHostileSides = 0;
 
-            capturingTeam = playerUnits > 0 ? TeamType.Player : TeamType.Enemy;
+            foreach (KeyValuePair<TeamType, int> pair in unitCountsByTeam)
+            {
+                TeamType team = pair.Key;
+                int count = pair.Value;
+
+                if (team == TeamType.Neutral || count <= 0)
+                    continue;
+
+                if (!foundCandidate)
+                {
+                    capturingTeam = team;
+                    foundCandidate = true;
+                    presentHostileSides = 1;
+                    continue;
+                }
+
+                if (!TeamRelations.AreAllied(capturingTeam, team))
+                    presentHostileSides++;
+            }
+
+            if (!foundCandidate || presentHostileSides != 1)
+                return false;
 
             if (_owner == capturingTeam)
                 return false;
 
-            if (_owner == TeamType.Player)
-                return playerUnits == 0;
-
-            if (_owner == TeamType.Enemy)
-                return enemyUnits == 0;
+            if (_owner != null && TeamRelations.AreAllied(_owner.Value, capturingTeam))
+                return false;
 
             return true;
         }
@@ -252,12 +293,25 @@ namespace Strategy.Buildings
         /// Намагається придбати покращення аванпосту, витрачаючи ресурси.
         /// У разі успіху подвоює дохід ресурсів та активує додатковий ConstructionCenter.
         /// </summary>
+        public bool CanUpgradeFor(TeamType team)
+        {
+            return _owner == team &&
+                   !_isUpgraded &&
+                   ResourceManager.Instance != null &&
+                   ResourceManager.Instance.GetResource(team) >= _upgradeCost;
+        }
+
         public bool TryUpgrade()
         {
-            if (!CanUpgrade)
+            return TryUpgrade(LocalPlayerContext.LocalTeam);
+        }
+
+        public bool TryUpgrade(TeamType team)
+        {
+            if (!CanUpgradeFor(team))
                 return false;
 
-            if (!ResourceManager.Instance.Spend(_upgradeCost))
+            if (!ResourceManager.Instance.Spend(team, _upgradeCost))
                 return false;
 
             _isUpgraded = true;
@@ -265,6 +319,30 @@ namespace Strategy.Buildings
             NotifyStatsChanged();
 
             return true;
+        }
+
+        public OutpostSaveState CaptureState()
+        {
+            return new OutpostSaveState(
+                _owner != null,
+                _owner.GetValueOrDefault(),
+                _capturingTeam != null,
+                _capturingTeam.GetValueOrDefault(),
+                _captureProgress,
+                _isUpgraded,
+                _resourceTimer);
+        }
+
+        public void RestoreState(OutpostSaveState state)
+        {
+            _owner = state.HasOwner ? state.Owner : null;
+            _capturingTeam = state.HasCapturingTeam ? state.CapturingTeam : null;
+            _captureProgress = Mathf.Max(0f, state.CaptureProgressSeconds);
+            _isUpgraded = state.IsUpgraded;
+            _resourceTimer = Mathf.Max(0f, state.ResourceTimer);
+            SetBuildAreaActive(_isUpgraded, false);
+            UpdateVisual();
+            NotifyStatsChanged();
         }
 
         /// <summary>
@@ -335,5 +413,43 @@ namespace Strategy.Buildings
         Neutral,
         PlayerOwned,
         EnemyOwned
+    }
+
+    [Serializable]
+    public struct OutpostSaveState
+    {
+        [SerializeField] private bool _hasOwner;
+        [SerializeField] private TeamType _owner;
+        [SerializeField] private bool _hasCapturingTeam;
+        [SerializeField] private TeamType _capturingTeam;
+        [SerializeField] private float _captureProgressSeconds;
+        [SerializeField] private bool _isUpgraded;
+        [SerializeField] private float _resourceTimer;
+
+        public bool HasOwner => _hasOwner;
+        public TeamType Owner => _owner;
+        public bool HasCapturingTeam => _hasCapturingTeam;
+        public TeamType CapturingTeam => _capturingTeam;
+        public float CaptureProgressSeconds => _captureProgressSeconds;
+        public bool IsUpgraded => _isUpgraded;
+        public float ResourceTimer => _resourceTimer;
+
+        public OutpostSaveState(
+            bool hasOwner,
+            TeamType owner,
+            bool hasCapturingTeam,
+            TeamType capturingTeam,
+            float captureProgressSeconds,
+            bool isUpgraded,
+            float resourceTimer)
+        {
+            _hasOwner = hasOwner;
+            _owner = owner;
+            _hasCapturingTeam = hasCapturingTeam;
+            _capturingTeam = capturingTeam;
+            _captureProgressSeconds = Mathf.Max(0f, captureProgressSeconds);
+            _isUpgraded = isUpgraded;
+            _resourceTimer = Mathf.Max(0f, resourceTimer);
+        }
     }
 }

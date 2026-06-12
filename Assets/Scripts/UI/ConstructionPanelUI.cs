@@ -20,6 +20,8 @@ namespace Strategy.UI
         private static readonly Vector2 ButtonSize = new Vector2(116f, 108f);
         private static readonly Color ButtonFillColor = new Color(0.03f, 0.45f, 0.85f, 1f);
         private static readonly Color DisabledFillColor = new Color(0.48f, 0.54f, 0.58f, 0.85f);
+        private static readonly Color CostAffordableColor = Color.white;
+        private static readonly Color CostUnaffordableColor = new Color(1f, 0.42f, 0.32f, 1f);
 
         [SerializeField] private Transform _contentRoot;
         [SerializeField] private TMP_Text _emptyText;
@@ -30,10 +32,13 @@ namespace Strategy.UI
         [SerializeField] private Sprite _buttonSprite;
 
         private readonly List<Button> _buttons = new();
+        private readonly List<BuildingData> _buttonBuildings = new();
+        private readonly List<TMP_Text> _costTexts = new();
 
         private void OnEnable()
         {
             EventManager.OnConstructionCentersChanged += RefreshAvailability;
+            ResourceManager.OnTeamResourceChanged += OnTeamResourceChanged;
             BuildButtons();
             RefreshAvailability();
         }
@@ -41,6 +46,7 @@ namespace Strategy.UI
         private void OnDisable()
         {
             EventManager.OnConstructionCentersChanged -= RefreshAvailability;
+            ResourceManager.OnTeamResourceChanged -= OnTeamResourceChanged;
         }
 
         /// <summary>
@@ -70,8 +76,10 @@ namespace Strategy.UI
                 if (building == null)
                     continue;
 
-                Button button = CreateButton(building);
+                Button button = CreateButton(building, out TMP_Text costText);
                 _buttons.Add(button);
+                _buttonBuildings.Add(building);
+                _costTexts.Add(costText);
             }
 
             RebuildGrid();
@@ -82,7 +90,7 @@ namespace Strategy.UI
         /// Процедурно будує повністю стилізований GameObject кнопки для однієї будівлі,
         /// включаючи іконку або резервний текст, мітку назви, вартість та піделементи часу будівництва.
         /// </summary>
-        private Button CreateButton(BuildingData building)
+        private Button CreateButton(BuildingData building, out TMP_Text costText)
         {
             GameObject buttonObject = new GameObject(
                 "Build_" + GetDisplayName(building),
@@ -127,7 +135,7 @@ namespace Strategy.UI
 
             CreateText(buttonObject.transform, "Name", GetDisplayName(building), 16f, FontStyles.Bold,
                 TextAlignmentOptions.Center, new Vector2(0f, -60f), new Vector2(106f, 30f), true);
-            CreateText(buttonObject.transform, "Cost", "$" + Mathf.Max(0, building.EconomyCost), 14f, FontStyles.Normal,
+            costText = CreateText(buttonObject.transform, "Cost", "$" + Mathf.Max(0, building.EconomyCost), 14f, FontStyles.Normal,
                 TextAlignmentOptions.Left, new Vector2(9f, 8f), new Vector2(48f, 21f), false);
             CreateText(buttonObject.transform, "Time", FormatSeconds(building.BuildTime), 14f, FontStyles.Normal,
                 TextAlignmentOptions.Right, new Vector2(-9f, 8f), new Vector2(50f, 20f), false);
@@ -244,6 +252,9 @@ namespace Strategy.UI
             if (!HasPlayerConstructionCenter())
                 return;
 
+            if (!CanAfford(building))
+                return;
+
             _placementManager.StartPlacement(building);
         }
 
@@ -257,13 +268,28 @@ namespace Strategy.UI
 
             for (int i = 0; i < _buttons.Count; i++)
             {
-                if (_buttons[i] != null)
-                {
-                    _buttons[i].interactable = hasBuildArea;
-                    if (_buttons[i].targetGraphic is Image background)
-                        background.color = hasBuildArea ? ButtonFillColor : DisabledFillColor;
-                }
+                Button button = _buttons[i];
+                if (button == null)
+                    continue;
+
+                BuildingData building = i < _buttonBuildings.Count ? _buttonBuildings[i] : null;
+                bool hasResources = CanAfford(building);
+                bool isAvailable = hasBuildArea && hasResources;
+
+                button.interactable = isAvailable;
+
+                if (button.targetGraphic is Image background)
+                    background.color = isAvailable ? ButtonFillColor : DisabledFillColor;
+
+                if (i < _costTexts.Count && _costTexts[i] != null)
+                    _costTexts[i].color = hasResources ? CostAffordableColor : CostUnaffordableColor;
             }
+        }
+
+        private void OnTeamResourceChanged(TeamType team, int amount)
+        {
+            if (team == ResolveTeam())
+                RefreshAvailability();
         }
 
         /// <summary>Знищує всі дочірні GameObject під кореневим контейнером та очищає список кнопок.</summary>
@@ -276,6 +302,8 @@ namespace Strategy.UI
             }
 
             _buttons.Clear();
+            _buttonBuildings.Clear();
+            _costTexts.Clear();
         }
 
         /// <summary>Налаштовує GridLayoutGroup та ContentSizeFitter для 3-колонкового макету з автоматичною висотою.</summary>
@@ -366,6 +394,19 @@ namespace Strategy.UI
             return _team == TeamType.Player
                 ? LocalPlayerContext.LocalTeam
                 : _team;
+        }
+
+        /// <summary>Перевіряє, чи команда панелі має достатньо ресурсів для конкретної будівлі.</summary>
+        private bool CanAfford(BuildingData building)
+        {
+            if (building == null)
+                return false;
+
+            int cost = Mathf.Max(0, building.EconomyCost);
+            if (cost <= 0 || ResourceManager.Instance == null)
+                return true;
+
+            return ResourceManager.Instance.GetResource(ResolveTeam()) >= cost;
         }
     }
 }

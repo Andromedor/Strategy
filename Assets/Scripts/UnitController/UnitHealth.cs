@@ -34,5 +34,10 @@ namespace Strategy.Buildings
             if (_currentHealth < 0f)
                 _currentHealth = 0f;
         }
+
+        public void SetCurrentHealth(float value, float maxHealth)
+        {
+            _currentHealth = Mathf.Clamp(value, 0f, Mathf.Max(0f, maxHealth));
+        }
     }
 }

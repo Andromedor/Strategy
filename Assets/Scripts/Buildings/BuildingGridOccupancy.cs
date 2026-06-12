@@ -14,6 +14,8 @@ namespace Strategy.Buildings
 
         public Vector2Int OriginCell => _originCell;
         public int RotationSteps => BuildingGridPlacementService.NormalizeRotationSteps(_rotationSteps);
+        public BuildingData BuildingData => _buildingData;
+        public BuildingPlacementGridConfig GridConfig => _gridConfig;
 
         public void Initialize(
             BuildingData buildingData,

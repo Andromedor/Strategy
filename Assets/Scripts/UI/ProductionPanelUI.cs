@@ -30,6 +30,7 @@ namespace Strategy.UI
         private readonly List<BuildingProduction> _selectedFactories = new();
         private readonly List<ProductionItemData> _displayItems = new();
         private readonly List<BuildingProduction> _stateFactories = new();
+        private readonly List<GameObject> _factoryCommandTargets = new();
         private BuildingProduction _currentFactory;
         private float _nextProductionStateRefreshTime;
 
@@ -136,15 +137,27 @@ namespace Strategy.UI
                 return;
 
             PruneSelectedFactories();
+            _factoryCommandTargets.Clear();
 
             if (_selectedFactories.Count > 0)
             {
-                FactoryProductionDistributor.TryQueueLeastLoaded(_selectedFactories, item, out _);
+                for (int i = 0; i < _selectedFactories.Count; i++)
+                {
+                    if (_selectedFactories[i] != null)
+                        _factoryCommandTargets.Add(_selectedFactories[i].gameObject);
+                }
             }
             else if (_currentFactory != null)
             {
-                _currentFactory.AddToQueue(item);
+                _factoryCommandTargets.Add(_currentFactory.gameObject);
             }
+
+            PlayerCommand command = PlayerCommand.ProduceUnit(
+                ResolveTeam(),
+                LocalPlayerContext.LocalPlayerId,
+                _factoryCommandTargets,
+                item);
+            CommandDispatcher.Dispatch(command, PlayerCommandExecutor.Execute);
 
             RefreshButtons(ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0);
             RefreshProductionStates();

@@ -43,8 +43,9 @@ namespace Strategy.UI
         private void Refresh()
         {
             int playerResource = ResourceManager.Instance != null ? ResourceManager.Instance.Resource : 0;
-            int capturedOutposts = Outpost.GetOwnedCount(TeamType.Player);
-            int resourcePerMinute = Mathf.RoundToInt(Outpost.GetResourcePerMinute(TeamType.Player));
+            TeamType localTeam = LocalPlayerContext.LocalTeam;
+            int capturedOutposts = Outpost.GetOwnedCount(localTeam);
+            int resourcePerMinute = Mathf.RoundToInt(Outpost.GetResourcePerMinute(localTeam));
 
             SetText(_zonesValueText, capturedOutposts.ToString());
             SetText(_moneyValueText, playerResource.ToString());

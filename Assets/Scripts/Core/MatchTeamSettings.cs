@@ -28,6 +28,7 @@ namespace Strategy.Core
         private void Awake()
         {
             Active = this;
+            ApplyLaunchConfig(MatchLaunchContext.CurrentConfig);
             Apply();
         }
 
@@ -65,6 +66,23 @@ namespace Strategy.Core
 
                     TeamRelations.SetAlliance(first.Team, second.Team, true);
                 }
+            }
+        }
+
+        public void ApplyLaunchConfig(MatchLaunchConfig config)
+        {
+            if (config == null)
+                return;
+
+            _localTeam = config.LocalTeam;
+            _localPlayerId = config.LocalPlayerId;
+            _teams.Clear();
+
+            for (int i = 0; i < config.Teams.Count; i++)
+            {
+                TeamLaunchSlot slot = config.Teams[i];
+                if (slot != null && slot.Team != TeamType.Neutral)
+                    _teams.Add(slot.ToTeamSlot());
             }
         }
     }

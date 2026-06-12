@@ -26,6 +26,7 @@ namespace Strategy.Buildings
         [SerializeField] private bool _syncVisualWithZone = true;
 
         private readonly Dictionary<TeamComponent, int> _unitsInside = new();
+        private readonly Dictionary<TeamType, int> _teamUnitCounts = new();
         private readonly Dictionary<GameObject, int> _blockingBuildingsInside = new();
         private readonly List<TeamComponent> _staleUnits = new();
         private readonly List<GameObject> _staleBuildings = new();
@@ -57,26 +58,26 @@ namespace Strategy.Buildings
         {
             CleanupDestroyedEntries();
 
-            int playerUnits = 0;
-            int enemyUnits = 0;
+            _teamUnitCounts.Clear();
 
             foreach (TeamComponent unit in _unitsInside.Keys)
             {
                 if (unit == null)
                     continue;
 
-                if (unit.Team == TeamType.Player)
-                    playerUnits++;
+                if (unit.Team == TeamType.Neutral)
+                    continue;
 
-                if (unit.Team == TeamType.Enemy)
-                    enemyUnits++;
+                if (_teamUnitCounts.TryGetValue(unit.Team, out int count))
+                    _teamUnitCounts[unit.Team] = count + 1;
+                else
+                    _teamUnitCounts.Add(unit.Team, 1);
             }
 
             if (_outpost != null)
             {
                 _outpost.TickCapture(
-                    playerUnits,
-                    enemyUnits,
+                    _teamUnitCounts,
                     _blockingBuildingsInside.Count > 0,
                     Time.deltaTime);
             }

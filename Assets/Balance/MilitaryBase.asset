@@ -15,8 +15,8 @@ MonoBehaviour:
   _buildingName: Military Base
   _icon: {fileID: 0}
   _prefab: {fileID: 166950, guid: d6786c9bcf7304f1f8c2bbc4231bd81e, type: 3}
-  _economyCost: 0
-  _buildTime: 0
+  _economyCost: 600
+  _buildTime: 10
   _maxHealth: 5000
   _checkBoxSize: {x: 15, y: 16, z: 15}
   _checkBoxOffset: {x: 0, y: 8, z: 0}

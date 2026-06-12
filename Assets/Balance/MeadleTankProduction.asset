@@ -15,5 +15,5 @@ MonoBehaviour:
   ItemName: MeadlTank
   Icon: {fileID: 0}
   UnitData: {fileID: 11400000, guid: a750e01c2cf13eb4cbc5196212e50b2c, type: 2}
-  Cost: 0
+  Cost: 120
   ProductionTime: 4

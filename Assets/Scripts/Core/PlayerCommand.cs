@@ -103,6 +103,22 @@ namespace Strategy.Core
                 null,
                 productionItem);
         }
+
+        public static PlayerCommand UpgradeOutpost(
+            TeamType team,
+            int playerId,
+            Transform outpost)
+        {
+            return new PlayerCommand(
+                PlayerCommandType.UpgradeOutpost,
+                team,
+                playerId,
+                null,
+                Vector3.zero,
+                outpost,
+                null,
+                null);
+        }
     }
 
     public enum PlayerCommandType
@@ -110,6 +126,7 @@ namespace Strategy.Core
         MoveUnits,
         AttackTarget,
         BuildStructure,
-        ProduceUnit
+        ProduceUnit,
+        UpgradeOutpost
     }
 }

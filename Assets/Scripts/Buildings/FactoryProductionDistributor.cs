@@ -33,8 +33,13 @@ namespace Strategy.Buildings
             for (int i = 0; i < factories.Count; i++)
             {
                 BuildingProduction factory = factories[i];
-                if (factory == null || !factory.isActiveAndEnabled || !factory.CanProduce(item))
+                if (factory == null ||
+                    !factory.isActiveAndEnabled ||
+                    BuildingConstructionState.IsConstructing(factory) ||
+                    !factory.CanProduce(item))
+                {
                     continue;
+                }
 
                 int workCount = factory.PendingWorkCount;
                 if (bestFactory != null && workCount >= bestWorkCount)

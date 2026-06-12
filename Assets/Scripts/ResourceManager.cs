@@ -105,9 +105,49 @@ namespace Strategy.Core
                 OnResourceChanged?.Invoke(clampedAmount);
         }
 
+        public void RestoreResources(IEnumerable<TeamResourceAmount> resources)
+        {
+            _resources.Clear();
+
+            if (resources != null)
+            {
+                foreach (TeamResourceAmount resource in resources)
+                {
+                    if (resource.Team != TeamType.Neutral)
+                        _resources[resource.Team] = Mathf.Max(0, resource.Amount);
+                }
+            }
+
+            RaiseAllResourceEvents();
+        }
+
+        public void CopyResources(List<TeamResourceAmount> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+            foreach (KeyValuePair<TeamType, int> pair in _resources)
+                results.Add(new TeamResourceAmount(pair.Key, pair.Value));
+        }
+
         private void InitializeResources()
         {
             _resources.Clear();
+
+            MatchLaunchConfig launchConfig = MatchLaunchContext.CurrentConfig;
+            if (launchConfig != null && launchConfig.Teams.Count > 0)
+            {
+                for (int i = 0; i < launchConfig.Teams.Count; i++)
+                {
+                    TeamLaunchSlot team = launchConfig.Teams[i];
+                    if (team != null && team.Team != TeamType.Neutral)
+                        _resources[team.Team] = team.StartingResources;
+                }
+
+                RaiseAllResourceEvents();
+                return;
+            }
 
             MatchTeamSettings matchSettings = MatchTeamSettings.Active;
 
@@ -137,6 +177,8 @@ namespace Strategy.Core
                 TeamResourceAmount resource = _extraStartingResources[i];
                 _resources[resource.Team] = Mathf.Max(0, resource.Amount);
             }
+
+            RaiseAllResourceEvents();
         }
 
         private int ResolveStartingResource(TeamType team)
@@ -149,6 +191,14 @@ namespace Strategy.Core
 
             return Mathf.Max(0, _defaultTeamResource);
         }
+
+        private void RaiseAllResourceEvents()
+        {
+            foreach (KeyValuePair<TeamType, int> pair in _resources)
+                OnTeamResourceChanged?.Invoke(pair.Key, pair.Value);
+
+            OnResourceChanged?.Invoke(Resource);
+        }
     }
 
     [Serializable]
@@ -159,5 +209,11 @@ namespace Strategy.Core
 
         public TeamType Team => _team;
         public int Amount => _amount;
+
+        public TeamResourceAmount(TeamType team, int amount)
+        {
+            _team = team;
+            _amount = Mathf.Max(0, amount);
+        }
     }
 }

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65da6e5b322f13546b08fee575bfad51, type: 3}
+  m_Name: EasyAI
+  m_EditorClassIdentifier: Assembly-CSharp::Strategy.AI.AiDifficultyProfile
+  _difficulty: 0
+  _decisionInterval: 2.5
+  _attackCooldown: 28
+  _captureCooldown: 12
+  _buildCooldown: 18
+  _minimumOwnedOutposts: 1
+  _resourceReserve: 120
+  _desiredFactoryCount: 1
+  _outpostUpgradeResourceMultiplier: 2.5
+  _captureSquadSize: 1
+  _attackGroupSize: 4
+  _defenseRadius: 34
+  _maxPendingWorkPerFactory: 1
+  _focusHighValueBuildings: 0
+  _productionWeights:
+  - _item: {fileID: 11400000, guid: bae9135be8b7f6648b3ad496fa6c9b8a, type: 2}
+    _weight: 1.2
+  - _item: {fileID: 11400000, guid: f83509def1fbe4a468b83ca0a4a598af, type: 2}
+    _weight: 0.7
+  - _item: {fileID: 11400000, guid: b0311d41d60616b4da60ab2dfaaa6a6d, type: 2}
+    _weight: 0.15
